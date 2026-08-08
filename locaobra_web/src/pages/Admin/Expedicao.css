@@ -1,0 +1,355 @@
+/* ============================================
+   PAINEL DE EXPEDIÇÃO — ESTILOS
+   ============================================ */
+
+/* Filtros */
+.expedicaoFiltros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.expedicaoFiltros .equipInput {
+    background-color: var(--bg-primary, #f8f9fa);
+}
+
+/* Avatar de expedição */
+.expeAvatar {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, #e67e00));
+    color: #fff;
+    font-size: 1rem;
+}
+
+/* Tags de status */
+.expeStatusTag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.expeStatusTag.agendado {
+    background-color: rgba(33, 150, 243, 0.15);
+    color: #1565c0;
+}
+
+.expeStatusTag.em_transito {
+    background-color: rgba(255, 140, 0, 0.15);
+    color: var(--primary-color);
+}
+
+.expeStatusTag.concluido {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #2e7d32;
+}
+
+.expeStatusTag.cancelado {
+    background-color: rgba(214, 48, 49, 0.15);
+    color: var(--danger-color, #d63031);
+}
+
+/* Type tag override color for ENTREGA/COLETA */
+.typeTag.entrega {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #2e7d32;
+}
+
+.typeTag.coleta {
+    background-color: rgba(33, 150, 243, 0.15);
+    color: #1565c0;
+}
+
+/* ============================================
+   MODAL DE DETALHES
+   ============================================ */
+.detalheModalCard {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 780px;
+    max-width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
+}
+
+.novaExpedicaoModalCard {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 900px;
+    max-width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
+}
+
+.vistoriaModalCard {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 720px;
+    max-width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
+}
+
+/* Grid de informações do detalhe */
+.detalheInfoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    background-color: var(--bg-primary, #f8f9fa);
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+}
+
+.detalheInfoItem {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #636e72);
+    line-height: 1.5;
+}
+
+.detalheInfoItem strong {
+    color: var(--text-primary, #2d3436);
+}
+
+/* Seção check-in / check-out */
+.checkinSection {
+    background-color: #fff;
+    border: 1px solid var(--border-color, #dfe6e9);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.checkinSection h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary, #2d3436);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.checkinSection h4 svg {
+    color: var(--primary-color);
+    margin-right: 6px;
+}
+
+.checkinActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Form fields */
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.formField label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary, #636e72);
+}
+
+/* ============================================
+   VISTORIA CARDS
+   ============================================ */
+.vistoriaList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vistoriaCard {
+    background-color: var(--bg-primary, #f8f9fa);
+    border: 1px solid var(--border-color, #dfe6e9);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+}
+
+.vistoriaCard p {
+    margin: 4px 0;
+    color: var(--text-secondary, #636e72);
+}
+
+.vistoriaCard p strong {
+    color: var(--text-primary, #2d3436);
+}
+
+.vistoriaCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.vistoriaTipoTag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.vistoriaTipoTag.entrega {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #2e7d32;
+}
+
+.vistoriaTipoTag.devolucao {
+    background-color: rgba(255, 140, 0, 0.15);
+    color: var(--primary-color);
+}
+
+.vistoriaCondicao {
+    font-weight: 600;
+    color: var(--text-secondary, #636e72);
+}
+
+.vistoriaData {
+    font-size: 0.75rem;
+    color: var(--gray-500, #999);
+    margin-left: auto;
+}
+
+.vistoriaFotos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.vistoriaFotos img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #dfe6e9);
+}
+
+/* Upload de fotos */
+.photoUpload {
+    border: 2px dashed var(--border-color, #dfe6e9);
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-secondary, #636e72);
+    background: var(--bg-primary, #f8f9fa);
+}
+
+.photoUpload:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.photoUpload span {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.photoPreviewGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.photoPreviewItem {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color, #dfe6e9);
+}
+
+.photoPreviewItem img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    display: block;
+}
+
+.photoPreviewItem button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.photoPreviewItem button:hover {
+    background: var(--danger-color, #d63031);
+}
+
+/* Assinatura */
+.assinaturaRegistrada {
+    background-color: rgba(0, 184, 148, 0.1);
+    border: 1px solid rgba(0, 184, 148, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.assinaturaText {
+    font-family: 'Segoe Script', cursive, sans-serif;
+    font-size: 1.2rem;
+    color: var(--text-primary, #2d3436);
+    margin: 4px 0 0 0;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .expedicaoFiltros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .expedicaoFiltros .equipInput,
+    .expedicaoFiltros .searchBox {
+        max-width: 100% !important;
+    }
+
+    .detalheInfoGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .detalheModalCard,
+    .novaExpedicaoModalCard,
+    .vistoriaModalCard {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+}

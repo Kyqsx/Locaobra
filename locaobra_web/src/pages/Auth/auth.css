@@ -1,0 +1,133 @@
+.loginSplitPage {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Lado da Imagem */
+.loginImageSide {
+    flex: 1;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.imageOverlay {
+    background: rgba(0, 0, 0, 0.7); /* Escurece a imagem para ler o texto */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    color: white;
+}
+
+.brandLogo {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #ff8c00; /* Laranja construção */
+}
+
+.imageOverlay h1 {
+    font-size: 2.5rem;
+    max-width: 500px;
+    line-height: 1.2;
+    color: #fff;
+    text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
+}
+
+/* Lado do Formulário */
+.loginFormSide {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f4f7f6;
+    padding: 40px;
+}
+
+.login-card { width: 100%; max-width: 400px; }
+
+.login-card h2 { margin-bottom: 5px; color: #333; }
+.login-card p { color: #666; margin-bottom: 30px; }
+
+.loginInputGroup { margin-bottom: 5px; }
+.loginInputLabel { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
+
+.inputWithIcon {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0 15px;
+}
+
+.inputIcon { color: #888; margin-right: 10px; }
+
+.loginInputField {
+    border: none;
+    padding: 12px 0;
+    width: 100%;
+    outline: none;
+    font-size: 1rem;
+}
+
+.loginPasswordWrapper {
+    display: flex;
+    width: 100%;
+    align-items: center;
+}
+
+.loginEye-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+}
+
+.login-button {
+    width: 100%;
+    padding: 14px;
+    background-color: #ff8c00;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+.login-button:hover { background-color: #e67e00; }
+
+.forgotPassword { text-align: right; margin-bottom: 20px; }
+.forgotPassword a { color: #ff8c00; text-decoration: none; font-size: 0.9rem; }
+
+.login-footer { text-align: center; margin-top: 25px; }
+.login-footer a { color: #ff8c00; font-weight: bold; text-decoration: none; }
+
+/* Popup de Erro Simples */
+.loginPopup {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+}
+.loginPopup-content {
+    background: white; padding: 30px; border-radius: 12px; text-align: center;
+}
+.loginPopup-content button {
+    margin-top: 15px; padding: 8px 20px; background: #ff8c00; border: none; color: white; border-radius: 5px; cursor: pointer;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .loginImageSide { display: none; }
+}

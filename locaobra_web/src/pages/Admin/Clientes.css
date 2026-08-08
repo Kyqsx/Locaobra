@@ -1,0 +1,193 @@
+/* ============================================
+   EQUIPAMENTO TEST - ESTILOS COMPATÍVEIS
+   ============================================ */
+
+:root {
+  --primary-color: #ff8c00;
+  --primary-dark: #e67e00;
+  --primary-light: #ffaa33;
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --text-primary: #2d3436;
+  --text-secondary: #636e72;
+  --border-color: #dfe6e9;
+  --success-color: #00b894;
+  --danger-color: #d63031;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --transition: all 0.3s ease;
+}
+
+.equipTestContainer {
+  padding: 30px;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Reutilizando animação do seu Dashboard */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card do Formulário */
+.equipFormCard {
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 30px;
+  border: 1px solid var(--border-color);
+}
+
+.equipFormCard h2 {
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  border-left: 4px solid var(--primary-color);
+  padding-left: 15px;
+}
+
+/* Inputs e Campos */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.equipInput, .equipTextarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: var(--transition);
+  background-color: var(--bg-primary);
+}
+
+.equipInput:focus, .equipTextarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+}
+
+/* Especificações Técnicas */
+.height100 {
+    max-height: 100%;
+}
+
+.specsSection {
+  background-color: var(--bg-primary);
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.specRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.specsHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+/* Botões Reutilizando o Estilo do seu Dashboard */
+.btnPrimary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  opacity: 0.9;
+}
+
+.btnSmallDelete {
+  padding: 5px 10px;
+  background-color: rgba(214, 48, 49, 0.1);
+  color: var(--danger-color);
+  border: 1px solid var(--danger-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+/* Grid de Listagem de Equipamentos */
+.equipListGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.equipResultCard {
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.equipResultCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.equipResultCard h3 {
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.priceBadge {
+  background-color: rgba(255, 140, 0, 0.1);
+  color: var(--primary-color);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.imagePreviewGrid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin: 15px 0;
+}
+
+.imageThumb {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.messageBanner {
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.success { background-color: var(--success-green); color: #fff; }
+.error { background-color: var(--error-red); color: #fff; }
