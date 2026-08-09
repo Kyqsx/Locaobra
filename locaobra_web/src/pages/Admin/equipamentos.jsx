@@ -13,6 +13,8 @@ import { canAccessAdminRoute } from '../../utils/permissions';
 const STATUS_UNIDADE_LABEL = {
     DISPONIVEL: 'Disponível',
     ALUGADO: 'Alugado',
+    EM_LIMPEZA: 'Em limpeza',
+    AGUARDANDO_MANUTENCAO: 'Aguardando manutenção',
     EM_MANUTENCAO: 'Em manutenção',
 };
 
@@ -639,9 +641,9 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged }) {
                                     <input className="equipInput" name="codigoPatrimonio" placeholder="Código de Patrimônio (ex: MAR-001)" value={unidadeForm.codigoPatrimonio} onChange={handleUnidadeChange} />
                                     <input className="equipInput" name="numeroDeSerie" placeholder="Nº de Série do Fabricante" value={unidadeForm.numeroDeSerie} onChange={handleUnidadeChange} />
                                     <select className="unidadeStatusSelect" name="status" value={unidadeForm.status} onChange={handleUnidadeChange}>
-                                        <option value="DISPONIVEL">Disponível</option>
-                                        <option value="EM_MANUTENCAO">Em manutenção</option>
-                                        <option value="ALUGADO">Alugado</option>
+                                        {Object.entries(STATUS_UNIDADE_LABEL).map(([value, label]) => (
+                                            <option key={value} value={value}>{label}</option>
+                                        ))}
                                     </select>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                         <button type="submit" className="addBtn">

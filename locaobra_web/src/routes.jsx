@@ -12,6 +12,8 @@ import AdminEquipamentos from './pages/Admin/equipamentos';
 import AdminClientes from './pages/Admin/clientes';
 import AdminFuncionarios from './pages/Admin/funcionarios';
 import AdminExpedicao from './pages/Admin/expedicao';
+import AdminOrdensServico from './pages/Admin/ordensServico';
+import AdminNotificacoes from './pages/Admin/notificacoes';
 
 import Header from "./components/header";
 import Sidebar from "./components/sidebar";
@@ -88,6 +90,8 @@ function RotasApp() {
                             <Route path="clientes" element={<AdminClientes />} /> 
                             <Route path="funcionarios" element={<AdminFuncionarios />} />
                             <Route path="expedicao" element={<AdminExpedicao />} />
+                            <Route path="ordens-servico" element={<AdminOrdensServico />} />
+                            <Route path="notificacoes" element={<AdminNotificacoes />} />
                         </Route>
 
                     </Route>

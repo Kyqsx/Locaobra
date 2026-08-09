@@ -1,0 +1,112 @@
+/* ============================================
+   ORDENS DE SERVIÇO — ESTILOS
+   ============================================ */
+
+.osModalCard {
+    width: 100%;
+    max-width: 620px;
+}
+
+.osDetalheModalCard {
+    max-width: 760px;
+}
+
+.fieldHint {
+    font-size: 0.8rem;
+    color: var(--danger-color, #d63031);
+    margin-top: 6px;
+}
+
+/* Tabs */
+.osTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+    border-bottom: 1px solid #e6e6e6;
+    padding-bottom: 4px;
+}
+
+.osTabBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: background 0.15s, color 0.15s;
+}
+
+.osTabBtn:hover {
+    background: rgba(255, 140, 0, 0.08);
+    color: var(--primary-color, #ff8c00);
+}
+
+.osTabBtn.active {
+    background: rgba(255, 140, 0, 0.12);
+    color: var(--primary-color, #ff8c00);
+    border-bottom: 2px solid var(--primary-color, #ff8c00);
+}
+
+/* Tags de status da OS */
+.osStatusTag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 10px;
+}
+
+.osStatusTag.aberta {
+    background-color: rgba(33, 150, 243, 0.15);
+    color: #1565c0;
+}
+
+.osStatusTag.em_andamento {
+    background-color: rgba(255, 140, 0, 0.15);
+    color: var(--primary-color, #ff8c00);
+}
+
+.osStatusTag.concluida {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #2e7d32;
+}
+
+.osStatusTag.cancelada {
+    background-color: rgba(214, 48, 49, 0.15);
+    color: var(--danger-color, #d63031);
+}
+
+.smallBtn.danger {
+    background-color: rgba(214, 48, 49, 0.1);
+    color: var(--danger-color, #d63031);
+    border: 1px solid rgba(214, 48, 49, 0.3);
+}
+
+.smallBtn.danger:hover {
+    background-color: rgba(214, 48, 49, 0.2);
+}
+
+.smallBtn.success {
+    background-color: #2e7d32;
+}
+
+.smallBtn.success:hover {
+    background-color: #256428;
+}
+
+.addBtn.success {
+    background-color: #2e7d32;
+}
+
+.addBtn.success:hover {
+    background-color: #256428;
+}

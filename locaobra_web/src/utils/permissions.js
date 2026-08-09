@@ -1,7 +1,9 @@
 export const ADMIN_ALLOWED_PATHS = {
   RH: ['/admin/clientes', '/admin/funcionarios'],
-  TECNICO_MANUTENCAO: ['/admin/equipamentos'],
+  TECNICO_MANUTENCAO: ['/admin/equipamentos', '/admin/ordens-servico'],
   ENTREGADOR: ['/admin/expedicao'],
+  CONFERENTE: ['/admin/expedicao', '/admin/equipamentos'],
+  ANALISTA_FINANCEIRO: ['/admin/notificacoes'],
 };
 
 export function canAccessAdminRoute(user, pathname = '/') {

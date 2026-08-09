@@ -58,8 +58,14 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit,
                                 <select className="equipInput" name="cargo" value={form.cargo} onChange={onChange}>
                                     <option value="">Cargo</option>
                                     <option value="ENTREGADOR">Entregador</option>
-                                    <option value="RH">RH</option>
+                                    <option value="CONFERENTE">Conferente</option>
                                     <option value="TECNICO_MANUTENCAO">Técnico de Manutenção</option>
+                                    <option value="FAXINE">Faxineiro</option>
+                                    <option value="CONSULTOR_LOCACAO">Consultor de Locação</option>
+                                    <option value="ANALISTA_CREDENCIAMENTO">Analista de Credenciamento</option>
+                                    <option value="ANALISTA_FINANCEIRO">Analista Financeiro</option>
+                                    <option value="GERENTE_OPERACOES">Gerente de Operações</option>
+                                    <option value="RH">Recursos Humanos</option>
                                 </select>
                             </FormField>
                             <FormField label="Departamento">

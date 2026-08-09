@@ -12,6 +12,8 @@ import {
   faUsers,
   faUserTie,
   faTruck,
+  faWrench,
+  faBell,
   faArrowLeft 
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -62,6 +64,16 @@ const Sidebar = () => {
           {canAccess('/admin/expedicao') && (
             <Link to="/admin/expedicao" className="sub-item">
               <FontAwesomeIcon icon={faTruck} /> Expedição
+            </Link>
+          )}
+          {canAccess('/admin/ordens-servico') && (
+            <Link to="/admin/ordens-servico" className="sub-item">
+              <FontAwesomeIcon icon={faWrench} /> Ordens de Serviço
+            </Link>
+          )}
+          {canAccess('/admin/notificacoes') && (
+            <Link to="/admin/notificacoes" className="sub-item">
+              <FontAwesomeIcon icon={faBell} /> Notificações de Avarias
             </Link>
           )}
 
