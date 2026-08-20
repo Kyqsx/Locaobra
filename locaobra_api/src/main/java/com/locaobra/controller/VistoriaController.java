@@ -2,6 +2,7 @@ package com.locaobra.controller;
 
 import com.locaobra.dto.request.VistoriaRequest;
 import com.locaobra.dto.response.VistoriaResponse;
+import com.locaobra.service.StorageService;
 import com.locaobra.service.VistoriaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +21,12 @@ import java.util.List;
 public class VistoriaController {
 
     private final VistoriaService vistoriaService;
+    private final StorageService storageService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public VistoriaController(VistoriaService vistoriaService) {
+    public VistoriaController(VistoriaService vistoriaService, StorageService storageService) {
         this.vistoriaService = vistoriaService;
+        this.storageService = storageService;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -37,17 +39,10 @@ public class VistoriaController {
         if (fotos != null && fotos.length > 0) {
             List<String> urls = new ArrayList<>();
 
-            String basePath = System.getProperty("user.dir") + "/uploads/vistorias";
-            File baseDir = new File(basePath);
-            if (!baseDir.exists()) baseDir.mkdirs();
-
             for (MultipartFile f : fotos) {
                 if (f == null || f.isEmpty()) continue;
-                String filename = System.currentTimeMillis() + "_"
-                        + f.getOriginalFilename().replaceAll("\\s+", "_");
-                File dest = new File(baseDir, filename);
-                f.transferTo(dest.getAbsoluteFile());
-                urls.add("/uploads/vistorias/" + filename);
+                String url = storageService.salvar(f, "vistorias");
+                if (url != null) urls.add(url);
             }
             request.setFotos(urls);
         }
@@ -75,17 +70,10 @@ public class VistoriaController {
 
         if (fotos != null && fotos.length > 0) {
             List<String> urls = new ArrayList<>();
-            String basePath = System.getProperty("user.dir") + "/uploads/vistorias";
-            File baseDir = new File(basePath);
-            if (!baseDir.exists()) baseDir.mkdirs();
-
             for (MultipartFile f : fotos) {
                 if (f == null || f.isEmpty()) continue;
-                String filename = System.currentTimeMillis() + "_"
-                        + f.getOriginalFilename().replaceAll("\\s+", "_");
-                File dest = new File(baseDir, filename);
-                f.transferTo(dest.getAbsoluteFile());
-                urls.add("/uploads/vistorias/" + filename);
+                String url = storageService.salvar(f, "vistorias");
+                if (url != null) urls.add(url);
             }
             request.setFotos(urls);
         }

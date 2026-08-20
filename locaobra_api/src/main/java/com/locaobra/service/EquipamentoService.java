@@ -25,16 +25,19 @@ public class EquipamentoService {
     private final EspecificacaoEquipamentoRepository especificacaoRepository;
     private final ImagemEquipamentoRepository imagemRepository;
     private final UnidadeEquipamentoRepository unidadeRepository;
+    private final StorageService storageService;
 
     public EquipamentoService(
             EquipamentoRepository equipamentoRepository,
             EspecificacaoEquipamentoRepository especificacaoRepository,
             ImagemEquipamentoRepository imagemRepository,
-            UnidadeEquipamentoRepository unidadeRepository) {
+            UnidadeEquipamentoRepository unidadeRepository,
+            StorageService storageService) {
         this.equipamentoRepository = equipamentoRepository;
         this.especificacaoRepository = especificacaoRepository;
         this.imagemRepository = imagemRepository;
         this.unidadeRepository = unidadeRepository;
+        this.storageService = storageService;
     }
 
     @Transactional
@@ -130,12 +133,8 @@ public class EquipamentoService {
         ImagemEquipamento img = imagemRepository.findByEquipamentoIdAndUrl(equipamentoId, url);
         if (img != null) {
             imagemRepository.delete(img);
-            // delete file from disk if exists
-            try {
-                String basePath = System.getProperty("user.dir") + "/uploads/equipamentos";
-                java.io.File f = new java.io.File(basePath + url.replace("/uploads/equipamentos", ""));
-                if (f.exists()) f.delete();
-            } catch (Exception ignored) {}
+            // remove do storage (Supabase ou disco local)
+            storageService.remover(url);
 
             // re-order remaining images
             List<ImagemEquipamento> remaining = imagemRepository.findByEquipamentoIdOrderByOrdem(equipamentoId);

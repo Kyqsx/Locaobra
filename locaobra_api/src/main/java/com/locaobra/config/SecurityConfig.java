@@ -24,9 +24,28 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final java.util.List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:}") String allowedOriginsConfig) {
         this.jwtAuthFilter = jwtAuthFilter;
+        if (allowedOriginsConfig == null || allowedOriginsConfig.isBlank()) {
+            this.allowedOrigins = java.util.Arrays.asList(
+                    "http://localhost:3000",
+                    "http://localhost:4200",
+                    "http://localhost:5173",
+                    "http://localhost:8081",
+                    "http://192.168.0.98:5173",
+                    "http://172.17.19.249:5173",
+                    "https://locaobra.onrender.com"
+            );
+        } else {
+            this.allowedOrigins = java.util.Arrays.stream(allowedOriginsConfig.split(","))
+                    .map(String::trim)
+                    .filter(o -> !o.isEmpty())
+                    .toList();
+        }
     }
 
     @Bean
@@ -151,14 +170,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:4200",
-                "http://localhost:5173",
-                "http://localhost:8081",
-                "http://192.168.0.98:5173",
-                "http://172.17.19.249:5173"
-        ));
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         config.setAllowCredentials(true);

@@ -3,6 +3,7 @@ package com.locaobra.controller;
 import com.locaobra.dto.request.EquipamentoRequest;
 import com.locaobra.dto.response.EquipamentoResponse;
 import com.locaobra.service.EquipamentoService;
+import com.locaobra.service.StorageService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,9 +21,11 @@ import java.util.List;
 public class EquipamentoController {
 
     private final EquipamentoService equipamentoService;
+    private final StorageService storageService;
 
-    public EquipamentoController(EquipamentoService equipamentoService) {
+    public EquipamentoController(EquipamentoService equipamentoService, StorageService storageService) {
         this.equipamentoService = equipamentoService;
+        this.storageService = storageService;
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -36,21 +38,11 @@ public class EquipamentoController {
 
         if (imagens != null && imagens.length > 0) {
             List<String> urls = new ArrayList<>();
-
-            // caminho absoluto — evita o problema do /tmp/tomcat
-            String basePath = System.getProperty("user.dir") + "/uploads/equipamentos";
-            File baseDir = new File(basePath);
-            if (!baseDir.exists())
-                baseDir.mkdirs();
-
             for (MultipartFile f : imagens) {
                 if (f == null || f.isEmpty())
                     continue;
-                String filename = System.currentTimeMillis() + "_"
-                        + f.getOriginalFilename().replaceAll("\\s+", "_");
-                File dest = new File(baseDir, filename);
-                f.transferTo(dest.getAbsoluteFile()); // .getAbsoluteFile() é o ponto chave
-                urls.add("/uploads/equipamentos/" + filename);
+                String url = storageService.salvar(f, "equipamentos");
+                if (url != null) urls.add(url);
             }
             request.setImagens(urls);
         }
@@ -86,19 +78,11 @@ public class EquipamentoController {
 
         if (imagens != null && imagens.length > 0) {
             List<String> urls = new ArrayList<>();
-            String basePath = System.getProperty("user.dir") + "/uploads/equipamentos";
-            File baseDir = new File(basePath);
-            if (!baseDir.exists())
-                baseDir.mkdirs();
-
             for (MultipartFile f : imagens) {
                 if (f == null || f.isEmpty())
                     continue;
-                String filename = System.currentTimeMillis() + "_"
-                        + f.getOriginalFilename().replaceAll("\\s+", "_");
-                File dest = new File(baseDir, filename);
-                f.transferTo(dest.getAbsoluteFile());
-                urls.add("/uploads/equipamentos/" + filename);
+                String url = storageService.salvar(f, "equipamentos");
+                if (url != null) urls.add(url);
             }
             request.setImagens(urls);
         }

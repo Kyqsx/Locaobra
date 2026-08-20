@@ -4,6 +4,7 @@ import com.locaobra.dto.request.ExpedicaoRequest;
 import com.locaobra.dto.response.ExpedicaoResponse;
 import com.locaobra.enums.StatusExpedicao;
 import com.locaobra.service.ExpedicaoService;
+import com.locaobra.service.StorageService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -23,9 +23,11 @@ import java.util.Map;
 public class ExpedicaoController {
 
     private final ExpedicaoService expedicaoService;
+    private final StorageService storageService;
 
-    public ExpedicaoController(ExpedicaoService expedicaoService) {
+    public ExpedicaoController(ExpedicaoService expedicaoService, StorageService storageService) {
         this.expedicaoService = expedicaoService;
+        this.storageService = storageService;
     }
 
     @PostMapping
@@ -90,14 +92,7 @@ public class ExpedicaoController {
             @RequestPart("assinatura") String assinatura,
             @RequestPart("foto") MultipartFile foto) throws IOException {
 
-        String basePath = System.getProperty("user.dir") + "/uploads/entregas";
-        File baseDir = new File(basePath);
-        if (!baseDir.exists()) baseDir.mkdirs();
-
-        String filename = System.currentTimeMillis() + "_" + foto.getOriginalFilename().replaceAll("\\s+", "_");
-        File dest = new File(baseDir, filename);
-        foto.transferTo(dest.getAbsoluteFile());
-        String fotoUrl = "/uploads/entregas/" + filename;
+        String fotoUrl = storageService.salvar(foto, "entregas");
 
         return ResponseEntity.ok(expedicaoService.confirmarEntrega(id, assinatura, fotoUrl));
     }
