@@ -6,7 +6,7 @@
 .expedicaoFiltros {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
     padding: 4px 0;
 }
@@ -17,7 +17,7 @@
 
 /* Avatar de expedição */
 .expeAvatar {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, #e67e00));
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, #B5690A));
     color: #fff;
     font-size: 1rem;
 }
@@ -26,9 +26,9 @@
 .expeStatusTag {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.68rem;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -39,8 +39,13 @@
 }
 
 .expeStatusTag.em_transito {
-    background-color: rgba(255, 140, 0, 0.15);
+    background-color: rgba(217, 130, 15, 0.15);
     color: var(--primary-color);
+}
+
+.expeStatusTag.entregue {
+    background-color: rgba(0, 172, 193, 0.15);
+    color: #00838f;
 }
 
 .expeStatusTag.concluido {
@@ -69,50 +74,50 @@
    ============================================ */
 .detalheModalCard {
     background-color: #fff;
-    border-radius: 12px;
-    padding: 24px;
-    width: 780px;
+    border-radius: 10px;
+    padding: 20px;
+    width: 624px;
     max-width: 95%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
+    box-shadow: var(--shadow-md, 0 4px 10px rgba(0,0,0,0.1));
 }
 
 .novaExpedicaoModalCard {
     background-color: #fff;
-    border-radius: 12px;
-    padding: 24px;
-    width: 900px;
-    max-width: 95%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
-}
-
-.vistoriaModalCard {
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 24px;
+    border-radius: 10px;
+    padding: 20px;
     width: 720px;
     max-width: 95%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
+    box-shadow: var(--shadow-md, 0 4px 10px rgba(0,0,0,0.1));
+}
+
+.vistoriaModalCard {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    width: 576px;
+    max-width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md, 0 4px 10px rgba(0,0,0,0.1));
 }
 
 /* Grid de informações do detalhe */
 .detalheInfoGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+    gap: 10px;
     background-color: var(--bg-primary, #f8f9fa);
-    padding: 14px;
-    border-radius: 8px;
-    margin-bottom: 18px;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
 }
 
 .detalheInfoItem {
-    font-size: 0.9rem;
+    font-size: 0.765rem;
     color: var(--text-secondary, #636e72);
     line-height: 1.5;
 }
@@ -125,31 +130,88 @@
 .checkinSection {
     background-color: #fff;
     border: 1px solid var(--border-color, #dfe6e9);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 16px;
+    border-radius: 8px;
+    padding: 13px;
+    margin-bottom: 13px;
 }
 
 .checkinSection h4 {
-    margin: 0 0 12px 0;
+    margin: 0 0 10px 0;
     color: var(--text-primary, #2d3436);
     font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
 .checkinSection h4 svg {
     color: var(--primary-color);
+    margin-right: 5px;
+}
+
+/* Seção do passo atual, destacada pra guiar o usuário */
+.stepSection.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(230, 126, 34, 0.15);
+}
+
+/* Numeração dos passos (1,2,3,4) no cabeçalho de cada seção */
+.stepBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.637rem;
+    font-weight: 700;
     margin-right: 6px;
+    background-color: #dfe6e9;
+    color: #636e72;
+}
+
+.stepBadge.current {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.stepBadge.done {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+/* Tag mostrando quem é o responsável por aquele passo (ex: "Entregador") */
+.responsavelTag {
+    font-size: 0.595rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 3px 7px;
+    border-radius: 16px;
+    background-color: #eef2f7;
+    color: #636e72;
+    margin-right: auto;
+}
+
+.responsavelTag.optional {
+    background-color: #f1f1f1;
+    color: #999;
+}
+
+/* Botão desativado precisa parecer desativado — sem isso a pessoa
+   continua tentando clicar sem entender por que não funciona. */
+.checkinSection .smallBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(40%);
 }
 
 .checkinActions {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
 }
 
 /* Form fields */
@@ -157,11 +219,11 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .formField label {
-    font-size: 0.85rem;
+    font-size: 0.722rem;
     font-weight: 600;
     color: var(--text-secondary, #636e72);
 }
@@ -172,15 +234,15 @@
 .vistoriaList {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .vistoriaCard {
     background-color: var(--bg-primary, #f8f9fa);
     border: 1px solid var(--border-color, #dfe6e9);
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 0.85rem;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.722rem;
 }
 
 .vistoriaCard p {
@@ -195,15 +257,15 @@
 .vistoriaCardHeader {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
 }
 
 .vistoriaTipoTag {
-    padding: 2px 8px;
+    padding: 2px 6px;
     border-radius: 4px;
-    font-size: 0.75rem;
+    font-size: 0.637rem;
     font-weight: 700;
     text-transform: uppercase;
 }
@@ -214,7 +276,7 @@
 }
 
 .vistoriaTipoTag.devolucao {
-    background-color: rgba(255, 140, 0, 0.15);
+    background-color: rgba(217, 130, 15, 0.15);
     color: var(--primary-color);
 }
 
@@ -224,7 +286,7 @@
 }
 
 .vistoriaData {
-    font-size: 0.75rem;
+    font-size: 0.637rem;
     color: var(--gray-500, #999);
     margin-left: auto;
 }
@@ -232,30 +294,30 @@
 .vistoriaFotos {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 6px;
+    margin-top: 8px;
 }
 
 .vistoriaFotos img {
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: 5px;
     border: 1px solid var(--border-color, #dfe6e9);
 }
 
 /* Upload de fotos */
 .photoUpload {
     border: 2px dashed var(--border-color, #dfe6e9);
-    border-radius: 8px;
-    padding: 18px;
+    border-radius: 6px;
+    padding: 15px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     color: var(--text-secondary, #636e72);
     background: var(--bg-primary, #f8f9fa);
 }
@@ -266,27 +328,27 @@
 }
 
 .photoUpload span {
-    font-size: 0.9rem;
+    font-size: 0.765rem;
     font-weight: 500;
 }
 
 .photoPreviewGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .photoPreviewItem {
     position: relative;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
     border: 1px solid var(--border-color, #dfe6e9);
 }
 
 .photoPreviewItem img {
     width: 100%;
-    height: 100px;
+    height: 80px;
     object-fit: cover;
     display: block;
 }
@@ -299,13 +361,13 @@
     color: #fff;
     border: none;
     border-radius: 4px;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
 }
 
 .photoPreviewItem button:hover {
@@ -316,13 +378,13 @@
 .assinaturaRegistrada {
     background-color: rgba(0, 184, 148, 0.1);
     border: 1px solid rgba(0, 184, 148, 0.3);
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 6px;
+    padding: 10px;
 }
 
 .assinaturaText {
     font-family: 'Segoe Script', cursive, sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.02rem;
     color: var(--text-primary, #2d3436);
     margin: 4px 0 0 0;
 }
@@ -330,7 +392,7 @@
 /* ============================================
    RESPONSIVE
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 614px) {
     .expedicaoFiltros {
         flex-direction: column;
         align-items: stretch;

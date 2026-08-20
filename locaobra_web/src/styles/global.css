@@ -1,23 +1,42 @@
 /* ============================================
-   GLOBAL CSS - BemClinic
-   Design moderno, elegante e limpo
+   LOCAOBRA — DESIGN SYSTEM
+   Paleta: aço + âmbar de obra. Tipografia técnica.
    ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
 /* ============================================
    CSS VARIABLES
    ============================================ */
 :root {
-    /* Cores Primárias */
-    --primary-color: #ff8c00;
+    /* Cor primária — âmbar de obra (substitui o laranja anterior) */
+    --primary-color: #D9820F;
+    --primary-color-dark: #B5690A;
+    --primary-color-light: #E9A64B;
+    --primary-blue: #D9820F;
+    --primary-blue-dark: #B5690A;
+    --primary-blue-light: #E9A64B;
+    --secondary-blue: rgba(217, 130, 15, 0.10);
+
+    /* Cor secundária — aço/marinho, usada em navegação, sidebar, headers técnicos */
+    --steel-900: #17232F;
+    --steel-800: #1E2E3D;
+    --steel-700: #2A4157;
+    --steel-600: #3A5670;
+    --steel-100: #E9EDF1;
+
     --dark-grey: #333333;
     --light-grey: #f9f9f9;
 
     /* Cores de Apoio */
-    --success-green: #10b981;
-    --success-green-light: #34d399;
-    --warning-yellow: #f59e0b;
-    --error-red: #ef4444;
-    --error-red-light: #f87171;
+    --success-green: #1F9D6B;
+    --success-green-light: #3DBE8A;
+    --warning-yellow: #D9A441;
+    --error-red: #DC4C4C;
+    --error-red-light: #E97070;
+    --success-color: #1F9D6B;
+    --danger-color: #DC4C4C;
+    --info-color: #3574B8;
 
     /* Cores Neutras */
     --white: #ffffff;
@@ -34,53 +53,53 @@
 
     /* Tipografia */
     --font-primary: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --font-secondary: 'Poppins', 'Inter', sans-serif;
+    --font-secondary: 'Space Grotesk', 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Consolas', monospace;
 
-    /* Tamanhos de Fonte */
-    --text-xs: 0.75rem;    /* 12px */
-    --text-sm: 0.875rem;   /* 14px */
-    --text-base: 1rem;     /* 16px */
-    --text-lg: 1.125rem;   /* 18px */
-    --text-xl: 1.25rem;    /* 20px */
-    --text-2xl: 1.5rem;    /* 24px */
-    --text-3xl: 1.875rem;  /* 30px */
-    --text-4xl: 2.25rem;   /* 36px */
-    --text-5xl: 3rem;      /* 48px */
+    /* Tamanhos de Fonte — escala compacta */
+    --text-xs: 0.6875rem;   /* 11px */
+    --text-sm: 0.75rem;     /* 12px */
+    --text-base: 0.8125rem; /* 13px */
+    --text-lg: 0.9375rem;   /* 15px */
+    --text-xl: 1.0625rem;   /* 17px */
+    --text-2xl: 1.25rem;    /* 20px */
+    --text-3xl: 1.5rem;     /* 24px */
+    --text-4xl: 1.875rem;   /* 30px */
+    --text-5xl: 2.25rem;    /* 36px */
 
-    --text-center: text-align: center;
-
-    /* Espacamentos */
+    /* Espacamentos — escala compacta */
     --space-1: 0.25rem;    /* 4px */
     --space-2: 0.5rem;     /* 8px */
-    --space-3: 0.75rem;    /* 12px */
-    --space-4: 1rem;       /* 16px */
-    --space-5: 1.25rem;    /* 20px */
-    --space-6: 1.5rem;     /* 24px */
-    --space-8: 2rem;       /* 32px */
-    --space-10: 2.5rem;    /* 40px */
-    --space-12: 3rem;      /* 48px */
-    --space-16: 4rem;      /* 64px */
-    --space-20: 5rem;      /* 80px */
+    --space-3: 0.625rem;   /* 10px */
+    --space-4: 0.875rem;   /* 14px */
+    --space-5: 1.125rem;   /* 18px */
+    --space-6: 1.25rem;    /* 20px */
+    --space-8: 1.75rem;    /* 28px */
+    --space-10: 2.125rem;  /* 34px */
+    --space-12: 2.5rem;    /* 40px */
+    --space-16: 3.25rem;   /* 52px */
+    --space-20: 4rem;      /* 64px */
 
-    /* Raios de Borda */
-    --radius-sm: 0.125rem;  /* 2px */
-    --radius-md: 0.375rem;  /* 6px */
-    --radius-lg: 0.5rem;    /* 8px */
-    --radius-xl: 0.75rem;   /* 12px */
-    --radius-2xl: 1rem;     /* 16px */
+    /* Raios de Borda — menos "bolha", mais técnico */
+    --radius-sm: 0.125rem;
+    --radius-md: 0.3125rem;
+    --radius-lg: 0.4375rem;
+    --radius-xl: 0.625rem;
+    --radius-2xl: 0.875rem;
     --radius-full: 9999px;
 
     /* Sombras */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-sm: 0 1px 2px 0 rgba(23, 35, 47, 0.06);
+    --shadow-md: 0 4px 8px -2px rgba(23, 35, 47, 0.10), 0 2px 4px -2px rgba(23, 35, 47, 0.06);
+    --shadow-lg: 0 10px 20px -4px rgba(23, 35, 47, 0.12), 0 4px 8px -4px rgba(23, 35, 47, 0.06);
+    --shadow-xl: 0 20px 32px -8px rgba(23, 35, 47, 0.14), 0 8px 12px -6px rgba(23, 35, 47, 0.06);
+    --shadow-2xl: 0 25px 50px -12px rgba(23, 35, 47, 0.28);
 
     /* Transições */
     --transition-fast: 0.15s ease;
-    --transition-normal: 0.3s ease;
-    --transition-slow: 0.5s ease;
+    --transition-normal: 0.22s ease;
+    --transition-slow: 0.4s ease;
+    --transition: all 0.22s ease;
 
     /* Breakpoints (para media queries) */
     --breakpoint-sm: 640px;
@@ -89,23 +108,19 @@
     --breakpoint-xl: 1280px;
     --breakpoint-2xl: 1536px;
 
-    --height100: height: 100%; 
+    /* Aliases para compatibilidade com os módulos administrativos */
+    --bg-primary: #F4F5F7;
+    --bg-secondary: #ffffff;
+    --text-primary: #1B2530;
+    --text-secondary: #667181;
+    --border-color: #E4E7EB;
+    --primary-dark: #B5690A;
+    --primary-light: #E9A64B;
+    --icon-tint: rgba(217, 130, 15, 0.12);
 }
 
 /* ============================================
    GLOBAL STYLES
-   ============================================ */
-body {
-    font-family: var(--font-primary);
-    line-height: 1.6;
-    color: var(--gray-900);
-    background-color: var(--white);
-    margin: 0;
-    padding: 0;
-}
-
-/* ============================================
-   RESET & BASE STYLES
    ============================================ */
 *,
 *::before,
@@ -126,7 +141,7 @@ body {
     font-family: var(--font-primary);
     font-size: var(--text-base);
     font-weight: 400;
-    line-height: 1.6;
+    line-height: 1.55;
     color: var(--gray-700);
     background-color: var(--gray-50);
     -webkit-font-smoothing: antialiased;
@@ -140,6 +155,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-secondary);
     font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.2;
     color: var(--gray-900);
     margin-bottom: var(--space-4);
@@ -154,18 +170,23 @@ h6 { font-size: var(--text-base); }
 
 p {
     margin-bottom: var(--space-4);
-    line-height: 1.7;
+    line-height: 1.65;
 }
 
 a {
-    color: var(--primary-blue);
+    color: var(--primary-color);
     text-decoration: none;
     transition: color var(--transition-fast);
 }
 
 a:hover {
-    color: var(--primary-blue-light);
+    color: var(--primary-color-dark);
     text-decoration: underline;
+}
+
+code, .mono {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
 }
 
 /* ============================================
@@ -306,7 +327,7 @@ a:hover {
    FORM ELEMENTS
    ============================================ */
 .form-group {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-5);
 }
 
 .form-label {
@@ -331,8 +352,8 @@ a:hover {
 
 .form-input:focus {
     outline: none;
-    border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--secondary-blue);
 }
 
 .form-input::placeholder {
@@ -340,7 +361,7 @@ a:hover {
 }
 
 .form-textarea {
-    min-height: 120px;
+    min-height: 100px;
     resize: vertical;
 }
 
@@ -349,40 +370,38 @@ a:hover {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right var(--space-3) center;
     background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
+    background-size: 1.3em 1.3em;
     padding-right: var(--space-10);
 }
 
 select {
-    width: 100%; /* Ou um valor fixo como 200px */
-    padding: 10px 15px;
-    font-size: 16px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #333;
-    background-color: #f1f1f1;
-    border: 1px solid #f1f1f1; /* Cinza claro para combinar com as bordas das imagens */
-    border-radius: 8px; /* Arredondado suave como os botões */
+    width: 100%;
+    padding: 0.5625rem 0.8125rem;
+    font-size: var(--text-base);
+    font-family: var(--font-primary);
+    color: var(--gray-700);
+    background-color: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    appearance: none; /* Remove a seta padrão do navegador */
+    appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    
-    /* Adicionando uma seta customizada via Background Image */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8c00' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D9820F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    background-size: 16px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-size: 14px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 select:hover {
-    border-color: var(--primary-color); /* Laranja da sua marca */
+    border-color: var(--primary-color);
 }
 
 select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 5px rgba(255, 140, 0, 0.3);
+    box-shadow: 0 0 0 3px var(--secondary-blue);
 }
 
 /* ============================================
@@ -397,7 +416,7 @@ select:focus {
     border: none;
     border-radius: var(--radius-lg);
     font-size: var(--text-base);
-    font-weight: 500;
+    font-weight: 600;
     font-family: var(--font-primary);
     text-decoration: none;
     cursor: pointer;
@@ -407,12 +426,12 @@ select:focus {
 }
 
 .btn:hover{
-    filter: brightness(0.8);
-}   
+    filter: brightness(0.94);
+}
 
-.btn:focus {
+.btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    box-shadow: 0 0 0 3px var(--secondary-blue);
 }
 
 .btn:disabled {
@@ -422,20 +441,20 @@ select:focus {
 
 /* Button Variants */
 .btn-primary {
-    background-color: var(--primary-blue);
+    background-color: var(--primary-color);
     color: var(--white);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--primary-blue-dark);
+    background-color: var(--primary-color-dark);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
     background-color: var(--white);
-    color: var(--primary-blue);
-    border: 1px solid var(--primary-blue);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -561,7 +580,7 @@ th {
     background-color: var(--gray-50);
     font-weight: 600;
     color: var(--gray-900);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -584,13 +603,13 @@ tr:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(17, 24, 32, 0.55);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: modalFadeIn 0.3s ease;
+    animation: modalFadeIn 0.25s ease;
 }
 
 .modal-content {
@@ -601,7 +620,7 @@ tr:hover {
     max-width: 90vw;
     max-height: 90vh;
     overflow-y: auto;
-    animation: modalSlideIn 0.3s ease;
+    animation: modalSlideIn 0.25s ease;
 }
 
 .popup {
@@ -613,8 +632,8 @@ tr:hover {
     box-shadow: var(--shadow-lg);
     padding: var(--space-4);
     z-index: 1001;
-    border-left: 4px solid var(--primary-blue);
-    animation: popupSlideIn 0.3s ease;
+    border-left: 3px solid var(--primary-color);
+    animation: popupSlideIn 0.25s ease;
 }
 
 .popup-error {
@@ -640,7 +659,7 @@ tr:hover {
 @keyframes modalSlideIn {
     from {
         opacity: 0;
-        transform: scale(0.9) translateY(-20px);
+        transform: scale(0.94) translateY(-16px);
     }
     to {
         opacity: 1;
@@ -660,7 +679,7 @@ tr:hover {
 }
 
 .fade-in {
-    animation: fadeIn 0.5s ease;
+    animation: fadeIn 0.4s ease;
 }
 
 @keyframes fadeIn {
@@ -669,13 +688,13 @@ tr:hover {
 }
 
 .slide-up {
-    animation: slideUp 0.5s ease;
+    animation: slideUp 0.4s ease;
 }
 
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(16px);
     }
     to {
         opacity: 1;
@@ -758,30 +777,27 @@ tr:hover {
 .btn:focus-visible,
 .form-input:focus-visible,
 a:focus-visible {
-    outline: 2px solid var(--primary-blue);
+    outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
 /* ============================================
    SCROLLBAR CUSTOMIZATION
    ============================================ */
-
-/* Ocultar scrollbar em ambos os temas */
 * {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer e Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 *::-webkit-scrollbar {
-    display: none; /* Chrome, Safari e Opera */
+    display: none;
 }
 
-/* Para elementos que precisam de scroll funcional mas invisível */
 .custom-scroll {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer e Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 .custom-scroll::-webkit-scrollbar {
-    display: none; /* Chrome, Safari e Opera */
+    display: none;
 }

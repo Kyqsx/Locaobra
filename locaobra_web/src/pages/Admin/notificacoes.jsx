@@ -107,7 +107,7 @@ export default function Notificacoes() {
                                     </td>
                                     <td className="nameCell">
                                         <div className="userCell">
-                                            <div className="userCellAvatar" style={{ background: '#ff8c00' }}>
+                                            <div className="userCellAvatar" style={{ background: '#D9820F' }}>
                                                 <FontAwesomeIcon icon={faExclamationTriangle} />
                                             </div>
                                             <div>

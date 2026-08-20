@@ -16,15 +16,15 @@ function FormField({ label, children }) {
     );
 }
 
-function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting }) {
+function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting, cargos, departamentos }) {
     if (!open) return null;
 
     return (
         <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
-                    <h3>{editingId ? 'Editar funcionário' : 'Cadastrar funcionário'}</h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <h3>{editingId ? 'Editar funcionario' : 'Cadastrar funcionario'}</h3>
+                    <button type="button" className="closeBtn" onClick={onClose}>Fechar</button>
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">
@@ -39,8 +39,8 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit,
                             <FormField label="CPF">
                                 <input className="equipInput" name="cpf" placeholder="CPF" value={form.cpf} onChange={onChange} required />
                             </FormField>
-                            <FormField label="Matrícula">
-                                <input className="equipInput" name="matricula" placeholder="Matrícula" value={form.matricula} onChange={onChange} required />
+                            <FormField label="Matricula">
+                                <input className="equipInput" name="matricula" placeholder="Matricula" value={form.matricula} onChange={onChange} required />
                             </FormField>
                         </div>
 
@@ -55,57 +55,60 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit,
 
                         <div className="formRow split-3">
                             <FormField label="Cargo">
-                                <select className="equipInput" name="cargo" value={form.cargo} onChange={onChange}>
-                                    <option value="">Cargo</option>
-                                    <option value="ENTREGADOR">Entregador</option>
-                                    <option value="CONFERENTE">Conferente</option>
-                                    <option value="TECNICO_MANUTENCAO">Técnico de Manutenção</option>
-                                    <option value="FAXINE">Faxineiro</option>
-                                    <option value="CONSULTOR_LOCACAO">Consultor de Locação</option>
-                                    <option value="ANALISTA_CREDENCIAMENTO">Analista de Credenciamento</option>
-                                    <option value="ANALISTA_FINANCEIRO">Analista Financeiro</option>
-                                    <option value="GERENTE_OPERACOES">Gerente de Operações</option>
-                                    <option value="RH">Recursos Humanos</option>
+                                <select className="equipInput" name="cargoId" value={form.cargoId} onChange={onChange}>
+                                    <option value="">Selecione o cargo</option>
+                                    {cargos.map(c => (
+                                        <option key={c.id} value={c.id}>{c.nome}</option>
+                                    ))}
                                 </select>
                             </FormField>
                             <FormField label="Departamento">
-                                <select className="equipInput" name="departamento" value={form.departamento} onChange={onChange}>
-                                    <option value="">Departamento</option>
-                                    <option value="LOGISTICA_E_ALMOXARIFADO">Logística e Almoxarifado</option>
-                                    <option value="MANUTENCAO_E_PATIO">Manutenção e Patio</option>
-                                    <option value="COMERCIAL_E_ATENDIMENTO">Comercial e Atendimento</option>
-                                    <option value="FINANCEIRO">Financeiro</option>
-                                    <option value="OPERACOES">Operações</option>
-                                    <option value="RECURSOS_HUMANOS">Recursos Humanos</option>
+                                <select className="equipInput" name="departamentoId" value={form.departamentoId} onChange={onChange}>
+                                    <option value="">Selecione o departamento</option>
+                                    {departamentos.map(d => (
+                                        <option key={d.id} value={d.id}>{d.nome}</option>
+                                    ))}
                                 </select>
                             </FormField>
-                            <FormField label="Salário">
-                                <input className="equipInput" name="salario" type="number" step="0.01" placeholder="Salário" value={form.salario} onChange={onChange} />
+                            <FormField label="Salario (R$)">
+                                <input
+                                    className="equipInput"
+                                    name="salario"
+                                    placeholder="0,00"
+                                    value={form.salario}
+                                    onChange={onChange}
+                                    readOnly={Boolean(form.cargoId && cargos.find(c => String(c.id) === String(form.cargoId))?.salarioPadrao != null)}
+                                    title={form.cargoId ? "Definido automaticamente pelo cargo selecionado" : "Defina o salario"}
+                                />
+                                {form.cargoId && (
+                                    <small style={{ color: '#888', fontSize: '0.75rem' }}>
+                                        Definido pelo cargo selecionado
+                                    </small>
+                                )}
                             </FormField>
                         </div>
-
-                        <div className="formRow split-3">
-                            <FormField label="Data de nascimento">
+<div className="formRow split-2">
+                            <FormField label="Data de Nascimento">
                                 <input className="equipInput" name="dataNascimento" type="date" value={form.dataNascimento} onChange={onChange} />
                             </FormField>
-                            <FormField label="Data de admissão">
+                            <FormField label="Data de Admissao">
                                 <input className="equipInput" name="dataAdmissao" type="date" value={form.dataAdmissao} onChange={onChange} />
-                            </FormField>
-                            <FormField label="Data de demissão">
-                                <input className="equipInput" name="dataDemissao" type="date" value={form.dataDemissao} onChange={onChange} />
                             </FormField>
                         </div>
 
-                        <div className="formRow full">
-                            <FormField label={editingId ? 'Senha (deixe em branco para manter)' : 'Senha de acesso'}>
-                                <input className="equipInput" name="senha" type="password" placeholder={editingId ? 'Nova senha' : 'Senha de acesso'} value={form.senha} onChange={onChange} />
+                        <div className="formRow split-2">
+                            <FormField label="Data de Demissao">
+                                <input className="equipInput" name="dataDemissao" type="date" value={form.dataDemissao} onChange={onChange} />
+                            </FormField>
+                            <FormField label="Senha (inicial)">
+                                <input className="equipInput" name="senha" type="password" placeholder="Deixe em branco para 123456" value={form.senha} onChange={onChange} />
                             </FormField>
                         </div>
                     </div>
 
                     <label className="checkboxRow">
                         <input type="checkbox" name="status" checked={Boolean(form.status)} onChange={onChange} />
-                        Funcionário ativo
+                        Funcionario ativo
                     </label>
 
                     <div className="formFooter">
@@ -128,8 +131,8 @@ const initialForm = {
     matricula: '',
     email: '',
     telefone: '',
-    cargo: '',
-    departamento: '',
+    cargoId: '',
+    departamentoId: '',
     salario: '',
     dataNascimento: '',
     dataAdmissao: '',
@@ -137,11 +140,12 @@ const initialForm = {
     status: true,
     senha: ''
 };
-
 export default function Funcionarios() {
     const { user } = useAuth();
     const [funcionarios, setFuncionarios] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
+    const [cargos, setCargos] = useState([]);
+    const [departamentos, setDepartamentos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [form, setForm] = useState(initialForm);
@@ -157,16 +161,20 @@ export default function Funcionarios() {
     function fetchData() {
         setLoading(true);
         Promise.all([
-            api.get('/api/funcionarios?apenasAtivos=false'),
-            api.get('/api/usuarios')
+            api.get('/api/funcionarios'),
+            api.get('/api/usuarios'),
+            api.get('/api/cargos'),
+            api.get('/api/departamentos')
         ])
-            .then(([funcionariosResponse, usuariosResponse]) => {
-                setFuncionarios(funcionariosResponse.data || []);
-                setUsuarios(usuariosResponse.data || []);
+            .then(([funcResp, userResp, cargosResp, deptResp]) => {
+                setFuncionarios(funcResp.data || []);
+                setUsuarios(userResp.data || []);
+                setCargos(cargosResp.data || []);
+                setDepartamentos(deptResp.data || []);
             })
             .catch(err => {
                 console.error(err);
-                setMessage({ type: 'error', text: 'Erro ao carregar funcionários: ' + (err.response?.data?.message || err.message) });
+                setMessage({ type: 'error', text: 'Erro ao carregar dados: ' + (err.response?.data?.message || err.message) });
             })
             .finally(() => setLoading(false));
     }
@@ -180,21 +188,42 @@ export default function Funcionarios() {
             const term = searchTerm.toLowerCase();
             return (
                 funcionario.nome?.toLowerCase().includes(term) ||
-                funcionario.cpf?.toLowerCase().includes(term) ||
-                funcionario.matricula?.toLowerCase().includes(term)
+                funcionario.matricula?.toLowerCase().includes(term) ||
+                funcionario.cpf?.toLowerCase().includes(term)
             );
         });
     }, [funcionarios, searchTerm]);
 
     function handleChange(e) {
         const { name, value, type, checked } = e.target;
-        setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        const newValue = type === 'checkbox' ? checked : value;
+
+        setForm(prev => {
+            const next = { ...prev, [name]: newValue };
+
+            // Quando selecionar um cargo, preencher automaticamente
+            // o salário padrão e o departamento vinculado ao cargo.
+            if (name === 'cargoId' && value) {
+                const cargoSelecionado = cargos.find(c => String(c.id) === String(value));
+                if (cargoSelecionado) {
+                    if (cargoSelecionado.salarioPadrao != null) {
+                        next.salario = String(cargoSelecionado.salarioPadrao);
+                    }
+                    if (cargoSelecionado.departamentoId) {
+                        next.departamentoId = String(cargoSelecionado.departamentoId);
+                    }
+                }
+            }
+
+            return next;
+        });
     }
 
     function resetForm() {
         setForm(initialForm);
         setEditingId(null);
         setModalOpen(false);
+        setMessage(null);
     }
 
     function handleEdit(funcionario) {
@@ -204,10 +233,10 @@ export default function Funcionarios() {
             nome: funcionario.nome || '',
             cpf: funcionario.cpf || '',
             matricula: funcionario.matricula || '',
-            email: funcionario.email || '',
+            email: '',
             telefone: funcionario.telefone || '',
-            cargo: funcionario.cargo || '',
-            departamento: funcionario.departamento || '',
+            cargoId: funcionario.cargoId || '',
+            departamentoId: funcionario.departamentoId || '',
             salario: funcionario.salario ?? '',
             dataNascimento: funcionario.dataNascimento ? funcionario.dataNascimento.slice(0, 10) : '',
             dataAdmissao: funcionario.dataAdmissao ? funcionario.dataAdmissao.slice(0, 10) : '',
@@ -216,16 +245,17 @@ export default function Funcionarios() {
             senha: ''
         });
     }
-
-    function handleSubmit(e) {
+function handleSubmit(e) {
         e.preventDefault();
         setSubmitting(true);
-        setMessage({ type: 'info', text: editingId ? 'Atualizando funcionário...' : 'Salvando funcionário...' });
+        setMessage({ type: 'info', text: editingId ? 'Atualizando funcionario...' : 'Salvando funcionario...' });
 
         const payload = {
             ...form,
             status: Boolean(form.status),
-            salario: form.salario ? String(form.salario) : ''
+            cargoId: form.cargoId ? Number(form.cargoId) : null,
+            departamentoId: form.departamentoId ? Number(form.departamentoId) : null,
+            salario: form.salario ? form.salario.toString() : '',
         };
 
         const request = editingId
@@ -234,35 +264,33 @@ export default function Funcionarios() {
 
         request
             .then(() => {
-                setMessage({ type: 'success', text: editingId ? 'Funcionário atualizado com sucesso!' : 'Funcionário criado com sucesso!' });
+                setMessage({ type: 'success', text: editingId ? 'Funcionario atualizado com sucesso!' : 'Funcionario criado com sucesso!' });
                 resetForm();
                 fetchData();
             })
             .catch(err => {
-                setMessage({ type: 'error', text: 'Erro ao salvar funcionário: ' + (err.response?.data?.message || err.message) });
+                setMessage({ type: 'error', text: 'Erro ao salvar funcionario: ' + (err.response?.data?.message || err.message) });
             })
             .finally(() => setSubmitting(false));
     }
 
     function handleDelete(id) {
-        if (!window.confirm('Deseja excluir este funcionário?')) {
-            return;
-        }
-
+        if (!window.confirm('Tem certeza que deseja excluir este funcionario?')) return;
+        setSubmitting(true);
         api.delete(`/api/funcionarios/${id}`)
             .then(() => {
-                setMessage({ type: 'success', text: 'Funcionário excluído com sucesso!' });
+                setMessage({ type: 'success', text: 'Funcionario excluido com sucesso!' });
                 fetchData();
             })
             .catch(err => {
-                setMessage({ type: 'error', text: 'Erro ao excluir funcionário: ' + (err.response?.data?.message || err.message) });
-            });
+                setMessage({ type: 'error', text: 'Erro ao excluir: ' + (err.response?.data?.message || err.message) });
+            })
+            .finally(() => setSubmitting(false));
     }
-
-    return (
+return (
         <div className="adminContent">
             <div className="viewHeader">
-                <h2 className="pageTitle">Gestão de Funcionários</h2>
+                <h2 className="pageTitle">Gestao de Funcionarios</h2>
             </div>
 
             {message && (
@@ -272,28 +300,30 @@ export default function Funcionarios() {
             )}
 
             <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de funcionários</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>Cadastre ou edite funcionários em uma janela dedicada com campos identificados. O usuário de acesso é criado automaticamente.</p>
+                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de funcionarios</h3>
+                <p style={{ color: '#666', marginBottom: '12px' }}>
+                    Cadastre, edite ou gerencie os funcionarios da empresa.
+                </p>
                 <div className="formFooter">
                     <button type="button" className="addBtn" onClick={() => {
                         setEditingId(null);
                         setForm(initialForm);
                         setModalOpen(true);
                     }}>
-                        Novo Funcionário
+                        Novo Funcionario
                     </button>
                 </div>
             </div>
 
             <div className="recentUsersSection">
                 <div className="sectionHeader">
-                    <h3><FontAwesomeIcon icon={faList} /> Planilha de Funcionários</h3>
+                    <h3><FontAwesomeIcon icon={faList} /> Planilha de Funcionarios</h3>
                     <div className="headerRight">
                         <div className="searchBox">
                             <FontAwesomeIcon icon={faSearch} className="searchIcon" />
                             <input
                                 className="searchInput"
-                                placeholder="Pesquisar funcionário..."
+                                placeholder="Pesquisar funcionario..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -306,16 +336,18 @@ export default function Funcionarios() {
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Matrícula</th>
+                                <th>Matricula</th>
                                 <th>CPF</th>
-                                <th>Usuário</th>
+                                <th>Cargo</th>
+                                <th>Departamento</th>
+                                <th>Usuario</th>
                                 <th>Status</th>
-                                <th>Ações</th>
+                                <th>Acoes</th>
                             </tr>
                         </thead>
                         <tbody>
                             {!loading && filteredFuncionarios.map(funcionario => {
-                                const usuarioAssociado = usuarios.find(usuario => usuario.idFuncionario === funcionario.id);
+                                const usuarioAssociado = usuarios.find(u => u.idFuncionario === funcionario.id);
                                 return (
                                     <tr key={funcionario.id} className="tableRow">
                                         <td className="nameCell">
@@ -328,7 +360,9 @@ export default function Funcionarios() {
                                         </td>
                                         <td>{funcionario.matricula || '---'}</td>
                                         <td>{funcionario.cpf || '---'}</td>
-                                        <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vínculo'}</td>
+                                        <td>{funcionario.cargoNome || '---'}</td>
+                                        <td>{funcionario.departamentoNome || '---'}</td>
+                                        <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vinculo'}</td>
                                         <td>{funcionario.status ? 'Ativo' : 'Inativo'}</td>
                                         <td className="actionsCell">
                                             <button className="actionBtn edit" title="Editar" onClick={() => handleEdit(funcionario)}>
@@ -355,6 +389,8 @@ export default function Funcionarios() {
                 onSubmit={handleSubmit}
                 onReset={resetForm}
                 submitting={submitting}
+                cargos={cargos}
+                departamentos={departamentos}
             />
         </div>
     );

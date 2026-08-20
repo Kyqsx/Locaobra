@@ -63,18 +63,21 @@ export function AuthProvider({ children }) {
                 }
 
                 setUser(userData);
+                return userData;
             } else {
                 logout();
+                return null;
             }
         } catch (error) {
             console.error("Sessão inválida ou expirada");
             logout();
+            return null;
         } finally {
             setLoading(false); // SÓ FINALIZA O LOADING AQUI
         }
     };
 
-    const login = (loginEmail, token, userDataFromLogin = {}) => {
+    const login = async (loginEmail, token) => {
         console.log("Iniciando persistência de login para:", loginEmail);
 
         localStorage.setItem('token', token);
@@ -82,15 +85,14 @@ export function AuthProvider({ children }) {
 
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        const userToSet = {
-            id: userDataFromLogin.id || null,
-            nome: userDataFromLogin.nome || loginEmail.split('@')[0],
-            email: loginEmail,
-            tipo: userDataFromLogin.tipo || "CLIENTE",
-        };
-
-        setUser(userToSet);
-        setLoading(false);
+        // Importante: não montamos o "user" só com o que veio da tela de login
+        // (id/nome/tipo) — isso deixava cargoFuncionario indefinido até o
+        // próximo reload da página, e as rotas /admin/* que dependem do cargo
+        // (ex.: entregador, conferente) bloqueavam o acesso logo após o login.
+        // Buscamos a sessão completa (com cargoFuncionario) antes de continuar,
+        // e devolvemos o usuário pra quem chamou decidir o redirecionamento.
+        setLoading(true);
+        return await checkSession();
     };
 
     const logout = () => {

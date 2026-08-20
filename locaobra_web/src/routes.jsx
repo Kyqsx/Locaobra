@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from './utils/useAuth';
-import { canAccessAdminRoute } from './utils/permissions';
+import { canAccessAdminRoute, getDefaultAdminPath } from './utils/permissions';
 
 import Home from './pages/Home/index';
 import Login from "./pages/Auth/login";
@@ -14,6 +14,8 @@ import AdminFuncionarios from './pages/Admin/funcionarios';
 import AdminExpedicao from './pages/Admin/expedicao';
 import AdminOrdensServico from './pages/Admin/ordensServico';
 import AdminNotificacoes from './pages/Admin/notificacoes';
+import AdminCargos from './pages/Admin/Cargos';
+import AdminDepartamentos from './pages/Admin/Departamentos';
 
 import Header from "./components/header";
 import Sidebar from "./components/sidebar";
@@ -57,7 +59,17 @@ function AdminRoute({ children }) {
     const location = useLocation();
 
     if (loading) return null;
-    if (!isAuthenticated || !canAccessAdminRoute(user, location.pathname)) {
+    if (!isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
+    if (!canAccessAdminRoute(user, location.pathname)) {
+        // Se a pessoa não pode ver essa página específica (ex.: dashboard),
+        // manda pra primeira página que faz sentido pro cargo dela, em vez
+        // de simplesmente expulsar do painel administrativo.
+        const fallback = getDefaultAdminPath(user);
+        if (fallback && fallback !== location.pathname) {
+            return <Navigate to={fallback} replace />;
+        }
         return <Navigate to="/" replace />;
     }
     return children;
@@ -92,6 +104,8 @@ function RotasApp() {
                             <Route path="expedicao" element={<AdminExpedicao />} />
                             <Route path="ordens-servico" element={<AdminOrdensServico />} />
                             <Route path="notificacoes" element={<AdminNotificacoes />} />
+                            <Route path="cargos" element={<AdminCargos />} />
+                            <Route path="departamentos" element={<AdminDepartamentos />} />
                         </Route>
 
                     </Route>

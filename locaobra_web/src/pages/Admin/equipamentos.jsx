@@ -335,10 +335,10 @@ function EquipamentoCreateModal({ onClose, onCreated }) {
    MODAL DE EDIÇÃO — um por equipamento, com estado 100% isolado.
    Busca os dados sozinho ao abrir; ao fechar, tudo é descartado.
    ============================================================ */
-function EquipamentoEditModal({ equipamentoId, onClose, onChanged }) {
+function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCatalogo, canManageFrota }) {
     const [loading, setLoading] = useState(true);
     const [eq, setEq] = useState(null);
-    const [activeTab, setActiveTab] = useState('dados');
+    const [activeTab, setActiveTab] = useState(canManageCatalogo ? 'dados' : 'unidades');
 
     const [form, setForm] = useState({ nome: '', categoria: '', descricao: '', valorDiaria: '', especificacoes: [] });
     const [dadosMessage, setDadosMessage] = useState(null);
@@ -540,19 +540,23 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged }) {
                 ) : (
                     <>
                         <div className="modalTabs">
-                            <button type="button" className={activeTab === 'dados' ? 'modalTabBtn active' : 'modalTabBtn'} onClick={() => setActiveTab('dados')}>
-                                <FontAwesomeIcon icon={faTools} /> Dados
-                            </button>
-                            <button type="button" className={activeTab === 'imagens' ? 'modalTabBtn active' : 'modalTabBtn'} onClick={() => setActiveTab('imagens')}>
-                                <FontAwesomeIcon icon={faImage} /> Imagens ({eq?.imagens?.length ?? 0})
-                            </button>
+                            {canManageCatalogo && (
+                                <>
+                                    <button type="button" className={activeTab === 'dados' ? 'modalTabBtn active' : 'modalTabBtn'} onClick={() => setActiveTab('dados')}>
+                                        <FontAwesomeIcon icon={faTools} /> Dados
+                                    </button>
+                                    <button type="button" className={activeTab === 'imagens' ? 'modalTabBtn active' : 'modalTabBtn'} onClick={() => setActiveTab('imagens')}>
+                                        <FontAwesomeIcon icon={faImage} /> Imagens ({eq?.imagens?.length ?? 0})
+                                    </button>
+                                </>
+                            )}
                             <button type="button" className={activeTab === 'unidades' ? 'modalTabBtn active' : 'modalTabBtn'} onClick={() => setActiveTab('unidades')}>
                                 <FontAwesomeIcon icon={faBoxesStacked} /> Unidades ({eq?.quantidadeTotal ?? 0})
                             </button>
                         </div>
 
                         {/* ===== ABA DADOS ===== */}
-                        {activeTab === 'dados' && (
+                        {activeTab === 'dados' && canManageCatalogo && (
                             <form onSubmit={handleSalvarDados} className="equipForm">
                                 {dadosMessage && (
                                     <div className={`messageBanner ${dadosMessage.type === 'error' ? 'negative' : 'positive'}`}>{dadosMessage.text}</div>
@@ -586,7 +590,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged }) {
                         )}
 
                         {/* ===== ABA IMAGENS ===== */}
-                        {activeTab === 'imagens' && (
+                        {activeTab === 'imagens' && canManageCatalogo && (
                             <div>
                                 {imagensMessage && (
                                     <div className={`messageBanner ${imagensMessage.type === 'error' ? 'negative' : 'positive'}`}>{imagensMessage.text}</div>
@@ -637,23 +641,25 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged }) {
                                     <div className={`messageBanner ${unidadeMessage.type === 'error' ? 'negative' : 'positive'}`}>{unidadeMessage.text}</div>
                                 )}
 
-                                <form onSubmit={handleUnidadeSubmit} className="unidadeFormRow">
-                                    <input className="equipInput" name="codigoPatrimonio" placeholder="Código de Patrimônio (ex: MAR-001)" value={unidadeForm.codigoPatrimonio} onChange={handleUnidadeChange} />
-                                    <input className="equipInput" name="numeroDeSerie" placeholder="Nº de Série do Fabricante" value={unidadeForm.numeroDeSerie} onChange={handleUnidadeChange} />
-                                    <select className="unidadeStatusSelect" name="status" value={unidadeForm.status} onChange={handleUnidadeChange}>
-                                        {Object.entries(STATUS_UNIDADE_LABEL).map(([value, label]) => (
-                                            <option key={value} value={value}>{label}</option>
-                                        ))}
-                                    </select>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <button type="submit" className="addBtn">
-                                            {unidadeEditId ? 'Salvar' : <><FontAwesomeIcon icon={faPlus} /> Adicionar</>}
-                                        </button>
-                                        {unidadeEditId && (
-                                            <button type="button" className="smallBtn delete" onClick={handleCancelUnidadeEdit}>Cancelar</button>
-                                        )}
-                                    </div>
-                                </form>
+                                {canManageFrota && (
+                                    <form onSubmit={handleUnidadeSubmit} className="unidadeFormRow">
+                                        <input className="equipInput" name="codigoPatrimonio" placeholder="Código de Patrimônio (ex: MAR-001)" value={unidadeForm.codigoPatrimonio} onChange={handleUnidadeChange} />
+                                        <input className="equipInput" name="numeroDeSerie" placeholder="Nº de Série do Fabricante" value={unidadeForm.numeroDeSerie} onChange={handleUnidadeChange} />
+                                        <select className="unidadeStatusSelect" name="status" value={unidadeForm.status} onChange={handleUnidadeChange}>
+                                            {Object.entries(STATUS_UNIDADE_LABEL).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
+                                        </select>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button type="submit" className="addBtn">
+                                                {unidadeEditId ? 'Salvar' : <><FontAwesomeIcon icon={faPlus} /> Adicionar</>}
+                                            </button>
+                                            {unidadeEditId && (
+                                                <button type="button" className="smallBtn delete" onClick={handleCancelUnidadeEdit}>Cancelar</button>
+                                            )}
+                                        </div>
+                                    </form>
+                                )}
 
                                 <div className="tableWrapper">
                                     <table className="usersTable">
@@ -679,8 +685,12 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged }) {
                                                             </select>
                                                         </td>
                                                         <td className="actionsCell">
-                                                            <button className="actionBtn edit" onClick={() => handleEditUnidade(u)} title="Editar"><FontAwesomeIcon icon={faEdit} /></button>
-                                                            <button className="actionBtn delete" onClick={() => handleDeleteUnidade(u.id)} title="Remover"><FontAwesomeIcon icon={faTrash} /></button>
+                                                            {canManageFrota && (
+                                                                <>
+                                                                    <button className="actionBtn edit" onClick={() => handleEditUnidade(u)} title="Editar"><FontAwesomeIcon icon={faEdit} /></button>
+                                                                    <button className="actionBtn delete" onClick={() => handleDeleteUnidade(u.id)} title="Remover"><FontAwesomeIcon icon={faTrash} /></button>
+                                                                </>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))
@@ -712,6 +722,14 @@ export default function Equipamento() {
     const [editingId, setEditingId] = useState(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [message, setMessage] = useState(null);
+
+    // Quem pode mexer no catálogo (criar/editar/excluir modelo, imagens).
+    // Precisa bater com as regras do SecurityConfig no backend.
+    const canManageCatalogo = user?.tipo === 'ADMIN' ||
+        ['GERENTE_OPERACOES', 'CONSULTOR_LOCACAO'].includes(user?.cargoFuncionario);
+    // Quem pode cadastrar/editar/excluir unidade física (patrimônio) —
+    // mais restrito que o catálogo, também espelhando o backend.
+    const canManageFrota = user?.tipo === 'ADMIN' || user?.cargoFuncionario === 'GERENTE_OPERACOES';
 
     useEffect(() => {
         fetchList();
@@ -760,15 +778,17 @@ export default function Equipamento() {
                 </div>
             )}
 
-            <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastrar Novo Modelo</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>Crie o modelo em uma janela dedicada, com upload de imagens e edição completa.</p>
-                <div className="formFooter">
-                    <button type="button" className="addBtn" onClick={() => setCreateModalOpen(true)}>
-                        Novo Modelo
-                    </button>
+            {canManageCatalogo && (
+                <div className="settingsCard">
+                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastrar Novo Modelo</h3>
+                    <p>Crie o modelo em uma janela dedicada, com upload de imagens e edição completa.</p>
+                    <div className="formFooter">
+                        <button type="button" className="addBtn" onClick={() => setCreateModalOpen(true)}>
+                            Novo Modelo
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="recentUsersSection">
                 <div className="sectionHeader">
@@ -820,12 +840,14 @@ export default function Equipamento() {
                                         </span>
                                     </td>
                                     <td className="actionsCell">
-                                        <button className="actionBtn edit" onClick={() => setEditingId(eq.id)} title="Editar equipamento">
+                                        <button className="actionBtn edit" onClick={() => setEditingId(eq.id)} title={canManageCatalogo ? 'Editar equipamento' : 'Ver unidades'}>
                                             <FontAwesomeIcon icon={faEdit} />
                                         </button>
-                                        <button className="actionBtn delete" onClick={() => handleDelete(eq.id)} title="Excluir">
-                                            <FontAwesomeIcon icon={faTrash} />
-                                        </button>
+                                        {canManageFrota && (
+                                            <button className="actionBtn delete" onClick={() => handleDelete(eq.id)} title="Excluir">
+                                                <FontAwesomeIcon icon={faTrash} />
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -839,7 +861,7 @@ export default function Equipamento() {
                 </div>
             </div>
 
-            {createModalOpen && (
+            {createModalOpen && canManageCatalogo && (
                 <EquipamentoCreateModal
                     onClose={() => setCreateModalOpen(false)}
                     onCreated={fetchList}
@@ -852,6 +874,8 @@ export default function Equipamento() {
                     equipamentoId={editingId}
                     onClose={() => setEditingId(null)}
                     onChanged={fetchList}
+                    canManageCatalogo={canManageCatalogo}
+                    canManageFrota={canManageFrota}
                 />
             )}
         </div>

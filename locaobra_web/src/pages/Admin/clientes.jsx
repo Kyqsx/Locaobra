@@ -19,6 +19,11 @@ export default function Clientes() {
     });
     const [message, setMessage] = useState(null);
 
+    // Excluir cliente apaga histórico — restrito, espelhando o backend
+    // (DELETE /api/clientes/** só ADMIN/RH/GERENTE_OPERACOES).
+    const canDeleteCliente = user?.tipo === 'ADMIN' ||
+        ['RH', 'GERENTE_OPERACOES'].includes(user?.cargoFuncionario);
+
     useEffect(() => {
         fetchList();
     }, []);
@@ -168,13 +173,15 @@ export default function Clientes() {
                                     <td className="dateCell">{cli.cpfCnpj || '---'}</td>
                                     <td className="actionsCell">
                                         {/* Botão de Delete Vinculado */}
-                                        <button
-                                            className="actionBtn delete"
-                                            onClick={() => handleDelete(cli.id)}
-                                            title="Excluir"
-                                        >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                        </button>
+                                        {canDeleteCliente && (
+                                            <button
+                                                className="actionBtn delete"
+                                                onClick={() => handleDelete(cli.id)}
+                                                title="Excluir"
+                                            >
+                                                <FontAwesomeIcon icon={faTrash} />
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

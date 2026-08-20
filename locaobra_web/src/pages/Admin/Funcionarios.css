@@ -1,24 +1,8 @@
-:root {
-  --primary-color: #ff8c00;
-  --primary-dark: #e67e00;
-  --primary-light: #ffaa33;
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --text-primary: #2d3436;
-  --text-secondary: #636e72;
-  --border-color: #dfe6e9;
-  --success-color: #00b894;
-  --danger-color: #d63031;
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-  --transition: all 0.3s ease;
-}
-
 .checkboxRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
   color: var(--text-primary);
 }
 
@@ -26,28 +10,28 @@
   background: #ececec;
   color: var(--text-primary);
   border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: 6px;
+  padding: 8px 13px;
   cursor: pointer;
 }
 
 .formGridFuncionarios {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .formField {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   flex: 1;
 }
 
 .formRow {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -72,13 +56,13 @@
 }
 
 .fieldLabel {
-  font-size: 0.9rem;
+  font-size: 0.765rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .actionBtn.edit {
-  background: rgba(255, 140, 0, 0.12);
+  background: rgba(217, 130, 15, 0.12);
   color: var(--primary-color);
 }
 

@@ -670,7 +670,7 @@ export default function OrdensServico() {
                             <p className="statTitle">OS em andamento</p>
                             <p className="statValue">{ordensFila.length}</p>
                         </div>
-                        <div className="statIcon" style={{ '--icon-color': '#ff8c00' }}>
+                        <div className="statIcon" style={{ '--icon-color': '#D9820F' }}>
                             <FontAwesomeIcon icon={faWrench} />
                         </div>
                     </div>

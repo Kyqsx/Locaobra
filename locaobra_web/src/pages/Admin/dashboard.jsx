@@ -120,7 +120,7 @@ const AdminDashboard = () => {
                           <p className="statTitle">Usuários</p>
                           <p className="statValue">{dashboardData.totalClientes ?? 0}</p>
                         </div>
-                        <div className="statIcon" style={{ '--icon-color': '#ff8c00' }}>
+                        <div className="statIcon" style={{ '--icon-color': '#D9820F' }}>
                           <FontAwesomeIcon icon={faUsers} />
                         </div>
                       </div>
@@ -196,12 +196,12 @@ const AdminDashboard = () => {
                   </div>
                   <div className="pieChartPlaceholder">
                     <svg viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="45" fill="none" stroke="#ff8c00" strokeWidth="15" strokeDasharray="70 314" />
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="#D9820F" strokeWidth="15" strokeDasharray="70 314" />
                       <circle cx="50" cy="50" r="45" fill="none" stroke="#4CAF50" strokeWidth="15" strokeDasharray="120 314" strokeDashoffset="-70" />
                       <circle cx="50" cy="50" r="45" fill="none" stroke="#2196F3" strokeWidth="15" strokeDasharray="124 314" strokeDashoffset="-190" />
                     </svg>
                     <div className="pieLabels">
-                      <div className="pieLabel"><span className="pieLegend" style={{ background: '#ff8c00' }}></span> Clientes</div>
+                      <div className="pieLabel"><span className="pieLegend" style={{ background: '#D9820F' }}></span> Clientes</div>
                       <div className="pieLabel"><span className="pieLegend" style={{ background: '#4CAF50' }}></span> Fornecedores</div>
                       <div className="pieLabel"><span className="pieLegend" style={{ background: '#2196F3' }}></span> Admins</div>
                     </div>

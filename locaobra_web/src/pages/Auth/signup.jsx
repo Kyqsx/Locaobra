@@ -77,8 +77,8 @@ const Signup = () => {
             if (response.data.token || response.status === 201) {
                 // Se o backend retornar o token no signup (login automático)
                 if (response.data.token) {
-                    const { id, token, tipo, nome: n, email: e_resp } = response.data;
-                    login(e_resp || email, token, { id, nome: n || nome, tipo });
+                    const { token, email: e_resp } = response.data;
+                    await login(e_resp || email, token);
                 }
 
                 console.log("Cadastro concluído! Redirecionando...");

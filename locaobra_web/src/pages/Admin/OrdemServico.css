@@ -4,25 +4,25 @@
 
 .osModalCard {
     width: 100%;
-    max-width: 620px;
+    max-width: 496px;
 }
 
 .osDetalheModalCard {
-    max-width: 760px;
+    max-width: 608px;
 }
 
 .fieldHint {
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     color: var(--danger-color, #d63031);
-    margin-top: 6px;
+    margin-top: 5px;
 }
 
 /* Tabs */
 .osTabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin: 16px 0;
+    gap: 6px;
+    margin: 13px 0;
     border-bottom: 1px solid #e6e6e6;
     padding-bottom: 4px;
 }
@@ -30,39 +30,39 @@
 .osTabBtn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: 6px;
+    padding: 6px 13px;
     border: none;
     background: transparent;
     color: #666;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.765rem;
     cursor: pointer;
-    border-radius: 8px 8px 0 0;
+    border-radius: 6px 6px 0 0;
     transition: background 0.15s, color 0.15s;
 }
 
 .osTabBtn:hover {
-    background: rgba(255, 140, 0, 0.08);
-    color: var(--primary-color, #ff8c00);
+    background: rgba(217, 130, 15, 0.08);
+    color: var(--primary-color, #D9820F);
 }
 
 .osTabBtn.active {
-    background: rgba(255, 140, 0, 0.12);
-    color: var(--primary-color, #ff8c00);
-    border-bottom: 2px solid var(--primary-color, #ff8c00);
+    background: rgba(217, 130, 15, 0.12);
+    color: var(--primary-color, #D9820F);
+    border-bottom: 2px solid var(--primary-color, #D9820F);
 }
 
 /* Tags de status da OS */
 .osStatusTag {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.68rem;
     font-weight: 600;
     white-space: nowrap;
-    margin-left: 10px;
+    margin-left: 8px;
 }
 
 .osStatusTag.aberta {
@@ -71,8 +71,8 @@
 }
 
 .osStatusTag.em_andamento {
-    background-color: rgba(255, 140, 0, 0.15);
-    color: var(--primary-color, #ff8c00);
+    background-color: rgba(217, 130, 15, 0.15);
+    color: var(--primary-color, #D9820F);
 }
 
 .osStatusTag.concluida {

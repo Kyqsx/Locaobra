@@ -1,0 +1,10 @@
+# Java / Maven
+locaobra_api/target/
+*.class
+
+# Arquivos de runtime (uploads)
+locaobra_api/uploads/
+
+# Node
+locaobra_web/node_modules/
+locaobra_web/dist/

@@ -9,7 +9,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-primary);
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -31,24 +31,24 @@ body {
   flex-direction: column;
   background-color: var(--bg-primary);
   overflow: hidden;
-  max-width: calc(100% - 260px);
+  max-width: calc(100% - 212px);
 }
 
 .adminHeader {
   background-color: var(--bg-secondary);
-  padding: 20px 30px;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
-  gap: 30px;
+  gap: 24px;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   flex: 1;
 }
 
@@ -56,13 +56,13 @@ body {
   display: none;
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.275rem;
   color: var(--text-primary);
   cursor: pointer;
 }
 
 .pageTitle {
-  font-size: 1.8rem;
+  font-size: 1.147rem;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -70,7 +70,7 @@ body {
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .searchBox {
@@ -78,15 +78,15 @@ body {
   align-items: center;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 15px;
-  gap: 10px;
-  width: 300px;
+  border-radius: 6px;
+  padding: 8px 12px;
+  gap: 8px;
+  width: 240px;
 }
 
 .searchIcon {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.765rem;
 }
 
 .searchInput {
@@ -94,7 +94,7 @@ body {
   border: none;
   outline: none;
   width: 100%;
-  font-size: 0.9rem;
+  font-size: 0.765rem;
   color: var(--text-primary);
 }
 
@@ -105,7 +105,7 @@ body {
 .notificationBtn {
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.02rem;
   color: var(--text-secondary);
   cursor: pointer;
   position: relative;
@@ -118,31 +118,31 @@ body {
 
 .notificationBadge {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: -6px;
+  right: -6px;
   background: var(--danger-color);
   color: white;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: 0.595rem;
   font-weight: bold;
 }
 
 .userProfile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 15px;
+  gap: 10px;
+  padding-left: 12px;
   border-left: 1px solid var(--border-color);
 }
 
 .userAvatar {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   color: white;
@@ -150,7 +150,7 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 0.935rem;
 }
 
 .userInfo {
@@ -161,12 +161,12 @@ body {
 
 .userName {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.807rem;
   color: var(--text-primary);
 }
 
 .userRole {
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   color: var(--text-secondary);
 }
 
@@ -177,12 +177,12 @@ body {
 .adminContent {
   flex: 1;
   overflow-y: auto;
-  padding: 30px;
+  padding: 24px;
   background-color: var(--bg-primary);
 }
 
 .adminContent::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .adminContent::-webkit-scrollbar-track {
@@ -205,14 +205,14 @@ body {
 .dashboardView {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 24px;
   animation: fadeIn 0.5s ease;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -222,20 +222,20 @@ body {
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(224px, 1fr));
+  gap: 16px;
 }
 
 .statCard {
   background-color: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 20px;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   border-left: 4px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 13px;
 }
 
 .statCard:hover {
@@ -252,41 +252,40 @@ body {
 .statInfo {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .statTitle {
-  font-size: 0.85rem;
+  font-size: 0.663rem;
   color: var(--text-secondary);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .statValue {
-  font-size: 2rem;
+  font-size: 1.275rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .statIcon {
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--icon-color, var(--primary-color));
-  color: white;
-  opacity: 0.2;
-  font-size: 1.5rem;
+  background: color-mix(in srgb, var(--icon-color, var(--primary-color)) 14%, white);
+  color: var(--icon-color, var(--primary-color));
+  font-size: 1rem;
 }
 
 .statChange {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
+  gap: 5px;
+  font-size: 0.765rem;
   font-weight: 600;
 }
 
@@ -304,18 +303,18 @@ body {
 
 .chartsSection {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
 }
 
 .chartCard {
   background-color: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 20px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .chartHeader {
@@ -325,7 +324,7 @@ body {
 }
 
 .chartHeader h3 {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -334,10 +333,10 @@ body {
   background: none;
   border: none;
   color: var(--text-secondary);
-  font-size: 1.2rem;
+  font-size: 1.02rem;
   cursor: pointer;
   transition: var(--transition);
-  padding: 5px;
+  padding: 4px;
 }
 
 .chartMenu:hover {
@@ -345,12 +344,12 @@ body {
 }
 
 .chartPlaceholder {
-  height: 250px;
+  height: 200px;
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  gap: 15px;
-  padding: 20px 0;
+  gap: 12px;
+  padding: 16px 0;
 }
 
 .fakeChart {
@@ -359,14 +358,14 @@ body {
   justify-content: space-around;
   width: 100%;
   height: 100%;
-  gap: 10px;
+  gap: 8px;
 }
 
 .chartBar {
   flex: 1;
   background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-  border-radius: 8px 8px 0 0;
-  min-height: 40px;
+  border-radius: 6px 6px 0 0;
+  min-height: 32px;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
 }
@@ -379,31 +378,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 30px;
-  height: 250px;
+  gap: 24px;
+  height: 200px;
 }
 
 .pieChartPlaceholder svg {
-  width: 180px;
-  height: 180px;
+  width: 144px;
+  height: 144px;
 }
 
 .pieLabels {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .pieLabel {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
+  gap: 8px;
+  font-size: 0.765rem;
 }
 
 .pieLegend {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 3px;
 }
 
@@ -413,8 +412,8 @@ body {
 
 .recentUsersSection {
   background-color: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 20px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -422,11 +421,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .sectionHeader h3 {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -435,21 +434,21 @@ body {
   background: none;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 6px 13px;
+  border-radius: 5px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: var(--transition);
-  font-size: 0.9rem;
+  font-size: 0.765rem;
   font-weight: 500;
 }
 
 .filterBtn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
-  background: rgba(255, 140, 0, 0.05);
+  background: rgba(217, 130, 15, 0.05);
 }
 
 .tableWrapper {
@@ -459,7 +458,7 @@ body {
 .usersTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.765rem;
 }
 
 .usersTable thead {
@@ -467,14 +466,14 @@ body {
 }
 
 .usersTable th {
-  padding: 12px 16px;
+  padding: 10px 13px;
   text-align: left;
   font-weight: 600;
   color: var(--text-secondary);
   border-bottom: 2px solid var(--border-color);
   text-transform: uppercase;
-  font-size: 0.8rem;
-  letter-spacing: 0.5px;
+  font-size: 0.68rem;
+  letter-spacing: 0.4px;
 }
 
 .tableRow {
@@ -487,7 +486,7 @@ body {
 }
 
 .usersTable td {
-  padding: 14px 16px;
+  padding: 12px 13px;
   color: var(--text-primary);
 }
 
@@ -498,12 +497,12 @@ body {
 .userCell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .userCellAvatar {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   color: white;
@@ -511,14 +510,14 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 0.95rem;
+  font-size: 0.807rem;
 }
 
 .typeTag {
   display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  padding: 5px 10px;
+  border-radius: 16px;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -534,15 +533,15 @@ body {
 }
 
 .typeTag.admin {
-  background-color: rgba(255, 140, 0, 0.2);
+  background-color: rgba(217, 130, 15, 0.2);
   color: var(--primary-color);
 }
 
 .statusTag {
   display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  padding: 5px 10px;
+  border-radius: 16px;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: capitalize;
 }
@@ -563,7 +562,7 @@ body {
 
 .actionsCell {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   border: none;
   align-items: center;
   justify-content: center;
@@ -571,16 +570,16 @@ body {
 }
 
 .actionBtn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: var(--transition);
-  font-size: 0.9rem;
+  font-size: 0.765rem;
 }
 
 .actionBtn.view {
@@ -617,11 +616,11 @@ body {
 .addBtn {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.807rem;
   cursor: pointer;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
@@ -634,11 +633,11 @@ body {
 
 .smallBtn {
   color: white;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.807rem;
   cursor: pointer;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
@@ -657,13 +656,13 @@ body {
 }
 
 .downloadBtn {
-  padding: 8px 16px;
+  padding: 6px 13px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.722rem;
   cursor: pointer;
   transition: var(--transition);
 }
@@ -675,14 +674,14 @@ body {
 
 .dangerBtn {
   width: 100%;
-  padding: 12px 20px;
+  padding: 10px 16px;
   background-color: rgba(244, 67, 54, 0.1);
   color: var(--danger-color);
   border: 1px solid var(--danger-color);
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   transition: var(--transition);
 }
 
@@ -705,18 +704,18 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .equipGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
 }
 
 .equipCard {
   background-color: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
@@ -730,25 +729,25 @@ body {
 }
 
 .equipImage {
-  height: 180px;
+  height: 128px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 3rem;
+  font-size: 1.87rem;
 }
 
 .equipInfo {
-  padding: 20px;
+  padding: 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .equipInfo h4 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--text-primary);
   font-weight: 600;
   margin: 0;
@@ -757,16 +756,16 @@ body {
 .equipStatus {
   display: inline-block;
   width: fit-content;
-  padding: 4px 10px;
+  padding: 4px 8px;
   background-color: rgba(76, 175, 80, 0.2);
   color: var(--success-color);
-  border-radius: 12px;
-  font-size: 0.8rem;
+  border-radius: 10px;
+  font-size: 0.68rem;
   font-weight: 600;
 }
 
 .equipPrice {
-  font-size: 1.3rem;
+  font-size: 0.935rem;
   font-weight: 700;
   color: var(--primary-color);
   margin: 0;
@@ -774,36 +773,36 @@ body {
 
 .equipActions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .reportsList {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .reportItem {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 20px;
+  gap: 16px;
+  padding: 16px;
   background-color: var(--bg-primary);
-  border-radius: 8px;
+  border-radius: 6px;
   border-left: 4px solid var(--primary-color);
 }
 
 .reportIcon {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.275rem;
 }
 
 .reportInfo {
@@ -821,31 +820,31 @@ body {
 }
 
 .reportInfo p {
-  font-size: 0.85rem;
+  font-size: 0.722rem;
   color: var(--text-secondary);
   margin: 0;
 }
 
 .settingsCard {
   background-color: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 20px;
   box-shadow: var(--shadow-sm);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .settingsCard h3 {
-  font-size: 1.2rem;
+  font-size: 0.892rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .settingItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
+  padding: 13px 0;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -861,7 +860,7 @@ body {
 }
 
 .settingLabel p {
-  font-size: 0.85rem;
+  font-size: 0.722rem;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -869,8 +868,8 @@ body {
 .toggleSwitch {
   position: relative;
   display: inline-block;
-  width: 50px;
-  height: 24px;
+  width: 40px;
+  height: 20px;
 }
 
 .toggleSwitch input {
@@ -888,14 +887,14 @@ body {
   bottom: 0;
   background-color: #ccc;
   transition: 0.4s;
-  border-radius: 24px;
+  border-radius: 20px;
 }
 
 .toggleSlider:before {
   position: absolute;
   content: '';
-  height: 18px;
-  width: 18px;
+  height: 15px;
+  width: 15px;
   left: 3px;
   bottom: 3px;
   background-color: white;
@@ -908,38 +907,38 @@ input:checked + .toggleSlider {
 }
 
 input:checked + .toggleSlider:before {
-  transform: translateX(26px);
+  transform: translateX(22px);
 }
 
 .reportCard {
   background-color: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 20px;
   box-shadow: var(--shadow-sm);
 }
 
 .reportCard h3 {
-  font-size: 1.3rem;
+  font-size: 0.935rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 /* ============================================
    RESPONSIVENESS
    ============================================ */
 
-@media (max-width: 1400px) {
+@media (max-width: 1120px) {
   .chartsSection {
     grid-template-columns: 1fr;
   }
 
   .searchBox {
-    width: 250px;
+    width: 200px;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 819px) {
   .adminSidebar {
     position: absolute;
     height: 100vh;
@@ -959,20 +958,20 @@ input:checked + .toggleSlider:before {
   }
 
   .headerRight {
-    gap: 15px;
+    gap: 12px;
   }
 
   .searchBox {
-    width: 200px;
+    width: 160px;
   }
 
   .adminHeader {
-    padding: 15px 20px;
-    gap: 15px;
+    padding: 12px 16px;
+    gap: 12px;
   }
 
   .adminContent {
-    padding: 20px;
+    padding: 16px;
   }
 
   .statsGrid {
@@ -980,15 +979,15 @@ input:checked + .toggleSlider:before {
   }
 
   .pageTitle {
-    font-size: 1.5rem;
+    font-size: 1.275rem;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 614px) {
   .adminHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 12px;
   }
 
   .headerLeft {
@@ -1019,16 +1018,16 @@ input:checked + .toggleSlider:before {
   }
 
   .equipGrid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
   }
 
   .usersTable {
-    font-size: 0.8rem;
+    font-size: 0.68rem;
   }
 
   .usersTable th,
   .usersTable td {
-    padding: 10px 8px;
+    padding: 8px 6px;
   }
 
   .actionsCell {
@@ -1036,9 +1035,9 @@ input:checked + .toggleSlider:before {
   }
 
   .actionBtn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.68rem;
   }
 
   .reportItem {
@@ -1047,47 +1046,47 @@ input:checked + .toggleSlider:before {
   }
 
   .reportIcon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1.02rem;
   }
 
   .pieChartPlaceholder {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
   }
 
   .pieChartPlaceholder svg {
-    width: 140px;
-    height: 140px;
+    width: 112px;
+    height: 112px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 390px) {
   .adminContent {
-    padding: 15px;
+    padding: 12px;
   }
 
   .pageTitle {
-    font-size: 1.3rem;
+    font-size: 1.105rem;
   }
 
   .statsGrid {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 12px;
   }
 
   .statValue {
-    font-size: 1.5rem;
+    font-size: 1.275rem;
   }
 
   .chartCard,
   .recentUsersSection {
-    padding: 16px;
+    padding: 13px;
   }
 
   .chartPlaceholder {
-    height: 200px;
+    height: 160px;
   }
 
   .equipGrid {
@@ -1097,7 +1096,7 @@ input:checked + .toggleSlider:before {
   .sectionHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
   }
 
   .filterBtn {
@@ -1110,11 +1109,11 @@ input:checked + .toggleSlider:before {
   }
 
   .usersTable {
-    min-width: 600px;
+    min-width: 500px;
   }
 
   .pieLabels {
-    font-size: 0.85rem;
+    font-size: 0.722rem;
   }
 
   .userInfo {

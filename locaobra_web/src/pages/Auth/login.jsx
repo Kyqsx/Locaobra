@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../utils/useAuth';
+import { getDefaultAdminPath } from '../../utils/permissions';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faLock, faEnvelope, faHardHat, faRocket } from '@fortawesome/free-solid-svg-icons';
 import api from '../../service/api';
@@ -49,17 +50,20 @@ const Login = () => {
         throw new Error('Resposta inválida do servidor: Faltam dados essenciais (token/tipo).');
       }
 
-      // LOG 3: Antes de chamar a função do Contexto
+      // LOG 3: Antes de chamar a função do Contexto.
+      // Esperamos terminar aqui porque login() agora busca a sessão completa
+      // (com cargoFuncionario) — sem isso, o redirecionamento abaixo decidiria
+      // com base em dado incompleto.
       console.log("DEBUG: Chamando função login() do useAuth...");
-      login(email, token, { id, nome, tipo });
+      const sessionUser = await login(email, token);
 
       // LOG 4: Verificar se o LocalStorage foi preenchido
       console.log("DEBUG: Token no LocalStorage após login():", localStorage.getItem('token'));
 
       console.log(`✅ Login bem-sucedido! Usuário tipo: ${tipo}. Redirecionando...`);
 
-      if (tipo === 'ADMIN') {
-        navigate('/admin');
+      if (tipo === 'ADMIN' || tipo === 'FUNCIONARIO') {
+        navigate(getDefaultAdminPath(sessionUser));
       } else {
         navigate('/');
       }

@@ -1,0 +1,40 @@
+.formGridDepartamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formGridDepartamentos .textareaInput {
+  resize: vertical;
+  font-family: inherit;
+  min-height: 48px;
+}
+
+.formGridDepartamentos .formField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.formGridDepartamentos .formRow {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.formGridDepartamentos .formRow.full {
+  width: 100%;
+}
+
+.formGridDepartamentos .fieldLabel {
+  font-size: 0.765rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.formGridDepartamentos .actionBtn.edit {
+  background: rgba(217, 130, 15, 0.12);
+  color: var(--primary-color);
+}
