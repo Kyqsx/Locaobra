@@ -40,6 +40,9 @@ public class SecurityConfig {
                 // ===================== ROTAS PÚBLICAS =====================
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                // Health check do Render (e do balanceador): precisa ser público
+                // pra não retornar 403 e o serviço ficar marcado como insalubre.
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 // Catálogo público (loja): qualquer visitante pode listar/ver equipamentos.
                 // Atenção: usa "*" (um segmento) e não "**", pra NÃO liberar
                 // sub-rotas como /api/equipamentos/{id}/unidades, que são internas.
