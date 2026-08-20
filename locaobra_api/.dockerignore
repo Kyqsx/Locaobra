@@ -1,0 +1,8 @@
+target/
+*.class
+.git
+.gitignore
+.DS_Store
+uploads/
+render.yaml
+docker-compose*.yml
