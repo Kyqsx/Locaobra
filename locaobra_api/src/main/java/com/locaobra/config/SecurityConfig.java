@@ -28,7 +28,7 @@ public class SecurityConfig {
 
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
-            org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:}") String allowedOriginsConfig) {
+            @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:}") String allowedOriginsConfig) {
         this.jwtAuthFilter = jwtAuthFilter;
         if (allowedOriginsConfig == null || allowedOriginsConfig.isBlank()) {
             this.allowedOrigins = java.util.Arrays.asList(
@@ -38,7 +38,8 @@ public class SecurityConfig {
                     "http://localhost:8081",
                     "http://192.168.0.98:5173",
                     "http://172.17.19.249:5173",
-                    "https://locaobra.onrender.com"
+                    "https://locaobra.onrender.com",
+                    "https://locaobra.vercel.app"
             );
         } else {
             this.allowedOrigins = java.util.Arrays.stream(allowedOriginsConfig.split(","))
