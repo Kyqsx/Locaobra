@@ -38,6 +38,12 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // ===================== ROTAS PÚBLICAS =====================
+                // Health check do Render — sem isso, o deploy fica preso em
+                // "Waiting for internal health check" pra sempre, porque a
+                // checagem cai na regra genérica .anyRequest().authenticated()
+                // e volta 403 pra uma chamada anônima.
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 // Catálogo público (loja): qualquer visitante pode listar/ver equipamentos.
