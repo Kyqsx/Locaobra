@@ -178,13 +178,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
+        // Usamos "OriginPatterns" (não "Origins") pra poder combinar origens
+        // fixas com curingas — necessário pros deploys de preview do Vercel
+        // (ex.: locaobra-git-feature-x-usuario.vercel.app), que mudam a cada
+        // branch/PR. Funciona com allowCredentials=true, diferente de "*".
+        config.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://localhost:4200",
                 "http://localhost:5173",
                 "http://localhost:8081",
                 "http://192.168.0.98:5173",
-                "http://172.17.19.249:5173"
+                "http://172.17.19.249:5173",
+                "https://locaobra.vercel.app",
+                "https://locaobra-*.vercel.app"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
