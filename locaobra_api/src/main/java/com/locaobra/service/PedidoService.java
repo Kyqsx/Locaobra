@@ -116,29 +116,35 @@ public class PedidoService {
     // CONSULTA
     // ======================================================================
 
+    @Transactional(readOnly = true)
     public PedidoResponse buscarPorId(Long id) {
         return construirResponse(buscarEntidade(id));
     }
 
+    @Transactional(readOnly = true)
     public List<PedidoResponse> listarTodos() {
         return pedidoRepository.findAll().stream().map(this::construirResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<PedidoResponse> listarPorStatus(StatusPedido status) {
         return pedidoRepository.findByStatus(status).stream().map(this::construirResponse).collect(Collectors.toList());
     }
 
     // Fila do consultor: pedidos recém-solicitados, aguardando revisão.
+    @Transactional(readOnly = true)
     public List<PedidoResponse> listarFilaConsultor() {
         return listarPorStatus(StatusPedido.SOLICITADO);
     }
 
     // Fila do analista de crédito: pedidos já confirmados pelo consultor.
+    @Transactional(readOnly = true)
     public List<PedidoResponse> listarFilaCredito() {
         return listarPorStatus(StatusPedido.CONFIRMADO);
     }
 
     // "Meus pedidos" do cliente logado.
+    @Transactional(readOnly = true)
     public List<PedidoResponse> listarMeus() {
         Cliente cliente = resolverClienteLogado();
         return pedidoRepository.findByClienteId(cliente.getId()).stream()
