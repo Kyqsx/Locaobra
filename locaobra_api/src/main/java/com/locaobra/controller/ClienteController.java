@@ -2,10 +2,12 @@ package com.locaobra.controller;
 
 import com.locaobra.dto.request.ClienteRequest;
 import com.locaobra.dto.response.ClienteResponse;
+import com.locaobra.dto.response.PerfilClienteResponse;
 import com.locaobra.service.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -27,6 +29,13 @@ public class ClienteController {
 
     public ClienteController(ClienteService clienteService) {
         this.clienteService = clienteService;
+    }
+
+    // Perfil do cliente logado — identificado pelo token, nunca por um
+    // parâmetro solto na URL, pra não deixar ninguém puxar dado de outro.
+    @GetMapping("/perfil")
+    public ResponseEntity<PerfilClienteResponse> perfil(Authentication authentication) {
+        return ResponseEntity.ok(clienteService.perfilLogado(authentication.getName()));
     }
 
     @PostMapping

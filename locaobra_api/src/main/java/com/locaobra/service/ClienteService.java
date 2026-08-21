@@ -1,11 +1,16 @@
 package com.locaobra.service;
 
+import com.locaobra.dto.EnderecoDTO;
 import com.locaobra.dto.request.ClienteRequest;
 import com.locaobra.dto.response.ClienteResponse;
+import com.locaobra.dto.response.PerfilClienteResponse;
 import com.locaobra.entity.Cliente;
+import com.locaobra.entity.Usuario;
 import com.locaobra.exception.BusinessException;
 import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.repository.ClienteRepository;
+import com.locaobra.repository.EnderecoRepository;
+import com.locaobra.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,9 +21,48 @@ import java.util.stream.Collectors;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final EnderecoRepository enderecoRepository;
 
-    public ClienteService(ClienteRepository clienteRepository) {
+    public ClienteService(ClienteRepository clienteRepository,
+            UsuarioRepository usuarioRepository,
+            EnderecoRepository enderecoRepository) {
         this.clienteRepository = clienteRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.enderecoRepository = enderecoRepository;
+    }
+
+    // Perfil do cliente logado (identificado pelo e-mail do token JWT),
+    // já com o endereço cadastrado formatado — usado pra pré-preencher o
+    // checkout de aluguel no catálogo.
+    @Transactional(readOnly = true)
+    public PerfilClienteResponse perfilLogado(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
+        if (usuario.getIdCliente() == null) {
+            throw new BusinessException("Esse usuário não está vinculado a um cadastro de cliente.");
+        }
+        Cliente cliente = findOrThrow(usuario.getIdCliente());
+
+        String enderecoFormatado = null;
+        if (usuario.getIdEndereco() != null) {
+            enderecoFormatado = enderecoRepository.findBasicById(usuario.getIdEndereco())
+                    .map(this::formatarEndereco)
+                    .orElse(null);
+        }
+
+        return PerfilClienteResponse.from(cliente, enderecoFormatado, usuario.getIdEndereco());
+    }
+
+    private String formatarEndereco(EnderecoDTO e) {
+        StringBuilder sb = new StringBuilder();
+        if (e.getRua() != null && !e.getRua().isBlank()) sb.append(e.getRua());
+        if (e.getNumero() != null && !e.getNumero().isBlank()) sb.append(", ").append(e.getNumero());
+        if (e.getBairro() != null && !e.getBairro().isBlank()) sb.append(" - ").append(e.getBairro());
+        if (e.getCidade() != null && !e.getCidade().isBlank()) sb.append(", ").append(e.getCidade());
+        if (e.getEstado() != null && !e.getEstado().isBlank()) sb.append("/").append(e.getEstado());
+        if (e.getCep() != null && !e.getCep().isBlank()) sb.append(" - CEP ").append(e.getCep());
+        return sb.toString();
     }
 
     @Transactional

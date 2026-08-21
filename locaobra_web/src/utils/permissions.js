@@ -14,14 +14,15 @@ export const ADMIN_ALLOWED_PATHS = {
     '/admin/notificacoes',
     '/admin/cargos',
     '/admin/departamentos',
+    '/admin/pedidos',
   ],
   RH: ['/admin/clientes', '/admin/funcionarios', '/admin/cargos', '/admin/departamentos'],
   TECNICO_MANUTENCAO: ['/admin/equipamentos', '/admin/ordens-servico'],
   ENTREGADOR: ['/admin/expedicao'],
   CONFERENTE: ['/admin/expedicao', '/admin/equipamentos'],
   ANALISTA_FINANCEIRO: ['/admin/notificacoes'],
-  CONSULTOR_LOCACAO: ['/admin/clientes', '/admin/expedicao', '/admin/equipamentos'],
-  ANALISTA_CREDENCIAMENTO: ['/admin/clientes'],
+  CONSULTOR_LOCACAO: ['/admin/clientes', '/admin/expedicao', '/admin/equipamentos', '/admin/pedidos'],
+  ANALISTA_CREDENCIAMENTO: ['/admin/clientes', '/admin/pedidos'],
   FAXINEIRO: ['/admin/equipamentos'],
 };
 

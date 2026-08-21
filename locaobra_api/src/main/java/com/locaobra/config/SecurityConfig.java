@@ -24,29 +24,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    private final java.util.List<String> allowedOrigins;
 
-    public SecurityConfig(
-            JwtAuthFilter jwtAuthFilter,
-            @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:}") String allowedOriginsConfig) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
-        if (allowedOriginsConfig == null || allowedOriginsConfig.isBlank()) {
-            this.allowedOrigins = java.util.Arrays.asList(
-                    "http://localhost:3000",
-                    "http://localhost:4200",
-                    "http://localhost:5173",
-                    "http://localhost:8081",
-                    "http://192.168.0.98:5173",
-                    "http://172.17.19.249:5173",
-                    "https://locaobra.onrender.com",
-                    "https://locaobra.vercel.app"
-            );
-        } else {
-            this.allowedOrigins = java.util.Arrays.stream(allowedOriginsConfig.split(","))
-                    .map(String::trim)
-                    .filter(o -> !o.isEmpty())
-                    .toList();
-        }
     }
 
     @Bean
@@ -60,9 +40,6 @@ public class SecurityConfig {
                 // ===================== ROTAS PÚBLICAS =====================
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
-                // Health check do Render (e do balanceador): precisa ser público
-                // pra não retornar 403 e o serviço ficar marcado como insalubre.
-                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 // Catálogo público (loja): qualquer visitante pode listar/ver equipamentos.
                 // Atenção: usa "*" (um segmento) e não "**", pra NÃO liberar
                 // sub-rotas como /api/equipamentos/{id}/unidades, que são internas.
@@ -90,6 +67,10 @@ public class SecurityConfig {
                     .hasAnyRole("ADMIN", "RH", "GERENTE_OPERACOES")
 
                 // ===================== CLIENTES =====================
+                // Perfil do próprio cliente logado (usado pra pré-preencher o
+                // checkout de aluguel). Precisa vir antes da regra genérica de
+                // GET /api/clientes/**, que não libera ROLE_CLIENTE.
+                .requestMatchers(HttpMethod.GET, "/api/clientes/perfil").hasRole("CLIENTE")
                 // Excluir cadastro de cliente é ação sensível (apaga histórico) —
                 // mais restrita do que ver/editar clientes no dia a dia.
                 .requestMatchers(HttpMethod.DELETE, "/api/clientes/**")
@@ -138,6 +119,26 @@ public class SecurityConfig {
                 .requestMatchers("/api/expedicoes/**")
                     .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "ENTREGADOR", "CONFERENTE", "CONSULTOR_LOCACAO", "TECNICO_MANUTENCAO")
 
+                // ===================== PEDIDOS (aluguel) =====================
+                // Cliente solicita e acompanha/cancela os próprios pedidos.
+                .requestMatchers(HttpMethod.POST, "/api/pedidos").hasRole("CLIENTE")
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/meus").hasRole("CLIENTE")
+                .requestMatchers(HttpMethod.POST, "/api/pedidos/*/cancelar")
+                    .hasAnyRole("CLIENTE", "ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO")
+                // Fila do consultor: revisa e confirma/recusa o orçamento.
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/fila-consultor")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO")
+                .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/confirmar", "/api/pedidos/*/recusar")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO")
+                // Fila do analista de credenciamento: aprova/reprova o crédito.
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/fila-credito")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "ANALISTA_CREDENCIAMENTO")
+                .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/aprovar-credito", "/api/pedidos/*/reprovar-credito")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "ANALISTA_CREDENCIAMENTO")
+                // Visão geral (listagem/detalhe) fica com quem participa do fluxo.
+                .requestMatchers("/api/pedidos/**")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO", "ANALISTA_CREDENCIAMENTO")
+
                 // ===================== MANUTENÇÃO =====================
                 .requestMatchers("/api/ordens-servico/**")
                     .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "TECNICO_MANUTENCAO")
@@ -171,7 +172,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:4200",
+                "http://localhost:5173",
+                "http://localhost:8081",
+                "http://192.168.0.98:5173",
+                "http://172.17.19.249:5173"
+        ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         config.setAllowCredentials(true);

@@ -16,6 +16,8 @@ import AdminOrdensServico from './pages/Admin/ordensServico';
 import AdminNotificacoes from './pages/Admin/notificacoes';
 import AdminCargos from './pages/Admin/Cargos';
 import AdminDepartamentos from './pages/Admin/Departamentos';
+import AdminPedidos from './pages/Admin/pedidos';
+import MeusPedidos from './pages/Pedidos/meusPedidos';
 
 import Header from "./components/header";
 import Sidebar from "./components/sidebar";
@@ -75,6 +77,15 @@ function AdminRoute({ children }) {
     return children;
 }
 
+function ClienteRoute({ children }) {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+    return children;
+}
+
 function RotasApp() {
     return (
         <AuthProvider>
@@ -90,6 +101,7 @@ function RotasApp() {
                             <Route path="/catalogo/:slug" element={<Catalogo />} />
                             <Route path="/productview" element={<ProductView />} />
                             <Route path="/productview/:id" element={<ProductView />} />
+                            <Route path="/meus-pedidos" element={<ClienteRoute><MeusPedidos /></ClienteRoute>} />
                         </Route>
 
                         <Route path="/admin" element={
@@ -106,6 +118,7 @@ function RotasApp() {
                             <Route path="notificacoes" element={<AdminNotificacoes />} />
                             <Route path="cargos" element={<AdminCargos />} />
                             <Route path="departamentos" element={<AdminDepartamentos />} />
+                            <Route path="pedidos" element={<AdminPedidos />} />
                         </Route>
 
                     </Route>

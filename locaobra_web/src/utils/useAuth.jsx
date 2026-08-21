@@ -50,13 +50,13 @@ export function AuthProvider({ children }) {
                 // Busca dados de cliente se necessário...
                 if (userData.tipo === "CLIENTE") {
                     try {
-                        // Busca o perfil pelo email ou ID
-                        const encodedEmail = encodeURIComponent(userEmail);
-                        const perfilResponse = await api.get(`/api/v1/clientes/perfil?email=${encodedEmail}`);
+                        const perfilResponse = await api.get('/api/clientes/perfil');
                         const perfil = perfilResponse.data;
 
                         userData.nome = perfil.nome || userData.nome;
                         userData.id_cliente = perfil.id; // ID da tabela de clientes, se for diferente do user_id
+                        userData.enderecoFormatado = perfil.enderecoFormatado || null;
+                        userData.idEndereco = perfil.idEndereco || null;
                     } catch (err) {
                         console.warn("⚠️ Perfil detalhado não encontrado. Usando dados básicos da conta.");
                     }

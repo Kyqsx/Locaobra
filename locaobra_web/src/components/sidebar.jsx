@@ -18,6 +18,7 @@ import {
   faBuilding,
   faChevronDown,
   faChevronRight,
+  faClipboardList,
 } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = () => {
@@ -54,6 +55,7 @@ const Sidebar = () => {
       label: 'Operações',
       icon: faWrench,
       items: [
+        { to: '/admin/pedidos', icon: faClipboardList, label: 'Pedidos' },
         { to: '/admin/expedicao', icon: faTruck, label: 'Expedição' },
         { to: '/admin/ordens-servico', icon: faWrench, label: 'Ordens de Serviço' },
         { to: '/admin/notificacoes', icon: faBell, label: 'Notificações de Avarias' },
