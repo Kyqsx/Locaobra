@@ -6,6 +6,7 @@ import com.locaobra.dto.response.ExpedicaoResponse;
 import com.locaobra.dto.response.VistoriaResponse;
 import com.locaobra.entity.*;
 import com.locaobra.enums.StatusExpedicao;
+import com.locaobra.enums.StatusPedido;
 import com.locaobra.enums.StatusUnidade;
 import com.locaobra.enums.TipoExpedicao;
 import com.locaobra.exception.BusinessException;
@@ -33,6 +34,7 @@ public class ExpedicaoService {
     private final UnidadeEquipamentoRepository unidadeRepository;
     private final EquipamentoRepository equipamentoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PedidoRepository pedidoRepository;
 
     public ExpedicaoService(
             ExpedicaoRepository expedicaoRepository,
@@ -43,7 +45,8 @@ public class ExpedicaoService {
             FuncionarioRepository funcionarioRepository,
             UnidadeEquipamentoRepository unidadeRepository,
             EquipamentoRepository equipamentoRepository,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            PedidoRepository pedidoRepository) {
         this.expedicaoRepository = expedicaoRepository;
         this.itemRepository = itemRepository;
         this.vistoriaRepository = vistoriaRepository;
@@ -53,6 +56,7 @@ public class ExpedicaoService {
         this.unidadeRepository = unidadeRepository;
         this.equipamentoRepository = equipamentoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.pedidoRepository = pedidoRepository;
     }
 
     @Transactional
@@ -85,6 +89,24 @@ public class ExpedicaoService {
             }
         }
 
+        // Gerada pelo Conferente a partir de um pedido já aprovado (fila do
+        // conferente): só faz sentido pra ENTREGA — COLETA é a etapa de volta,
+        // que já deriva da própria expedição de entrega (entregaOrigem acima).
+        Pedido pedido = null;
+        if (request.getPedidoId() != null) {
+            if (request.getTipo() != TipoExpedicao.ENTREGA) {
+                throw new BusinessException("Expedição gerada a partir de um pedido só pode ser do tipo ENTREGA.");
+            }
+            pedido = pedidoRepository.findById(request.getPedidoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado: " + request.getPedidoId()));
+            if (pedido.getStatus() != StatusPedido.APROVADO) {
+                throw new BusinessException("Só é possível gerar expedição a partir de um pedido com crédito APROVADO.");
+            }
+            if (expedicaoRepository.existsByPedidoIdAndStatusNot(pedido.getId(), StatusExpedicao.CANCELADO)) {
+                throw new BusinessException("Esse pedido já tem uma expedição em andamento ou concluída.");
+            }
+        }
+
         Expedicao expedicao = new Expedicao();
         expedicao.setCodigo(gerarCodigo());
         expedicao.setTipo(request.getTipo());
@@ -94,8 +116,17 @@ public class ExpedicaoService {
         expedicao.setPlacaVeiculo(request.getPlacaVeiculo());
         expedicao.setObservacoes(request.getObservacoes());
         expedicao.setEntregaOrigem(entregaOrigem);
+        expedicao.setPedido(pedido);
 
-        if (entregaOrigem != null) {
+        if (pedido != null) {
+            // Cliente e endereço vêm do pedido por padrão; um override explícito
+            // no request (ex.: conferente ajustou o endereço na hora) prevalece.
+            expedicao.setCliente(pedido.getCliente());
+            expedicao.setEnderecoEntrega(
+                    request.getEnderecoEntrega() != null && !request.getEnderecoEntrega().isBlank()
+                            ? request.getEnderecoEntrega() : pedido.getEnderecoEntrega());
+            aplicarNomesAutorizados(expedicao, request.getNomesAutorizados());
+        } else if (entregaOrigem != null) {
             // Herdado da entrega de origem — endereço é o mesmo local onde o
             // equipamento foi deixado; cliente idem, a não ser que venha um
             // override explícito no request.

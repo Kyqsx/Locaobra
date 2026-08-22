@@ -46,6 +46,12 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.listarFilaCredito());
     }
 
+    // Fila do conferente: pedidos APROVADO ainda sem expedição gerada.
+    @GetMapping("/fila-conferente")
+    public ResponseEntity<List<PedidoResponse>> listarFilaConferente() {
+        return ResponseEntity.ok(pedidoService.listarFilaConferente());
+    }
+
     @GetMapping
     public ResponseEntity<List<PedidoResponse>> listar(@RequestParam(required = false) StatusPedido status) {
         if (status != null) {

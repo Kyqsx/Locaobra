@@ -11,6 +11,11 @@ public class ExpedicaoRequest {
     private TipoExpedicao tipo;
     private Long clienteId;
     private Long motoristaId;
+    // Preenchido quando a expedição é gerada pelo Conferente a partir de um
+    // pedido APROVADO (fila-conferente). Só se aplica a tipo = ENTREGA — o
+    // service usa esse id pra herdar cliente/endereço do pedido quando não
+    // vierem explícitos no request, e pra vincular a expedição a ele.
+    private Long pedidoId;
     // Obrigatório quando tipo = COLETA: id da expedição de ENTREGA (CONCLUIDO)
     // que está sendo buscada. Cliente, endereço e itens são copiados dela
     // automaticamente pelo service — não precisa (e não deve) mandar itens
@@ -34,6 +39,9 @@ public class ExpedicaoRequest {
 
     public Long getMotoristaId() { return motoristaId; }
     public void setMotoristaId(Long motoristaId) { this.motoristaId = motoristaId; }
+
+    public Long getPedidoId() { return pedidoId; }
+    public void setPedidoId(Long pedidoId) { this.pedidoId = pedidoId; }
 
     public Long getEntregaOrigemId() { return entregaOrigemId; }
     public void setEntregaOrigemId(Long entregaOrigemId) { this.entregaOrigemId = entregaOrigemId; }

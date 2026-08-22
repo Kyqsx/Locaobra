@@ -203,9 +203,75 @@ CREATE TABLE IF NOT EXISTS pecas_estoque (
     atualizado_em        TIMESTAMP
 );
 -- ============================================================================
+-- 11-B) PEDIDOS
+--    Entidade: Pedido. Fluxo: cliente solicita (SOLICITADO) -> consultor
+--    confirma (CONFIRMADO) ou recusa (RECUSADO) -> analista de credenciamento
+--    aprova (APROVADO) ou reprova (REPROVADO) -> conferente gera a expedição
+--    (ver seção 12, expedicoes.pedido_id). Cliente pode cancelar antes da
+--    aprovação de crédito (CANCELADO).
+--    Observação: essa tabela e a de itens_pedido não estavam neste script de
+--    referência (adicionadas aqui junto com o campo expedicoes.pedido_id).
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS pedidos (
+    id                     BIGSERIAL PRIMARY KEY,
+    codigo                 VARCHAR(50) NOT NULL UNIQUE,
+    status                 VARCHAR(20) NOT NULL DEFAULT 'SOLICITADO',
+    cliente_id             BIGINT NOT NULL,
+    consultor_id           BIGINT,
+    analista_credito_id    BIGINT,
+    data_inicio            DATE NOT NULL,
+    data_fim               DATE NOT NULL,
+    endereco_entrega       VARCHAR(500) NOT NULL,
+    observacoes_cliente    VARCHAR(1000),
+    observacoes_consultor  VARCHAR(1000),
+    motivo_recusa          VARCHAR(1000),
+    valor_total_estimado   NUMERIC(12,2) NOT NULL DEFAULT 0,
+    confirmado_em          TIMESTAMP,
+    analisado_em           TIMESTAMP,
+    cancelado_em           TIMESTAMP,
+    criado_em              TIMESTAMP NOT NULL,
+    atualizado_em          TIMESTAMP,
+    CONSTRAINT fk_pedido_cliente FOREIGN KEY (cliente_id)
+        REFERENCES clientes (id),
+    CONSTRAINT fk_pedido_consultor FOREIGN KEY (consultor_id)
+        REFERENCES funcionarios (id),
+    CONSTRAINT fk_pedido_analista_credito FOREIGN KEY (analista_credito_id)
+        REFERENCES funcionarios (id),
+    CONSTRAINT ck_pedido_status CHECK (status IN (
+        'SOLICITADO', 'CONFIRMADO', 'APROVADO', 'RECUSADO', 'REPROVADO', 'CANCELADO'
+    ))
+);
+
+CREATE INDEX IF NOT EXISTS idx_pedidos_cliente ON pedidos (cliente_id);
+CREATE INDEX IF NOT EXISTS idx_pedidos_status ON pedidos (status);
+
+-- ============================================================================
+-- 11-C) ITENS_PEDIDO
+--    Entidade: ItemPedido. valor_diaria_snapshot: preço da diária travado no
+--    momento do pedido (não muda se o preço do equipamento mudar depois).
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS itens_pedido (
+    id                     BIGSERIAL PRIMARY KEY,
+    pedido_id              BIGINT NOT NULL,
+    equipamento_id         BIGINT NOT NULL,
+    quantidade             INTEGER NOT NULL,
+    valor_diaria_snapshot  NUMERIC(12,2) NOT NULL,
+    observacao_item        VARCHAR(500),
+    criado_em              TIMESTAMP NOT NULL,
+    CONSTRAINT fk_item_pedido_pedido FOREIGN KEY (pedido_id)
+        REFERENCES pedidos (id) ON DELETE CASCADE,
+    CONSTRAINT fk_item_pedido_equipamento FOREIGN KEY (equipamento_id)
+        REFERENCES equipamentos (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_itens_pedido_pedido ON itens_pedido (pedido_id);
+
+-- ============================================================================
 -- 12) EXPEDICOES
 --    Entidade: Expedicao.
 --    entrega_origem_id: auto-relacionamento (COLETA aponta para ENTREGA).
+--    pedido_id: preenchido quando a expedição (ENTREGA) foi gerada pelo
+--    Conferente a partir de um pedido APROVADO (ver seção 11-B).
 --    Os enums tipo/status podem ser validados por CHECK (opcional).
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS expedicoes (
@@ -216,6 +282,9 @@ CREATE TABLE IF NOT EXISTS expedicoes (
     cliente_id          BIGINT,
     motorista_id        BIGINT,
     entrega_origem_id   BIGINT,
+    -- Preenchido quando a expedição (ENTREGA) foi gerada pelo Conferente a
+    -- partir de um Pedido já APROVADO. Null pra expedições avulsas e pra COLETA.
+    pedido_id           BIGINT,
     nome_autorizado_1   VARCHAR(150),
     nome_autorizado_2   VARCHAR(150),
     nome_autorizado_3   VARCHAR(150),
@@ -238,6 +307,8 @@ CREATE TABLE IF NOT EXISTS expedicoes (
         REFERENCES funcionarios (id),
     CONSTRAINT fk_expedicao_origem FOREIGN KEY (entrega_origem_id)
         REFERENCES expedicoes (id),
+    CONSTRAINT fk_expedicao_pedido FOREIGN KEY (pedido_id)
+        REFERENCES pedidos (id),
     CONSTRAINT ck_expedicao_status CHECK (status IN (
         'AGENDADO', 'EM_TRANSITO', 'ENTREGUE', 'CONCLUIDO', 'CANCELADO'
     )),
@@ -247,6 +318,7 @@ CREATE TABLE IF NOT EXISTS expedicoes (
 CREATE INDEX IF NOT EXISTS idx_expedicoes_cliente ON expedicoes (cliente_id);
 CREATE INDEX IF NOT EXISTS idx_expedicoes_motorista ON expedicoes (motorista_id);
 CREATE INDEX IF NOT EXISTS idx_expedicoes_origem ON expedicoes (entrega_origem_id);
+CREATE INDEX IF NOT EXISTS idx_expedicoes_pedido ON expedicoes (pedido_id);
 
 -- ============================================================================
 -- 13) ITENS_EXPEDICAO

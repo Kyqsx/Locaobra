@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import './Expedicao.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -299,20 +299,20 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
 /* ============================================================
    MODAL DE CRIAÇÃO DE EXPEDIÇÃO
    ============================================================ */
-function NovaExpedicaoModal({ onClose, onChanged }) {
+function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
     const [clientes, setClientes] = useState([]);
     const [motoristas, setMotoristas] = useState([]);
     const [equipamentos, setEquipamentos] = useState([]);
     const [entregasParaColeta, setEntregasParaColeta] = useState([]);
     const [form, setForm] = useState({
         tipo: 'ENTREGA',
-        clienteId: '',
+        clienteId: pedidoOrigem ? String(pedidoOrigem.clienteId || '') : '',
         motoristaId: '',
         entregaOrigemId: '',
         placaVeiculo: '',
-        dataProgramada: new Date().toISOString().split('T')[0],
+        dataProgramada: pedidoOrigem?.dataInicio || new Date().toISOString().split('T')[0],
         horarioProgramado: '08:00',
-        enderecoEntrega: '',
+        enderecoEntrega: pedidoOrigem?.enderecoEntrega || '',
         observacoes: '',
         nomeAutorizado1: '',
         nomeAutorizado2: '',
@@ -347,8 +347,10 @@ function NovaExpedicaoModal({ onClose, onChanged }) {
         if (name === 'tipo') {
             // Trocar de tipo zera itens manuais (COLETA não usa essa lista,
             // os itens vêm da entrega selecionada) e a entrega/cliente escolhidos.
+            // Expedição gerada a partir de um pedido é sempre ENTREGA — o select
+            // fica desabilitado nesse caso, então isso nunca deve rodar ali.
             setItens([]);
-            setForm(prev => ({ ...prev, tipo: value, entregaOrigemId: '', clienteId: '' }));
+            setForm(prev => ({ ...prev, tipo: value, entregaOrigemId: '', clienteId: pedidoOrigem ? prev.clienteId : '' }));
             return;
         }
         setForm(prev => ({ ...prev, [name]: value }));
@@ -431,6 +433,7 @@ function NovaExpedicaoModal({ onClose, onChanged }) {
             clienteId: ehColeta ? null : (form.clienteId ? parseInt(form.clienteId, 10) : null),
             motoristaId: form.motoristaId ? parseInt(form.motoristaId, 10) : null,
             entregaOrigemId: ehColeta && form.entregaOrigemId ? parseInt(form.entregaOrigemId, 10) : null,
+            pedidoId: pedidoOrigem ? pedidoOrigem.id : null,
             placaVeiculo: form.placaVeiculo,
             dataProgramada: form.dataProgramada,
             horarioProgramado: form.horarioProgramado,
@@ -469,7 +472,7 @@ function NovaExpedicaoModal({ onClose, onChanged }) {
         <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
             <div className="modalCard novaExpedicaoModalCard">
                 <div className="modalHeader">
-                    <h3><FontAwesomeIcon icon={faTruck} /> Nova Expedição</h3>
+                    <h3><FontAwesomeIcon icon={faTruck} /> {pedidoOrigem ? `Nova Expedição — Pedido ${pedidoOrigem.codigo}` : 'Nova Expedição'}</h3>
                     <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
@@ -477,14 +480,45 @@ function NovaExpedicaoModal({ onClose, onChanged }) {
                     <div className={`messageBanner ${message.type === 'error' ? 'negative' : 'positive'}`}>{message.text}</div>
                 )}
 
+                {pedidoOrigem && (
+                    <div className="specsContainer" style={{ marginBottom: '16px' }}>
+                        <div className="specsHeader">
+                            <label><FontAwesomeIcon icon={faClipboardCheck} /> Itens aprovados neste pedido (selecione as unidades correspondentes abaixo)</label>
+                        </div>
+                        <div className="tableWrapper">
+                            <table className="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Equipamento</th>
+                                        <th>Qtd. no pedido</th>
+                                        <th>Obs. do cliente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(pedidoOrigem.itens || []).map(item => (
+                                        <tr key={item.id} className="tableRow">
+                                            <td>{item.equipamentoNome}</td>
+                                            <td>{item.quantidade}</td>
+                                            <td>{item.observacaoItem || '---'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit}>
                     <div className="formGrid">
                         <div className="formField">
                             <label>Tipo</label>
-                            <select className="equipInput" name="tipo" value={form.tipo} onChange={handleChange}>
+                            <select className="equipInput" name="tipo" value={form.tipo} onChange={handleChange} disabled={!!pedidoOrigem}>
                                 <option value="ENTREGA">Entrega</option>
                                 <option value="COLETA">Coleta / Devolução</option>
                             </select>
+                            {pedidoOrigem && (
+                                <p style={{ color: '#999', fontSize: '0.8rem', margin: '4px 0 0' }}>Expedição gerada a partir de um pedido é sempre do tipo Entrega.</p>
+                            )}
                         </div>
                         <div className="formField">
                             <label>Data Programada</label>
@@ -513,6 +547,11 @@ function NovaExpedicaoModal({ onClose, onChanged }) {
                                         Nenhuma entrega aguardando coleta no momento.
                                     </p>
                                 )}
+                            </div>
+                        ) : pedidoOrigem ? (
+                            <div className="formField">
+                                <label>Cliente</label>
+                                <input className="equipInput" value={pedidoOrigem.clienteNome || '---'} readOnly disabled />
                             </div>
                         ) : (
                             <div className="formField">
@@ -1324,6 +1363,8 @@ function VistoriaCard({ vistoria }) {
    ============================================================ */
 export default function Expedicao() {
     const { user } = useAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
     const [expedicoes, setExpedicoes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -1331,6 +1372,8 @@ export default function Expedicao() {
     const [filtroStatus, setFiltroStatus] = useState('');
     const [filtroTipo, setFiltroTipo] = useState('');
     const [showNova, setShowNova] = useState(false);
+    const [pedidoOrigem, setPedidoOrigem] = useState(null);
+    const [carregandoPedidoOrigem, setCarregandoPedidoOrigem] = useState(false);
     const [detalheId, setDetalheId] = useState(null);
     const [message, setMessage] = useState(null);
 
@@ -1355,6 +1398,27 @@ export default function Expedicao() {
         fetchList();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Chegou aqui pelo botão "Gerar expedição" na aba "Prontos p/ Expedição"
+    // de Pedidos: busca o pedido e já abre o modal de Nova Expedição
+    // pré-preenchido com os dados dele. Limpa o state da rota em seguida pra
+    // um F5 na página não reabrir o modal sozinho.
+    useEffect(() => {
+        const pedidoOrigemId = location.state?.pedidoOrigemId;
+        if (!pedidoOrigemId) return;
+        setCarregandoPedidoOrigem(true);
+        api.get(`/api/pedidos/${pedidoOrigemId}`)
+            .then(res => {
+                setPedidoOrigem(res.data);
+                setShowNova(true);
+            })
+            .catch(err => setMessage({ type: 'error', text: 'Não foi possível carregar o pedido: ' + (err.response?.data?.message || err.message) }))
+            .finally(() => {
+                setCarregandoPedidoOrigem(false);
+                navigate(location.pathname, { replace: true, state: {} });
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.state?.pedidoOrigemId]);
 
     if (!canAccessAdminRoute(user, '/admin/expedicao')) {
         return <Navigate to="/admin" replace />;
@@ -1404,6 +1468,10 @@ export default function Expedicao() {
 
             {message && (
                 <div className={`messageBanner ${message.type === 'error' ? 'negative' : 'positive'}`}>{message.text}</div>
+            )}
+
+            {carregandoPedidoOrigem && (
+                <div className="messageBanner">Carregando dados do pedido...</div>
             )}
 
             {/* FILTROS */}
@@ -1528,7 +1596,8 @@ export default function Expedicao() {
 
             {showNova && (
                 <NovaExpedicaoModal
-                    onClose={() => setShowNova(false)}
+                    pedidoOrigem={pedidoOrigem}
+                    onClose={() => { setShowNova(false); setPedidoOrigem(null); }}
                     onChanged={() => fetchList()}
                 />
             )}

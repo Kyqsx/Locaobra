@@ -141,9 +141,14 @@ public class SecurityConfig {
                     .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "ANALISTA_CREDENCIAMENTO")
                 .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/aprovar-credito", "/api/pedidos/*/reprovar-credito")
                     .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "ANALISTA_CREDENCIAMENTO")
+                // Fila do conferente: pedidos aprovados prontos pra virar expedição.
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/fila-conferente")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "CONFERENTE")
                 // Visão geral (listagem/detalhe) fica com quem participa do fluxo.
+                // CONFERENTE entra aqui só pra poder abrir o detalhe do pedido
+                // (GET /api/pedidos/{id}) ao montar a expedição a partir dele.
                 .requestMatchers("/api/pedidos/**")
-                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO", "ANALISTA_CREDENCIAMENTO")
+                    .hasAnyRole("ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO", "ANALISTA_CREDENCIAMENTO", "CONFERENTE")
 
                 // ===================== MANUTENÇÃO =====================
                 .requestMatchers("/api/ordens-servico/**")

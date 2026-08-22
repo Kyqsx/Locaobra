@@ -143,6 +143,16 @@ public class PedidoService {
         return listarPorStatus(StatusPedido.CONFIRMADO);
     }
 
+    // Fila do conferente: pedidos com crédito aprovado, prontos pra virar
+    // expedição. Some da lista assim que uma expedição é gerada (ver
+    // PedidoRepository.findAprovadosSemExpedicaoAtiva).
+    @Transactional(readOnly = true)
+    public List<PedidoResponse> listarFilaConferente() {
+        return pedidoRepository.findAprovadosSemExpedicaoAtiva().stream()
+                .map(this::construirResponse)
+                .collect(Collectors.toList());
+    }
+
     // "Meus pedidos" do cliente logado.
     @Transactional(readOnly = true)
     public List<PedidoResponse> listarMeus() {

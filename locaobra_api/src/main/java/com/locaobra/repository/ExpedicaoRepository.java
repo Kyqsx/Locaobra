@@ -41,4 +41,9 @@ public interface ExpedicaoRepository extends JpaRepository<Expedicao, Long> {
     List<Expedicao> findEntregasConcluidasSemColetaAtiva();
 
     boolean existsByEntregaOrigemIdAndStatusNot(Long entregaOrigemId, StatusExpedicao status);
+
+    // Usado pra impedir gerar duas expedições ativas pro mesmo pedido: se já
+    // existe uma não-CANCELADO vinculada, o pedido não deve mais aparecer na
+    // fila do conferente (ver PedidoRepository.findAprovadosSemExpedicaoAtiva).
+    boolean existsByPedidoIdAndStatusNot(Long pedidoId, StatusExpedicao status);
 }

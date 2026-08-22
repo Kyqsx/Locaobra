@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
 import './Pedidos.css';
@@ -99,20 +100,33 @@ function MotivoModal({ titulo, onConfirm, onClose, enviando }) {
 
 function AdminPedidos() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const cargo = user?.cargoFuncionario;
   const isAdminGeral = user?.tipo === 'ADMIN' || cargo === 'GERENTE_OPERACOES';
 
   const podeConsultor = isAdminGeral || cargo === 'CONSULTOR_LOCACAO';
   const podeCredito = isAdminGeral || cargo === 'ANALISTA_CREDENCIAMENTO';
+  const podeConferente = isAdminGeral || cargo === 'CONFERENTE';
 
-  const [aba, setAba] = useState(podeConsultor ? 'consultor' : 'credito');
+  const abasDisponiveis = [
+    podeConsultor && { id: 'consultor', label: 'Solicitações' },
+    podeCredito && { id: 'credito', label: 'Análise de Crédito' },
+    podeConferente && { id: 'conferente', label: 'Prontos p/ Expedição' },
+  ].filter(Boolean);
+
+  const [aba, setAba] = useState(abasDisponiveis[0]?.id || 'consultor');
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processandoId, setProcessandoId] = useState(null);
   const [modalRecusa, setModalRecusa] = useState(null); // { pedidoId, tipo: 'recusar' | 'reprovar' }
 
-  const endpoint = aba === 'consultor' ? '/api/pedidos/fila-consultor' : '/api/pedidos/fila-credito';
+  const ENDPOINT_POR_ABA = {
+    consultor: '/api/pedidos/fila-consultor',
+    credito: '/api/pedidos/fila-credito',
+    conferente: '/api/pedidos/fila-conferente',
+  };
+  const endpoint = ENDPOINT_POR_ABA[aba];
 
   const carregar = () => {
     setLoading(true);
@@ -167,6 +181,12 @@ function AdminPedidos() {
     }
   };
 
+  // Leva o conferente pra tela de Expedição já com o modal de "Nova
+  // Expedição" aberto e pré-preenchido a partir deste pedido.
+  const handleGerarExpedicao = (pedido) => {
+    navigate('/admin/expedicao', { state: { pedidoOrigemId: pedido.id } });
+  };
+
   return (
     <div className="pedidos-container admin-pedidos">
       <div className="pedidos-header">
@@ -174,20 +194,17 @@ function AdminPedidos() {
         <p className="pedidos-subtitle">Solicitações de aluguel enviadas pelos clientes pelo catálogo.</p>
       </div>
 
-      {(podeConsultor && podeCredito) && (
+      {abasDisponiveis.length > 1 && (
         <div className="pedidos-tabs">
-          <button
-            className={`pedidos-tab-btn ${aba === 'consultor' ? 'active' : ''}`}
-            onClick={() => setAba('consultor')}
-          >
-            Solicitações
-          </button>
-          <button
-            className={`pedidos-tab-btn ${aba === 'credito' ? 'active' : ''}`}
-            onClick={() => setAba('credito')}
-          >
-            Análise de Crédito
-          </button>
+          {abasDisponiveis.map((a) => (
+            <button
+              key={a.id}
+              className={`pedidos-tab-btn ${aba === a.id ? 'active' : ''}`}
+              onClick={() => setAba(a.id)}
+            >
+              {a.label}
+            </button>
+          ))}
         </div>
       )}
 
@@ -197,13 +214,13 @@ function AdminPedidos() {
         <div className="error-container">{error}</div>
       ) : pedidos.length === 0 ? (
         <div className="pedidos-vazio">
-          <p>Nenhum pedido aguardando {aba === 'consultor' ? 'revisão' : 'análise de crédito'} no momento.</p>
+          <p>Nenhum pedido {aba === 'consultor' ? 'aguardando revisão' : aba === 'credito' ? 'aguardando análise de crédito' : 'pronto para expedição'} no momento.</p>
         </div>
       ) : (
         <div className="pedidos-lista">
           {pedidos.map((pedido) => (
             <PedidoCard key={pedido.id} pedido={pedido}>
-              {aba === 'consultor' ? (
+              {aba === 'consultor' && (
                 <>
                   <button
                     className="btnSecondary btnDanger"
@@ -220,7 +237,8 @@ function AdminPedidos() {
                     {processandoId === pedido.id ? 'Confirmando...' : 'Confirmar e enviar p/ crédito'}
                   </button>
                 </>
-              ) : (
+              )}
+              {aba === 'credito' && (
                 <>
                   <button
                     className="btnSecondary btnDanger"
@@ -237,6 +255,14 @@ function AdminPedidos() {
                     {processandoId === pedido.id ? 'Aprovando...' : 'Aprovar crédito'}
                   </button>
                 </>
+              )}
+              {aba === 'conferente' && (
+                <button
+                  className="btnPrimary"
+                  onClick={() => handleGerarExpedicao(pedido)}
+                >
+                  Gerar expedição
+                </button>
               )}
             </PedidoCard>
           ))}

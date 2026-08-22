@@ -42,6 +42,16 @@ public class Expedicao {
     @JoinColumn(name = "entrega_origem_id")
     private Expedicao entregaOrigem;
 
+    // Preenchido quando essa expedição (ENTREGA) foi gerada pelo Conferente a
+    // partir de um Pedido já APROVADO (fila-conferente). Um pedido só pode ter
+    // uma expedição ativa (não CANCELADO) vinculada por vez — ver validação em
+    // ExpedicaoService.criar(). Fica null para expedições avulsas (criadas sem
+    // passar pelo fluxo de orçamento) e para COLETA (que deriva da ENTREGA, não
+    // do pedido diretamente).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pedido_id")
+    private Pedido pedido;
+
     // Pessoas autorizadas a receber o equipamento nessa entrega (até 3).
     // Definidas na criação da expedição; o Termo de Vistoria só EXIBE esses
     // nomes (não edita), e a confirmação de entrega (passo 3) usa um deles
@@ -134,6 +144,9 @@ public class Expedicao {
 
     public Expedicao getEntregaOrigem() { return entregaOrigem; }
     public void setEntregaOrigem(Expedicao entregaOrigem) { this.entregaOrigem = entregaOrigem; }
+
+    public Pedido getPedido() { return pedido; }
+    public void setPedido(Pedido pedido) { this.pedido = pedido; }
 
     public String getNomeAutorizado1() { return nomeAutorizado1; }
     public void setNomeAutorizado1(String nomeAutorizado1) { this.nomeAutorizado1 = nomeAutorizado1; }

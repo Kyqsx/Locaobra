@@ -18,4 +18,15 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByStatus(StatusPedido status);
 
     List<Pedido> findByStatusIn(List<StatusPedido> statuses);
+
+    // Fila do conferente: pedidos com crédito APROVADO que ainda não têm
+    // nenhuma expedição ativa (não CANCELADO) gerada a partir deles — mesmo
+    // padrão usado em ExpedicaoRepository.findEntregasConcluidasSemColetaAtiva().
+    // Se a expedição gerada for cancelada depois, o pedido volta a aparecer
+    // aqui, pra o conferente poder gerar uma nova.
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT p FROM Pedido p WHERE p.status = com.locaobra.enums.StatusPedido.APROVADO " +
+        "AND NOT EXISTS (SELECT 1 FROM Expedicao e WHERE e.pedido = p AND e.status <> com.locaobra.enums.StatusExpedicao.CANCELADO)"
+    )
+    List<Pedido> findAprovadosSemExpedicaoAtiva();
 }
