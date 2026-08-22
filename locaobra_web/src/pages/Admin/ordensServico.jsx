@@ -594,7 +594,7 @@ export default function OrdensServico() {
             .then(([eqRes, osRes, funcRes, pecasRes, alertasRes]) => {
                 setEquipamentos(eqRes.data);
                 setOrdens(osRes.data);
-                setTecnicos((funcRes.data || []).filter(f => Nome === 'TECNICO_MANUTENCAO'));
+                setTecnicos((funcRes.data || []).filter(f => f.cargoNome === 'TECNICO_MANUTENCAO'));
                 setPecas(pecasRes.data);
                 setAlertas(alertasRes.data);
             })

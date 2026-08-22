@@ -18,15 +18,18 @@ RUN mvn -B clean package -DskipTests
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-# Cria a pasta de uploads e expõe a porta
-RUN mkdir -p /app/uploads
 EXPOSE ${PORT:-8080}
 
 # Copia o jar gerado no estágio de build
 COPY --from=build /build/target/*.jar app.jar
 
-# Cria usuário não-root (boa prática de segurança)
-RUN useradd --create-home appuser
+# Cria usuário não-root (boa prática de segurança) e só então cria a pasta
+# de uploads, já com esse usuário como dono — senão ela fica de root e o
+# appuser não consegue escrever nela (mkdirs() falha silenciosamente e o
+# upload quebra com FileNotFoundException na hora de gravar o arquivo).
+RUN useradd --create-home appuser \
+    && mkdir -p /app/uploads \
+    && chown -R appuser:appuser /app
 USER appuser
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -147,7 +147,13 @@ private void removerSupabase(String url) {
     // ------------------------------------------------------------------
     private String salvarLocal(MultipartFile file, String pasta, String nome) throws IOException {
         File baseDir = new File(System.getProperty("user.dir") + "/uploads/" + pasta);
-        if (!baseDir.exists()) baseDir.mkdirs();
+        if (!baseDir.exists() && !baseDir.mkdirs() && !baseDir.exists()) {
+            // mkdirs() só falha silenciosamente por permissão ou disco somente-leitura;
+            // sem essa checagem, o erro só aparece depois, disfarçado de
+            // FileNotFoundException no transferTo() abaixo.
+            throw new IOException("Não foi possível criar o diretório de uploads: " + baseDir.getAbsolutePath()
+                    + " (verifique permissões do usuário do container)");
+        }
         File dest = new File(baseDir, nome);
         file.transferTo(dest.getAbsoluteFile());
         return "/uploads/" + pasta + "/" + nome;
