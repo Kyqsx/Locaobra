@@ -335,7 +335,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
         ])
             .then(([cliRes, funcRes, eqRes, colRes]) => {
                 setClientes(cliRes.data || []);
-                setMotoristas((funcRes.data || []).filter(f => f.cargo === 'ENTREGADOR'));
+                setMotoristas((funcRes.data || []).filter(f => f.cargoNome === 'ENTREGADOR'));
                 setEquipamentos(eqRes.data || []);
                 setEntregasParaColeta(colRes.data || []);
             })
