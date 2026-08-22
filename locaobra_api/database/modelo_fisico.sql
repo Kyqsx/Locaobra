@@ -23,6 +23,26 @@ CREATE TABLE IF NOT EXISTS departamentos (
 );
 
 -- ============================================================================
+-- 1-B) DEPOSITOS
+--    Entidade: Deposito -> @Table(name = "depositos")
+--    Local físico (galpão/pátio) onde ficam as unidades de equipamento e onde
+--    atuam os funcionários de logística. Vínculo é sempre com a UNIDADE
+--    (unidades_equipamento.deposito_id) e com o FUNCIONÁRIO
+--    (funcionarios.deposito_id) — nunca com o modelo de Equipamento.
+--    Criada aqui, antes de FUNCIONARIOS e UNIDADES_EQUIPAMENTO, pra essas FKs
+--    poderem referenciá-la.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS depositos (
+    id             BIGSERIAL PRIMARY KEY,
+    nome           VARCHAR(150) NOT NULL UNIQUE,
+    endereco       VARCHAR(500),
+    descricao      VARCHAR(500),
+    ativo          BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em      TIMESTAMP,
+    atualizado_em  TIMESTAMP
+);
+
+-- ============================================================================
 -- 2) CARGOS
 --    Entidade: Cargo -> @Table(name = "cargos")
 -- ============================================================================
@@ -86,6 +106,7 @@ CREATE TABLE IF NOT EXISTS funcionarios (
     data_nascimento  TIMESTAMP NOT NULL,
     cargo_id         BIGINT,
     departamento_id  BIGINT,
+    deposito_id      BIGINT,
     salario          DOUBLE PRECISION NOT NULL,
     data_admissao    TIMESTAMP NOT NULL,
     data_demissao    TIMESTAMP,
@@ -93,11 +114,14 @@ CREATE TABLE IF NOT EXISTS funcionarios (
     CONSTRAINT fk_funcionario_cargo FOREIGN KEY (cargo_id)
         REFERENCES cargos (id),
     CONSTRAINT fk_funcionario_departamento FOREIGN KEY (departamento_id)
-        REFERENCES departamentos (id)
+        REFERENCES departamentos (id),
+    CONSTRAINT fk_funcionario_deposito FOREIGN KEY (deposito_id)
+        REFERENCES depositos (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_funcionarios_cargo ON funcionarios (cargo_id);
 CREATE INDEX IF NOT EXISTS idx_funcionarios_departamento ON funcionarios (departamento_id);
+CREATE INDEX IF NOT EXISTS idx_funcionarios_deposito ON funcionarios (deposito_id);
 
 -- ============================================================================
 -- 6) USUARIOS
@@ -176,10 +200,16 @@ CREATE TABLE IF NOT EXISTS unidades_equipamento (
     status                      VARCHAR(30) NOT NULL DEFAULT 'DISPONIVEL',
     horimetro_atual             DOUBLE PRECISION,
     horimetro_limite_manutencao DOUBLE PRECISION,
+    -- Depósito físico onde essa unidade está guardada hoje. Vínculo é sempre
+    -- na unidade (patrimônio), nunca no modelo de Equipamento — o mesmo
+    -- modelo pode ter unidades espalhadas em depósitos diferentes.
+    deposito_id                 BIGINT,
     criado_em                   TIMESTAMP NOT NULL,
     atualizado_em               TIMESTAMP,
     CONSTRAINT fk_unidade_equipamento FOREIGN KEY (equipamento_id)
         REFERENCES equipamentos (id) ON DELETE CASCADE,
+    CONSTRAINT fk_unidade_deposito FOREIGN KEY (deposito_id)
+        REFERENCES depositos (id),
     CONSTRAINT ck_unidade_status CHECK (status IN (
         'DISPONIVEL', 'ALUGADO', 'EM_LIMPEZA',
         'AGUARDANDO_MANUTENCAO', 'EM_MANUTENCAO'
@@ -187,6 +217,7 @@ CREATE TABLE IF NOT EXISTS unidades_equipamento (
 );
 
 CREATE INDEX IF NOT EXISTS idx_unidade_equipamento ON unidades_equipamento (equipamento_id);
+CREATE INDEX IF NOT EXISTS idx_unidade_deposito ON unidades_equipamento (deposito_id);
 
 -- ============================================================================
 -- 11) PECAS_ESTOQUE

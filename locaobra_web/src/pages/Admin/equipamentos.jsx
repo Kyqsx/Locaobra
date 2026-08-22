@@ -349,12 +349,16 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
     const [imagensMessage, setImagensMessage] = useState(null);
     const [enviandoImagens, setEnviandoImagens] = useState(false);
 
-    const [unidadeForm, setUnidadeForm] = useState({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL' });
+    const [unidadeForm, setUnidadeForm] = useState({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL', depositoId: '' });
     const [unidadeEditId, setUnidadeEditId] = useState(null);
     const [unidadeMessage, setUnidadeMessage] = useState(null);
+    const [depositos, setDepositos] = useState([]);
 
     useEffect(() => {
         carregar();
+        api.get('/api/depositos?apenasAtivos=true')
+            .then(res => setDepositos(res.data || []))
+            .catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [equipamentoId]);
 
@@ -486,6 +490,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
             codigoPatrimonio: unidadeForm.codigoPatrimonio || null,
             numeroDeSerie: unidadeForm.numeroDeSerie || null,
             status: unidadeForm.status,
+            depositoId: unidadeForm.depositoId ? Number(unidadeForm.depositoId) : 0,
         };
 
         const request = unidadeEditId
@@ -495,7 +500,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
         request
             .then(() => {
                 setUnidadeMessage({ type: 'success', text: unidadeEditId ? 'Unidade atualizada!' : 'Unidade adicionada!' });
-                setUnidadeForm({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL' });
+                setUnidadeForm({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL', depositoId: '' });
                 setUnidadeEditId(null);
                 carregar();
                 onChanged();
@@ -510,14 +515,14 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
     }
 
     function handleEditUnidade(u) {
-        setUnidadeForm({ codigoPatrimonio: u.codigoPatrimonio || '', numeroDeSerie: u.numeroDeSerie || '', status: u.status || 'DISPONIVEL' });
+        setUnidadeForm({ codigoPatrimonio: u.codigoPatrimonio || '', numeroDeSerie: u.numeroDeSerie || '', status: u.status || 'DISPONIVEL', depositoId: u.depositoId || '' });
         setUnidadeEditId(u.id);
         setUnidadeMessage(null);
     }
 
     function handleCancelUnidadeEdit() {
         setUnidadeEditId(null);
-        setUnidadeForm({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL' });
+        setUnidadeForm({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL', depositoId: '' });
     }
 
     function handleDeleteUnidade(unidadeId) {
@@ -650,6 +655,12 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                                 <option key={value} value={value}>{label}</option>
                                             ))}
                                         </select>
+                                        <select className="unidadeStatusSelect" name="depositoId" value={unidadeForm.depositoId} onChange={handleUnidadeChange}>
+                                            <option value="">Sem depósito</option>
+                                            {depositos.map(d => (
+                                                <option key={d.id} value={d.id}>{d.nome}</option>
+                                            ))}
+                                        </select>
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <button type="submit" className="addBtn">
                                                 {unidadeEditId ? 'Salvar' : <><FontAwesomeIcon icon={faPlus} /> Adicionar</>}
@@ -668,6 +679,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                                 <th>Patrimônio</th>
                                                 <th>Nº de Série</th>
                                                 <th>Status</th>
+                                                <th>Depósito</th>
                                                 <th>Ações</th>
                                             </tr>
                                         </thead>
@@ -684,6 +696,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                                                 ))}
                                                             </select>
                                                         </td>
+                                                        <td>{u.depositoNome || '---'}</td>
                                                         <td className="actionsCell">
                                                             {canManageFrota && (
                                                                 <>
@@ -696,7 +709,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                                 ))
                                             ) : (
                                                 <tr className="tableRow">
-                                                    <td colSpan="4" style={{ textAlign: 'center', color: '#999' }}>Nenhuma unidade cadastrada ainda</td>
+                                                    <td colSpan="5" style={{ textAlign: 'center', color: '#999' }}>Nenhuma unidade cadastrada ainda</td>
                                                 </tr>
                                             )}
                                         </tbody>

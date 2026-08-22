@@ -16,6 +16,7 @@ import AdminOrdensServico from './pages/Admin/ordensServico';
 import AdminNotificacoes from './pages/Admin/notificacoes';
 import AdminCargos from './pages/Admin/Cargos';
 import AdminDepartamentos from './pages/Admin/Departamentos';
+import AdminDepositos from './pages/Admin/Depositos';
 import AdminPedidos from './pages/Admin/pedidos';
 import MeusPedidos from './pages/Pedidos/meusPedidos';
 
@@ -118,6 +119,7 @@ function RotasApp() {
                             <Route path="notificacoes" element={<AdminNotificacoes />} />
                             <Route path="cargos" element={<AdminCargos />} />
                             <Route path="departamentos" element={<AdminDepartamentos />} />
+                            <Route path="depositos" element={<AdminDepositos />} />
                             <Route path="pedidos" element={<AdminPedidos />} />
                         </Route>
 

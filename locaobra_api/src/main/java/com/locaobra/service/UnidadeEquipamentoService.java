@@ -2,11 +2,13 @@ package com.locaobra.service;
 
 import com.locaobra.dto.request.UnidadeEquipamentoRequest;
 import com.locaobra.dto.response.UnidadeEquipamentoResponse;
+import com.locaobra.entity.Deposito;
 import com.locaobra.entity.Equipamento;
 import com.locaobra.entity.UnidadeEquipamento;
 import com.locaobra.enums.StatusUnidade;
 import com.locaobra.exception.BusinessException;
 import com.locaobra.exception.ResourceNotFoundException;
+import com.locaobra.repository.DepositoRepository;
 import com.locaobra.repository.EquipamentoRepository;
 import com.locaobra.repository.UnidadeEquipamentoRepository;
 import org.springframework.stereotype.Service;
@@ -20,12 +22,15 @@ public class UnidadeEquipamentoService {
 
     private final UnidadeEquipamentoRepository unidadeRepository;
     private final EquipamentoRepository equipamentoRepository;
+    private final DepositoRepository depositoRepository;
 
     public UnidadeEquipamentoService(
             UnidadeEquipamentoRepository unidadeRepository,
-            EquipamentoRepository equipamentoRepository) {
+            EquipamentoRepository equipamentoRepository,
+            DepositoRepository depositoRepository) {
         this.unidadeRepository = unidadeRepository;
         this.equipamentoRepository = equipamentoRepository;
+        this.depositoRepository = depositoRepository;
     }
 
     @Transactional
@@ -50,6 +55,7 @@ public class UnidadeEquipamentoService {
         unidade.setStatus(request.getStatus() != null ? request.getStatus() : StatusUnidade.DISPONIVEL);
         unidade.setHorimetroAtual(request.getHorimetroAtual());
         unidade.setHorimetroLimiteManutencao(request.getHorimetroLimiteManutencao());
+        unidade.setDeposito(resolverDeposito(request.getDepositoId()));
 
         unidade = unidadeRepository.save(unidade);
         return UnidadeEquipamentoResponse.from(unidade);
@@ -106,6 +112,12 @@ public class UnidadeEquipamentoService {
         if (request.getHorimetroLimiteManutencao() != null) {
             unidade.setHorimetroLimiteManutencao(request.getHorimetroLimiteManutencao());
         }
+        if (request.getDepositoId() != null) {
+            // 0 é o valor que o frontend manda pra "Sem depósito" (select vazio
+            // vira depositoId ausente, mas queremos permitir desvincular
+            // explicitamente também) — ver resolverDeposito().
+            unidade.setDeposito(resolverDeposito(request.getDepositoId()));
+        }
 
         unidade = unidadeRepository.save(unidade);
         return UnidadeEquipamentoResponse.from(unidade);
@@ -115,6 +127,17 @@ public class UnidadeEquipamentoService {
     public void deletar(Long unidadeId) {
         UnidadeEquipamento unidade = findOrThrow(unidadeId);
         unidadeRepository.delete(unidade);
+    }
+
+    // depositoId == null -> não mexe no vínculo (form não enviou o campo).
+    // depositoId == 0 -> desvincula explicitamente ("Sem depósito" no select).
+    // depositoId > 0 -> resolve e vincula ao depósito informado.
+    private Deposito resolverDeposito(Long depositoId) {
+        if (depositoId == null || depositoId == 0L) {
+            return null;
+        }
+        return depositoRepository.findById(depositoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Depósito não encontrado: " + depositoId));
     }
 
     private UnidadeEquipamento findOrThrow(Long unidadeId) {

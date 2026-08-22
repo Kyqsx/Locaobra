@@ -34,6 +34,13 @@ public class Funcionario {
     @JoinColumn(name = "departamento_id")
     private DepartamentoEntity departamento;
 
+    // Depósito (galpão/pátio) onde o funcionário atua — relevante pra
+    // logística (conferente, entregador). Nullable: nem todo cargo trabalha
+    // num depósito físico (ex.: RH, analista de crédito).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deposito_id")
+    private Deposito deposito;
+
     @Column(name = "salario", nullable = false)
     private Double salario;
 
@@ -106,6 +113,14 @@ public class Funcionario {
 
     public void setDepartamento(DepartamentoEntity departamento) {
         this.departamento = departamento;
+    }
+
+    public Deposito getDeposito() {
+        return deposito;
+    }
+
+    public void setDeposito(Deposito deposito) {
+        this.deposito = deposito;
     }
 
     public Double getSalario() {

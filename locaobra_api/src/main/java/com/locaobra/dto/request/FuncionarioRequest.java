@@ -23,6 +23,8 @@ public class FuncionarioRequest {
 
     private Long departamentoId;
 
+    private Long depositoId;
+
     private String salario;
 
     private String dataNascimento;
@@ -49,6 +51,8 @@ public class FuncionarioRequest {
     public void setCargoId(Long cargoId) { this.cargoId = cargoId; }
     public Long getDepartamentoId() { return departamentoId; }
     public void setDepartamentoId(Long departamentoId) { this.departamentoId = departamentoId; }
+    public Long getDepositoId() { return depositoId; }
+    public void setDepositoId(Long depositoId) { this.depositoId = depositoId; }
     public String getSalario() { return salario; }
     public void setSalario(String salario) { this.salario = salario; }
     public String getDataNascimento() { return dataNascimento; }

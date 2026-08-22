@@ -164,10 +164,14 @@ public class SecurityConfig {
                 // Qualquer funcionário/admin autenticado vê as próprias notificações
                 .requestMatchers("/api/notificacoes/**").hasAnyRole("ADMIN", "FUNCIONARIO")
 
-                // ===================== CARGOS E DEPARTAMENTOS =====================
-                // Gestão de cargos e departamentos: ADMIN, RH, GERENTE_OPERACOES
+                // ===================== CARGOS, DEPARTAMENTOS E DEPÓSITOS =====================
+                // Gestão de cargos, departamentos e depósitos: ADMIN, RH, GERENTE_OPERACOES.
+                // Depósito é consumido como dropdown no cadastro de funcionário (RH) e
+                // no cadastro de unidade de equipamento (GERENTE_OPERACOES/ADMIN) — os
+                // mesmos três perfis, então não precisa de regra de leitura à parte.
                 .requestMatchers("/api/cargos/**").hasAnyRole("ADMIN", "RH", "GERENTE_OPERACOES")
                 .requestMatchers("/api/departamentos/**").hasAnyRole("ADMIN", "RH", "GERENTE_OPERACOES")
+                .requestMatchers("/api/depositos/**").hasAnyRole("ADMIN", "RH", "GERENTE_OPERACOES")
 
                 // ===================== ENDEREÇOS (escrita) =====================
                 .requestMatchers("/api/v1/enderecos/**", "/api/v1/endereco").authenticated()

@@ -4,6 +4,7 @@ import com.locaobra.dto.request.FuncionarioRequest;
 import com.locaobra.dto.response.FuncionarioResponse;
 import com.locaobra.entity.Cargo;
 import com.locaobra.entity.DepartamentoEntity;
+import com.locaobra.entity.Deposito;
 import com.locaobra.entity.Funcionario;
 import com.locaobra.entity.Usuario;
 import com.locaobra.enums.TipoUsuario;
@@ -11,6 +12,7 @@ import com.locaobra.exception.BusinessException;
 import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.repository.CargoRepository;
 import com.locaobra.repository.DepartamentoRepository;
+import com.locaobra.repository.DepositoRepository;
 import com.locaobra.repository.FuncionarioRepository;
 import com.locaobra.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,17 +34,20 @@ public class FuncionarioService {
     private final PasswordEncoder passwordEncoder;
     private final CargoRepository cargoRepository;
     private final DepartamentoRepository departamentoRepository;
+    private final DepositoRepository depositoRepository;
 
     public FuncionarioService(FuncionarioRepository funcionarioRepository,
                               UsuarioRepository usuarioRepository,
                               PasswordEncoder passwordEncoder,
                               CargoRepository cargoRepository,
-                              DepartamentoRepository departamentoRepository) {
+                              DepartamentoRepository departamentoRepository,
+                              DepositoRepository depositoRepository) {
         this.funcionarioRepository = funcionarioRepository;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.cargoRepository = cargoRepository;
         this.departamentoRepository = departamentoRepository;
+        this.depositoRepository = depositoRepository;
     }
 
     @Transactional
@@ -207,6 +212,17 @@ public class FuncionarioService {
         }
         if (request.getDataDemissao() != null && !request.getDataDemissao().isBlank()) {
             funcionario.setDataDemissao(parseData(request.getDataDemissao(), false));
+        }
+        if (request.getDepositoId() != null) {
+            // 0 = "Sem depósito" (desvincula explicitamente); >0 = resolve e vincula.
+            // Opcional: nem todo cargo trabalha num depósito físico.
+            if (request.getDepositoId() == 0L) {
+                funcionario.setDeposito(null);
+            } else {
+                Deposito deposito = depositoRepository.findById(request.getDepositoId())
+                        .orElseThrow(() -> new BusinessException("Depósito não encontrado: " + request.getDepositoId()));
+                funcionario.setDeposito(deposito);
+            }
         }
     }
     private FuncionarioResponse toResponse(Funcionario funcionario) {

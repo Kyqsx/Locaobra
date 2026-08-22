@@ -16,6 +16,13 @@ public class UnidadeEquipamento {
     @JoinColumn(name = "equipamento_id", nullable = false)
     private Equipamento equipamento;
 
+    // Onde essa unidade física está guardada — vínculo é sempre com a
+    // unidade (patrimônio), nunca com o modelo de Equipamento. Nullable:
+    // unidade pode não ter sido alocada a um depósito ainda.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deposito_id")
+    private Deposito deposito;
+
     @Column(name = "codigo_patrimonio", unique = true, length = 100)
     private String codigoPatrimonio;
 
@@ -64,6 +71,14 @@ public class UnidadeEquipamento {
 
     public void setEquipamento(Equipamento equipamento) {
         this.equipamento = equipamento;
+    }
+
+    public Deposito getDeposito() {
+        return deposito;
+    }
+
+    public void setDeposito(Deposito deposito) {
+        this.deposito = deposito;
     }
 
     public String getCodigoPatrimonio() {

@@ -28,4 +28,10 @@ public interface UnidadeEquipamentoRepository extends JpaRepository<UnidadeEquip
     boolean existsByNumeroDeSerie(String numeroDeSerie);
 
     void deleteByEquipamentoId(Long equipamentoId);
+
+    List<UnidadeEquipamento> findByDepositoId(Long depositoId);
+
+    boolean existsByDepositoId(Long depositoId);
+
+    long countByDepositoId(Long depositoId);
 }

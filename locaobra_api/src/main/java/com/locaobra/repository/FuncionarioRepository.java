@@ -21,4 +21,10 @@ public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> 
     List<Funcionario> findByStatusTrue();
 
     List<Funcionario> findByNomeContainingIgnoreCase(String nome);
+
+    List<Funcionario> findByDepositoId(Long depositoId);
+
+    boolean existsByDepositoId(Long depositoId);
+
+    long countByDepositoId(Long depositoId);
 }

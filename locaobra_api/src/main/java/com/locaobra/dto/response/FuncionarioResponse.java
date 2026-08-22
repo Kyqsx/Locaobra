@@ -17,6 +17,8 @@ public class FuncionarioResponse {
     private String cargoNome;
     private Long departamentoId;
     private String departamentoNome;
+    private Long depositoId;
+    private String depositoNome;
     private Double salario;
     private LocalDateTime dataAdmissao;
     private LocalDateTime dataDemissao;
@@ -38,6 +40,10 @@ public class FuncionarioResponse {
             r.departamentoId = f.getDepartamento().getId();
             r.departamentoNome = f.getDepartamento().getNome();
         }
+        if (f.getDeposito() != null) {
+            r.depositoId = f.getDeposito().getId();
+            r.depositoNome = f.getDeposito().getNome();
+        }
         r.salario = f.getSalario();
         r.dataAdmissao = f.getDataAdmissao();
         r.dataDemissao = f.getDataDemissao();
@@ -57,6 +63,8 @@ public class FuncionarioResponse {
     public String getCargoNome() { return cargoNome; }
     public Long getDepartamentoId() { return departamentoId; }
     public String getDepartamentoNome() { return departamentoNome; }
+    public Long getDepositoId() { return depositoId; }
+    public String getDepositoNome() { return depositoNome; }
     public Double getSalario() { return salario; }
     public LocalDateTime getDataAdmissao() { return dataAdmissao; }
     public LocalDateTime getDataDemissao() { return dataDemissao; }

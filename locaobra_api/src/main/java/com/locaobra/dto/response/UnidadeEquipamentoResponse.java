@@ -17,6 +17,8 @@ public class UnidadeEquipamentoResponse {
     private Double horimetroAtual;
     private Double horimetroLimiteManutencao;
     private boolean alertaManutencaoPreventiva;
+    private Long depositoId;
+    private String depositoNome;
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
 
@@ -32,6 +34,10 @@ public class UnidadeEquipamentoResponse {
         r.alertaManutencaoPreventiva = u.getHorimetroAtual() != null
                 && u.getHorimetroLimiteManutencao() != null
                 && u.getHorimetroAtual() >= u.getHorimetroLimiteManutencao();
+        if (u.getDeposito() != null) {
+            r.depositoId = u.getDeposito().getId();
+            r.depositoNome = u.getDeposito().getNome();
+        }
         r.criadoEm = u.getCriadoEm();
         r.atualizadoEm = u.getAtualizadoEm();
         return r;
@@ -45,6 +51,8 @@ public class UnidadeEquipamentoResponse {
     public Double getHorimetroAtual() { return horimetroAtual; }
     public Double getHorimetroLimiteManutencao() { return horimetroLimiteManutencao; }
     public boolean isAlertaManutencaoPreventiva() { return alertaManutencaoPreventiva; }
+    public Long getDepositoId() { return depositoId; }
+    public String getDepositoNome() { return depositoNome; }
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
 }

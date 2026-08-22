@@ -9,6 +9,7 @@ public class UnidadeEquipamentoRequest {
     private StatusUnidade status;
     private Double horimetroAtual;
     private Double horimetroLimiteManutencao;
+    private Long depositoId;
 
     public String getCodigoPatrimonio() { return codigoPatrimonio; }
     public void setCodigoPatrimonio(String codigoPatrimonio) { this.codigoPatrimonio = codigoPatrimonio; }
@@ -24,4 +25,7 @@ public class UnidadeEquipamentoRequest {
 
     public Double getHorimetroLimiteManutencao() { return horimetroLimiteManutencao; }
     public void setHorimetroLimiteManutencao(Double horimetroLimiteManutencao) { this.horimetroLimiteManutencao = horimetroLimiteManutencao; }
+
+    public Long getDepositoId() { return depositoId; }
+    public void setDepositoId(Long depositoId) { this.depositoId = depositoId; }
 }

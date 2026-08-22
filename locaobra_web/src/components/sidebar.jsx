@@ -16,6 +16,7 @@ import {
   faArrowLeft,
   faBriefcase,
   faBuilding,
+  faWarehouse,
   faChevronDown,
   faChevronRight,
   faClipboardList,
@@ -48,6 +49,7 @@ const Sidebar = () => {
         { to: '/admin/funcionarios', icon: faUserTie, label: 'Funcionários' },
         { to: '/admin/cargos', icon: faBriefcase, label: 'Cargos' },
         { to: '/admin/departamentos', icon: faBuilding, label: 'Departamentos' },
+        { to: '/admin/depositos', icon: faWarehouse, label: 'Depósitos' },
       ],
     },
     {

@@ -16,7 +16,7 @@ function FormField({ label, children }) {
     );
 }
 
-function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting, cargos, departamentos }) {
+function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting, cargos, departamentos, depositos }) {
     if (!open) return null;
 
     return (
@@ -67,6 +67,14 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit,
                                     <option value="">Selecione o departamento</option>
                                     {departamentos.map(d => (
                                         <option key={d.id} value={d.id}>{d.nome}</option>
+                                    ))}
+                                </select>
+                            </FormField>
+                            <FormField label="Depósito">
+                                <select className="equipInput" name="depositoId" value={form.depositoId} onChange={onChange}>
+                                    <option value="">Sem depósito</option>
+                                    {depositos.map(dep => (
+                                        <option key={dep.id} value={dep.id}>{dep.nome}</option>
                                     ))}
                                 </select>
                             </FormField>
@@ -138,7 +146,8 @@ const initialForm = {
     dataAdmissao: '',
     dataDemissao: '',
     status: true,
-    senha: ''
+    senha: '',
+    depositoId: ''
 };
 export default function Funcionarios() {
     const { user } = useAuth();
@@ -146,6 +155,7 @@ export default function Funcionarios() {
     const [usuarios, setUsuarios] = useState([]);
     const [cargos, setCargos] = useState([]);
     const [departamentos, setDepartamentos] = useState([]);
+    const [depositos, setDepositos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [form, setForm] = useState(initialForm);
@@ -164,13 +174,15 @@ export default function Funcionarios() {
             api.get('/api/funcionarios'),
             api.get('/api/usuarios'),
             api.get('/api/cargos'),
-            api.get('/api/departamentos')
+            api.get('/api/departamentos'),
+            api.get('/api/depositos')
         ])
-            .then(([funcResp, userResp, cargosResp, deptResp]) => {
+            .then(([funcResp, userResp, cargosResp, deptResp, depResp]) => {
                 setFuncionarios(funcResp.data || []);
                 setUsuarios(userResp.data || []);
                 setCargos(cargosResp.data || []);
                 setDepartamentos(deptResp.data || []);
+                setDepositos(depResp.data || []);
             })
             .catch(err => {
                 console.error(err);
@@ -242,7 +254,8 @@ export default function Funcionarios() {
             dataAdmissao: funcionario.dataAdmissao ? funcionario.dataAdmissao.slice(0, 10) : '',
             dataDemissao: funcionario.dataDemissao ? funcionario.dataDemissao.slice(0, 10) : '',
             status: funcionario.status ?? true,
-            senha: ''
+            senha: '',
+            depositoId: funcionario.depositoId || ''
         });
     }
 function handleSubmit(e) {
@@ -255,6 +268,7 @@ function handleSubmit(e) {
             status: Boolean(form.status),
             cargoId: form.cargoId ? Number(form.cargoId) : null,
             departamentoId: form.departamentoId ? Number(form.departamentoId) : null,
+            depositoId: form.depositoId ? Number(form.depositoId) : 0,
             salario: form.salario ? form.salario.toString() : '',
         };
 
@@ -340,6 +354,7 @@ return (
                                 <th>CPF</th>
                                 <th>Cargo</th>
                                 <th>Departamento</th>
+                                <th>Depósito</th>
                                 <th>Usuario</th>
                                 <th>Status</th>
                                 <th>Acoes</th>
@@ -362,6 +377,7 @@ return (
                                         <td>{funcionario.cpf || '---'}</td>
                                         <td>{funcionario.cargoNome || '---'}</td>
                                         <td>{funcionario.departamentoNome || '---'}</td>
+                                        <td>{funcionario.depositoNome || '---'}</td>
                                         <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vinculo'}</td>
                                         <td>{funcionario.status ? 'Ativo' : 'Inativo'}</td>
                                         <td className="actionsCell">
@@ -391,6 +407,7 @@ return (
                 submitting={submitting}
                 cargos={cargos}
                 departamentos={departamentos}
+                depositos={depositos}
             />
         </div>
     );
