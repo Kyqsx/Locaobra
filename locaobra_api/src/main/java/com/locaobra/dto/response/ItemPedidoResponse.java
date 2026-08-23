@@ -10,6 +10,8 @@ public class ItemPedidoResponse {
     private Long equipamentoId;
     private String equipamentoNome;
     private String equipamentoCategoria;
+    private Long depositoId;
+    private String depositoNome;
     private Integer quantidade;
     private BigDecimal valorDiariaSnapshot;
     private String observacaoItem;
@@ -20,6 +22,8 @@ public class ItemPedidoResponse {
         r.equipamentoId = item.getEquipamento() != null ? item.getEquipamento().getId() : null;
         r.equipamentoNome = item.getEquipamento() != null ? item.getEquipamento().getNome() : null;
         r.equipamentoCategoria = item.getEquipamento() != null ? item.getEquipamento().getCategoria() : null;
+        r.depositoId = item.getDeposito() != null ? item.getDeposito().getId() : null;
+        r.depositoNome = item.getDeposito() != null ? item.getDeposito().getNome() : null;
         r.quantidade = item.getQuantidade();
         r.valorDiariaSnapshot = item.getValorDiariaSnapshot();
         r.observacaoItem = item.getObservacaoItem();
@@ -30,6 +34,8 @@ public class ItemPedidoResponse {
     public Long getEquipamentoId() { return equipamentoId; }
     public String getEquipamentoNome() { return equipamentoNome; }
     public String getEquipamentoCategoria() { return equipamentoCategoria; }
+    public Long getDepositoId() { return depositoId; }
+    public String getDepositoNome() { return depositoNome; }
     public Integer getQuantidade() { return quantidade; }
     public BigDecimal getValorDiariaSnapshot() { return valorDiariaSnapshot; }
     public String getObservacaoItem() { return observacaoItem; }

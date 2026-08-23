@@ -299,7 +299,7 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
 /* ============================================================
    MODAL DE CRIAÇÃO DE EXPEDIÇÃO
    ============================================================ */
-function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
+function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId }) {
     const [clientes, setClientes] = useState([]);
     const [motoristas, setMotoristas] = useState([]);
     const [equipamentos, setEquipamentos] = useState([]);
@@ -325,6 +325,12 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
 
     const ehColeta = form.tipo === 'COLETA';
     const entregaSelecionada = entregasParaColeta.find(e => String(e.id) === String(form.entregaOrigemId));
+    // Quando o pedido foi desmembrado em mais de um depósito, essa expedição
+    // cobre só os itens do depósito escolhido (ver Admin/pedidos.jsx, fila
+    // do conferente) — o resto vira outra expedição depois.
+    const itensDoDeposito = pedidoOrigem
+        ? (pedidoOrigem.itens || []).filter(i => !depositoOrigemId || i.depositoId === depositoOrigemId)
+        : [];
 
     useEffect(() => {
         Promise.all([
@@ -381,6 +387,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
         return equipamentos.flatMap(eq =>
             (eq.unidades || [])
                 .filter(u => u.status === 'DISPONIVEL')
+                .filter(u => !pedidoOrigem || !depositoOrigemId || u.depositoId === depositoOrigemId)
                 .map(u => ({ ...u, equipamentoNome: eq.nome }))
         );
     }
@@ -434,6 +441,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
             motoristaId: form.motoristaId ? parseInt(form.motoristaId, 10) : null,
             entregaOrigemId: ehColeta && form.entregaOrigemId ? parseInt(form.entregaOrigemId, 10) : null,
             pedidoId: pedidoOrigem ? pedidoOrigem.id : null,
+            depositoId: pedidoOrigem ? depositoOrigemId : null,
             placaVeiculo: form.placaVeiculo,
             dataProgramada: form.dataProgramada,
             horarioProgramado: form.horarioProgramado,
@@ -483,7 +491,12 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
                 {pedidoOrigem && (
                     <div className="specsContainer" style={{ marginBottom: '16px' }}>
                         <div className="specsHeader">
-                            <label><FontAwesomeIcon icon={faClipboardCheck} /> Itens aprovados neste pedido (selecione as unidades correspondentes abaixo)</label>
+                            <label>
+                                <FontAwesomeIcon icon={faClipboardCheck} /> Itens aprovados neste pedido
+                                {depositoOrigemId && itensDoDeposito.length !== (pedidoOrigem.itens || []).length
+                                    ? ' — mostrando só os deste depósito (o restante vira outra expedição)'
+                                    : ''} (selecione as unidades correspondentes abaixo)
+                            </label>
                         </div>
                         <div className="tableWrapper">
                             <table className="usersTable">
@@ -495,7 +508,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {(pedidoOrigem.itens || []).map(item => (
+                                    {itensDoDeposito.map(item => (
                                         <tr key={item.id} className="tableRow">
                                             <td>{item.equipamentoNome}</td>
                                             <td>{item.quantidade}</td>
@@ -1373,6 +1386,7 @@ export default function Expedicao() {
     const [filtroTipo, setFiltroTipo] = useState('');
     const [showNova, setShowNova] = useState(false);
     const [pedidoOrigem, setPedidoOrigem] = useState(null);
+    const [depositoOrigemId, setDepositoOrigemId] = useState(null);
     const [carregandoPedidoOrigem, setCarregandoPedidoOrigem] = useState(false);
     const [detalheId, setDetalheId] = useState(null);
     const [message, setMessage] = useState(null);
@@ -1407,6 +1421,7 @@ export default function Expedicao() {
         const pedidoOrigemId = location.state?.pedidoOrigemId;
         if (!pedidoOrigemId) return;
         setCarregandoPedidoOrigem(true);
+        setDepositoOrigemId(location.state?.depositoOrigemId || null);
         api.get(`/api/pedidos/${pedidoOrigemId}`)
             .then(res => {
                 setPedidoOrigem(res.data);
@@ -1597,7 +1612,8 @@ export default function Expedicao() {
             {showNova && (
                 <NovaExpedicaoModal
                     pedidoOrigem={pedidoOrigem}
-                    onClose={() => { setShowNova(false); setPedidoOrigem(null); }}
+                    depositoOrigemId={depositoOrigemId}
+                    onClose={() => { setShowNova(false); setPedidoOrigem(null); setDepositoOrigemId(null); }}
                     onChanged={() => fetchList()}
                 />
             )}

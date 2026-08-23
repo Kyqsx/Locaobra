@@ -11,6 +11,8 @@ public interface ItemPedidoRepository extends JpaRepository<ItemPedido, Long> {
 
     List<ItemPedido> findByPedidoId(Long pedidoId);
 
+    List<ItemPedido> findByPedidoIdAndDepositoId(Long pedidoId, Long depositoId);
+
     List<ItemPedido> findByEquipamentoId(Long equipamentoId);
 
     void deleteByPedidoId(Long pedidoId);

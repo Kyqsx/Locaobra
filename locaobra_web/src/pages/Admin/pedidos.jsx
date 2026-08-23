@@ -45,7 +45,10 @@ function PedidoCard({ pedido, children }) {
         <div className="pedido-itens">
           {pedido.itens.map((item) => (
             <div key={item.id} className="pedido-item">
-              <span>{item.equipamentoNome} × {item.quantidade}</span>
+              <span>
+                {item.equipamentoNome} × {item.quantidade}
+                {item.depositoNome && <span className="pedido-item-deposito"> · {item.depositoNome}</span>}
+              </span>
               <span>R$ {Number(item.valorDiariaSnapshot).toFixed(2)}/dia</span>
             </div>
           ))}
@@ -98,6 +101,162 @@ function MotivoModal({ titulo, onConfirm, onClose, enviando }) {
   );
 }
 
+// Modal de confirmação do consultor: mostra de qual depósito (ou depósitos)
+// o sistema sugere atender o pedido, com um dropdown por item pra ajustar
+// manualmente antes de confirmar. Quando os itens estão espalhados em mais
+// de um depósito, o pedido vai gerar uma expedição por depósito depois
+// (fila do conferente).
+function AlocacaoDepositoModal({ pedido, onClose, onConfirmed }) {
+  const [sugestao, setSugestao] = useState(null);
+  const [depositos, setDepositos] = useState([]);
+  const [alocacoes, setAlocacoes] = useState({}); // itemPedidoId -> depositoId
+  const [observacoes, setObservacoes] = useState('');
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    setCarregando(true);
+    setErro(null);
+    Promise.all([
+      api.get(`/api/pedidos/${pedido.id}/sugestao-depositos`),
+      api.get('/api/depositos'),
+    ])
+      .then(([sugestaoRes, depositosRes]) => {
+        setSugestao(sugestaoRes.data);
+        setDepositos(depositosRes.data.filter((d) => d.ativo !== false));
+
+        const inicial = {};
+        (sugestaoRes.data.grupos || []).forEach((grupo) => {
+          grupo.itens.forEach((item) => {
+            inicial[item.itemPedidoId] = grupo.depositoId;
+          });
+        });
+        (sugestaoRes.data.itensNaoAtendidos || []).forEach((item) => {
+          if (item.depositoComMaisDisponibilidadeId) {
+            inicial[item.itemPedidoId] = item.depositoComMaisDisponibilidadeId;
+          }
+        });
+        setAlocacoes(inicial);
+      })
+      .catch(() => setErro('Não foi possível calcular a sugestão de depósito.'))
+      .finally(() => setCarregando(false));
+  }, [pedido.id]);
+
+  const handleAlocacaoChange = (itemPedidoId, depositoId) => {
+    setAlocacoes((prev) => ({ ...prev, [itemPedidoId]: Number(depositoId) }));
+  };
+
+  const totalItens = pedido.itens.length;
+  const itensAlocados = Object.values(alocacoes).filter(Boolean).length;
+  const podeConfirmar = itensAlocados === totalItens && !enviando;
+
+  const depositosEnvolvidos = new Set(Object.values(alocacoes).filter(Boolean)).size;
+
+  const handleConfirmar = async () => {
+    setEnviando(true);
+    setErro(null);
+    try {
+      await api.patch(`/api/pedidos/${pedido.id}/confirmar`, {
+        observacoes: observacoes.trim() || null,
+        alocacoes: Object.entries(alocacoes).map(([itemPedidoId, depositoId]) => ({
+          itemPedidoId: Number(itemPedidoId),
+          depositoId,
+        })),
+      });
+      onConfirmed();
+    } catch (err) {
+      setErro(err?.response?.data?.message || 'Não foi possível confirmar o pedido.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="checkoutBackdrop" onClick={onClose}>
+      <div className="checkoutModalCard alocacaoModalCard" onClick={(e) => e.stopPropagation()}>
+        <div className="checkoutModalHeader">
+          <h3>Confirmar {pedido.codigo}</h3>
+          <button type="button" className="checkoutCloseBtn" onClick={onClose}>✕</button>
+        </div>
+
+        {carregando ? (
+          <div className="loading-container">Calculando a melhor forma de atender esse pedido...</div>
+        ) : (
+          <>
+            {sugestao?.atendeUmDeposito && (
+              <div className="alocacaoAviso alocacaoAvisoOk">
+                ✓ O depósito <strong>{sugestao.depositoUnicoNome}</strong> tem tudo que esse pedido precisa.
+              </div>
+            )}
+            {sugestao && !sugestao.atendeUmDeposito && depositosEnvolvidos > 1 && (
+              <div className="alocacaoAviso alocacaoAvisoSplit">
+                ⚠ Nenhum depósito sozinho atende o pedido inteiro. Sugerimos dividir entre{' '}
+                <strong>{depositosEnvolvidos} depósitos</strong> — o sistema vai gerar uma expedição
+                separada pra cada um.
+              </div>
+            )}
+            {sugestao?.itensNaoAtendidos?.length > 0 && (
+              <div className="alocacaoAviso alocacaoAvisoErro">
+                ⚠ {sugestao.itensNaoAtendidos.length === 1 ? 'Um item não tem' : `${sugestao.itensNaoAtendidos.length} itens não têm`} estoque
+                suficiente em nenhum depósito sozinho. Revise as quantidades abaixo ou recuse o pedido.
+              </div>
+            )}
+
+            {erro && <div className="checkoutErro">{erro}</div>}
+
+            <div className="alocacaoItensLista">
+              {pedido.itens.map((item) => {
+                const naoAtendido = sugestao?.itensNaoAtendidos?.find((n) => n.itemPedidoId === item.id);
+                return (
+                  <div key={item.id} className="alocacaoItemRow">
+                    <div className="alocacaoItemInfo">
+                      <span className="alocacaoItemNome">{item.equipamentoNome} × {item.quantidade}</span>
+                      {naoAtendido && (
+                        <span className="alocacaoItemAlerta">
+                          Máximo encontrado: {naoAtendido.maiorDisponibilidadeEncontrada}
+                          {naoAtendido.depositoComMaisDisponibilidadeNome ? ` em ${naoAtendido.depositoComMaisDisponibilidadeNome}` : ''}
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={alocacoes[item.id] || ''}
+                      onChange={(e) => handleAlocacaoChange(item.id, e.target.value)}
+                      className={naoAtendido ? 'alocacaoSelectAlerta' : ''}
+                    >
+                      <option value="">Selecione o depósito</option>
+                      {depositos.map((d) => (
+                        <option key={d.id} value={d.id}>{d.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="checkoutField">
+              <label>Observações (opcional)</label>
+              <textarea
+                rows={2}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                placeholder="Alguma observação interna sobre esse pedido?"
+              />
+            </div>
+
+            <div className="checkoutModalActions">
+              <button type="button" className="btnSecondary" onClick={onClose} disabled={enviando}>Cancelar</button>
+              <button type="button" className="btnPrimary" disabled={!podeConfirmar} onClick={handleConfirmar}>
+                {enviando ? 'Confirmando...' : 'Confirmar e enviar p/ crédito'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AdminPedidos() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -120,6 +279,7 @@ function AdminPedidos() {
   const [error, setError] = useState(null);
   const [processandoId, setProcessandoId] = useState(null);
   const [modalRecusa, setModalRecusa] = useState(null); // { pedidoId, tipo: 'recusar' | 'reprovar' }
+  const [modalAlocacao, setModalAlocacao] = useState(null); // pedido sendo confirmado
 
   const ENDPOINT_POR_ABA = {
     consultor: '/api/pedidos/fila-consultor',
@@ -141,18 +301,6 @@ function AdminPedidos() {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aba]);
-
-  const handleConfirmar = async (id) => {
-    setProcessandoId(id);
-    try {
-      await api.patch(`/api/pedidos/${id}/confirmar`, {});
-      carregar();
-    } catch (err) {
-      alert(err?.response?.data?.message || 'Não foi possível confirmar o pedido.');
-    } finally {
-      setProcessandoId(null);
-    }
-  };
 
   const handleAprovarCredito = async (id) => {
     setProcessandoId(id);
@@ -182,9 +330,13 @@ function AdminPedidos() {
   };
 
   // Leva o conferente pra tela de Expedição já com o modal de "Nova
-  // Expedição" aberto e pré-preenchido a partir deste pedido.
-  const handleGerarExpedicao = (pedido) => {
-    navigate('/admin/expedicao', { state: { pedidoOrigemId: pedido.id } });
+  // Expedição" aberto e pré-preenchido a partir deste pedido+depósito. Um
+  // pedido desmembrado gera uma expedição por grupo — cada botão abaixo
+  // cobre só os itens daquele depósito.
+  const handleGerarExpedicao = (pedido, grupo) => {
+    navigate('/admin/expedicao', {
+      state: { pedidoOrigemId: pedido.id, depositoOrigemId: grupo.depositoId },
+    });
   };
 
   return (
@@ -232,9 +384,9 @@ function AdminPedidos() {
                   <button
                     className="btnPrimary"
                     disabled={processandoId === pedido.id}
-                    onClick={() => handleConfirmar(pedido.id)}
+                    onClick={() => setModalAlocacao(pedido)}
                   >
-                    {processandoId === pedido.id ? 'Confirmando...' : 'Confirmar e enviar p/ crédito'}
+                    Revisar e confirmar
                   </button>
                 </>
               )}
@@ -257,12 +409,18 @@ function AdminPedidos() {
                 </>
               )}
               {aba === 'conferente' && (
-                <button
-                  className="btnPrimary"
-                  onClick={() => handleGerarExpedicao(pedido)}
-                >
-                  Gerar expedição
-                </button>
+                <div className="gruposPendentesWrapper">
+                  {(pedido.gruposPendentes || []).map((grupo) => (
+                    <div key={grupo.depositoId} className="grupoPendenteRow">
+                      <span className="grupoPendenteInfo">
+                        <strong>{grupo.depositoNome}</strong>: {grupo.itens.map((i) => `${i.equipamentoNome} ×${i.quantidade}`).join(', ')}
+                      </span>
+                      <button className="btnPrimary" onClick={() => handleGerarExpedicao(pedido, grupo)}>
+                        Gerar expedição
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </PedidoCard>
           ))}
@@ -275,6 +433,17 @@ function AdminPedidos() {
           onConfirm={handleConfirmarRecusa}
           onClose={() => setModalRecusa(null)}
           enviando={processandoId === modalRecusa.pedidoId}
+        />
+      )}
+
+      {modalAlocacao && (
+        <AlocacaoDepositoModal
+          pedido={modalAlocacao}
+          onClose={() => setModalAlocacao(null)}
+          onConfirmed={() => {
+            setModalAlocacao(null);
+            carregar();
+          }}
         />
       )}
     </div>

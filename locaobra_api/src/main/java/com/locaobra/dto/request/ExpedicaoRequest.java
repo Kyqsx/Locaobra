@@ -16,6 +16,10 @@ public class ExpedicaoRequest {
     // service usa esse id pra herdar cliente/endereço do pedido quando não
     // vierem explícitos no request, e pra vincular a expedição a ele.
     private Long pedidoId;
+    // Obrigatório quando pedidoId vier preenchido: qual depósito está
+    // atendendo essa expedição. Precisa bater com o depósito atribuído aos
+    // itens do pedido (ver PedidoService.confirmar / sugerirAlocacaoDepositos).
+    private Long depositoId;
     // Obrigatório quando tipo = COLETA: id da expedição de ENTREGA (CONCLUIDO)
     // que está sendo buscada. Cliente, endereço e itens são copiados dela
     // automaticamente pelo service — não precisa (e não deve) mandar itens
@@ -42,6 +46,9 @@ public class ExpedicaoRequest {
 
     public Long getPedidoId() { return pedidoId; }
     public void setPedidoId(Long pedidoId) { this.pedidoId = pedidoId; }
+
+    public Long getDepositoId() { return depositoId; }
+    public void setDepositoId(Long depositoId) { this.depositoId = depositoId; }
 
     public Long getEntregaOrigemId() { return entregaOrigemId; }
     public void setEntregaOrigemId(Long entregaOrigemId) { this.entregaOrigemId = entregaOrigemId; }

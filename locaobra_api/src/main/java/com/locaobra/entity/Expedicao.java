@@ -42,15 +42,23 @@ public class Expedicao {
     @JoinColumn(name = "entrega_origem_id")
     private Expedicao entregaOrigem;
 
-    // Preenchido quando essa expedição (ENTREGA) foi gerada pelo Conferente a
-    // partir de um Pedido já APROVADO (fila-conferente). Um pedido só pode ter
-    // uma expedição ativa (não CANCELADO) vinculada por vez — ver validação em
-    // ExpedicaoService.criar(). Fica null para expedições avulsas (criadas sem
-    // passar pelo fluxo de orçamento) e para COLETA (que deriva da ENTREGA, não
-    // do pedido diretamente).
+    // Pedido que originou essa expedição, quando gerada pelo Conferente a
+    // partir de um pedido já APROVADO (fila-conferente). Um pedido pode gerar
+    // MAIS DE UMA expedição quando os itens estão espalhados em depósitos
+    // diferentes — nesse caso cada expedição cobre um subconjunto dos itens
+    // (ver depositoOrigem abaixo e ExpedicaoService.criar()). Fica null para
+    // expedições avulsas e para COLETA (que deriva da ENTREGA, não do pedido).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pedido_id")
     private Pedido pedido;
+
+    // Depósito de onde os itens dessa expedição estão saindo — só é
+    // preenchido quando a expedição vem de um pedido (pedido != null). É o
+    // que garante que duas expedições do mesmo pedido nunca competem pelos
+    // mesmos itens: cada uma cobre exatamente um depósito.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deposito_origem_id")
+    private Deposito depositoOrigem;
 
     // Pessoas autorizadas a receber o equipamento nessa entrega (até 3).
     // Definidas na criação da expedição; o Termo de Vistoria só EXIBE esses
@@ -147,6 +155,9 @@ public class Expedicao {
 
     public Pedido getPedido() { return pedido; }
     public void setPedido(Pedido pedido) { this.pedido = pedido; }
+
+    public Deposito getDepositoOrigem() { return depositoOrigem; }
+    public void setDepositoOrigem(Deposito depositoOrigem) { this.depositoOrigem = depositoOrigem; }
 
     public String getNomeAutorizado1() { return nomeAutorizado1; }
     public void setNomeAutorizado1(String nomeAutorizado1) { this.nomeAutorizado1 = nomeAutorizado1; }

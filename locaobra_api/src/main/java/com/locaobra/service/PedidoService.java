@@ -1,11 +1,17 @@
 package com.locaobra.service;
 
+import com.locaobra.dto.request.AlocacaoItemRequest;
+import com.locaobra.dto.request.ConfirmarPedidoRequest;
 import com.locaobra.dto.request.ItemPedidoRequest;
 import com.locaobra.dto.request.PedidoDecisaoRequest;
 import com.locaobra.dto.request.PedidoRequest;
+import com.locaobra.dto.response.ItemPedidoResponse;
 import com.locaobra.dto.response.PedidoResponse;
+import com.locaobra.dto.response.SugestaoAlocacaoResponse;
 import com.locaobra.entity.*;
+import com.locaobra.enums.StatusExpedicao;
 import com.locaobra.enums.StatusPedido;
+import com.locaobra.enums.StatusUnidade;
 import com.locaobra.exception.BusinessException;
 import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.repository.*;
@@ -18,7 +24,13 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +42,9 @@ public class PedidoService {
     private final EquipamentoRepository equipamentoRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final DepositoRepository depositoRepository;
+    private final UnidadeEquipamentoRepository unidadeRepository;
+    private final ExpedicaoRepository expedicaoRepository;
 
     public PedidoService(
             PedidoRepository pedidoRepository,
@@ -37,13 +52,19 @@ public class PedidoService {
             ClienteRepository clienteRepository,
             EquipamentoRepository equipamentoRepository,
             FuncionarioRepository funcionarioRepository,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            DepositoRepository depositoRepository,
+            UnidadeEquipamentoRepository unidadeRepository,
+            ExpedicaoRepository expedicaoRepository) {
         this.pedidoRepository = pedidoRepository;
         this.itemRepository = itemRepository;
         this.clienteRepository = clienteRepository;
         this.equipamentoRepository = equipamentoRepository;
         this.funcionarioRepository = funcionarioRepository;
         this.usuarioRepository = usuarioRepository;
+        this.depositoRepository = depositoRepository;
+        this.unidadeRepository = unidadeRepository;
+        this.expedicaoRepository = expedicaoRepository;
     }
 
     // ======================================================================
@@ -144,13 +165,36 @@ public class PedidoService {
     }
 
     // Fila do conferente: pedidos com crédito aprovado, prontos pra virar
-    // expedição. Some da lista assim que uma expedição é gerada (ver
-    // PedidoRepository.findAprovadosSemExpedicaoAtiva).
+    // expedição. Cada pedido carrega os "grupos pendentes" (um por depósito
+    // que ainda não teve expedição gerada) — um pedido desmembrado em 2
+    // depósitos só some da fila quando os dois grupos forem atendidos.
+    // Se o funcionário logado tem um depósito fixo (Funcionario.deposito),
+    // só mostramos os grupos daquele depósito; sem depósito fixo (ex.: admin
+    // e gerente de operações), mostramos tudo.
     @Transactional(readOnly = true)
     public List<PedidoResponse> listarFilaConferente() {
-        return pedidoRepository.findAprovadosSemExpedicaoAtiva().stream()
-                .map(this::construirResponse)
-                .collect(Collectors.toList());
+        Long depositoDoFuncionario = depositoDoFuncionarioLogadoOuNull();
+
+        List<PedidoResponse> resultado = new ArrayList<>();
+        for (Pedido pedido : pedidoRepository.findByStatus(StatusPedido.APROVADO)) {
+            List<ItemPedido> itens = itemRepository.findByPedidoId(pedido.getId());
+            List<PedidoResponse.GrupoPendenteResponse> grupos = montarGruposPendentes(pedido, itens);
+
+            if (depositoDoFuncionario != null) {
+                grupos = grupos.stream()
+                        .filter(g -> depositoDoFuncionario.equals(g.getDepositoId()))
+                        .collect(Collectors.toList());
+            }
+
+            if (grupos.isEmpty()) {
+                continue; // nada pendente pra esse conferente — não aparece na fila
+            }
+
+            PedidoResponse response = PedidoResponse.from(pedido, itens);
+            response.setGruposPendentes(grupos);
+            resultado.add(response);
+        }
+        return resultado;
     }
 
     // "Meus pedidos" do cliente logado.
@@ -163,16 +207,178 @@ public class PedidoService {
     }
 
     // ======================================================================
+    // SUGESTÃO DE DEPÓSITO (usada pelo consultor antes de confirmar)
+    // ======================================================================
+
+    // Dado um pedido SOLICITADO, sugere de qual depósito cada item deve sair:
+    // 1) tenta achar UM depósito que atenda tudo sozinho;
+    // 2) se não achar, faz alocação gulosa item a item (cada item vai pro
+    //    depósito com mais disponibilidade daquele equipamento);
+    // 3) item que nenhum depósito sozinho atende cai em "itensNaoAtendidos",
+    //    pro consultor decidir manualmente (ou recusar o pedido).
+    @Transactional(readOnly = true)
+    public SugestaoAlocacaoResponse sugerirAlocacaoDepositos(Long pedidoId) {
+        Pedido pedido = buscarEntidade(pedidoId);
+        List<ItemPedido> itens = itemRepository.findByPedidoId(pedido.getId());
+        List<Deposito> depositosAtivos = depositoRepository.findByAtivoTrue();
+
+        SugestaoAlocacaoResponse resposta = new SugestaoAlocacaoResponse();
+        if (itens.isEmpty() || depositosAtivos.isEmpty()) {
+            return resposta;
+        }
+
+        // disponibilidade[depositoId][itemId] = quantas unidades disponíveis
+        Map<Long, Map<Long, Long>> disponibilidade = new HashMap<>();
+        for (Deposito deposito : depositosAtivos) {
+            Map<Long, Long> porItem = new HashMap<>();
+            for (ItemPedido item : itens) {
+                long qtd = unidadeRepository.countByEquipamentoIdAndStatusAndDepositoId(
+                        item.getEquipamento().getId(), StatusUnidade.DISPONIVEL, deposito.getId());
+                porItem.put(item.getId(), qtd);
+            }
+            disponibilidade.put(deposito.getId(), porItem);
+        }
+
+        // Passo 1: existe um depósito só que atende tudo?
+        Deposito depositoUnico = depositosAtivos.stream()
+                .filter(d -> itens.stream().allMatch(i -> disponibilidade.get(d.getId()).get(i.getId()) >= i.getQuantidade()))
+                .min(Comparator.comparing(Deposito::getNome))
+                .orElse(null);
+
+        if (depositoUnico != null) {
+            resposta.setAtendeUmDeposito(true);
+            resposta.setDepositoUnicoId(depositoUnico.getId());
+            resposta.setDepositoUnicoNome(depositoUnico.getNome());
+
+            SugestaoAlocacaoResponse.GrupoDeposito grupo = new SugestaoAlocacaoResponse.GrupoDeposito();
+            grupo.setDepositoId(depositoUnico.getId());
+            grupo.setDepositoNome(depositoUnico.getNome());
+            grupo.setItens(itens.stream().map(i -> paraItemAlocado(i, disponibilidade.get(depositoUnico.getId()).get(i.getId())))
+                    .collect(Collectors.toList()));
+            resposta.setGrupos(List.of(grupo));
+            return resposta;
+        }
+
+        // Passo 2: gulosamente, item a item, escolhe o depósito com mais
+        // disponibilidade (precisa ser >= quantidade pedida).
+        Map<Long, List<ItemPedido>> itensPorDeposito = new LinkedHashMap<>();
+        List<SugestaoAlocacaoResponse.ItemNaoAtendido> naoAtendidos = new ArrayList<>();
+
+        for (ItemPedido item : itens) {
+            Deposito melhor = null;
+            long melhorQtd = -1;
+            for (Deposito deposito : depositosAtivos) {
+                long qtd = disponibilidade.get(deposito.getId()).get(item.getId());
+                if (qtd >= item.getQuantidade() && qtd > melhorQtd) {
+                    melhor = deposito;
+                    melhorQtd = qtd;
+                }
+            }
+
+            if (melhor != null) {
+                itensPorDeposito.computeIfAbsent(melhor.getId(), k -> new ArrayList<>()).add(item);
+            } else {
+                // Nenhum depósito sozinho tem o suficiente — reporta o que
+                // chegou mais perto, pro consultor decidir.
+                Deposito maisProximo = depositosAtivos.stream()
+                        .max(Comparator.comparingLong(d -> disponibilidade.get(d.getId()).get(item.getId())))
+                        .orElse(null);
+                SugestaoAlocacaoResponse.ItemNaoAtendido naoAtendido = new SugestaoAlocacaoResponse.ItemNaoAtendido();
+                naoAtendido.setItemPedidoId(item.getId());
+                naoAtendido.setEquipamentoNome(item.getEquipamento().getNome());
+                naoAtendido.setQuantidade(item.getQuantidade());
+                if (maisProximo != null) {
+                    naoAtendido.setMaiorDisponibilidadeEncontrada(disponibilidade.get(maisProximo.getId()).get(item.getId()));
+                    naoAtendido.setDepositoComMaisDisponibilidadeId(maisProximo.getId());
+                    naoAtendido.setDepositoComMaisDisponibilidadeNome(maisProximo.getNome());
+                }
+                naoAtendidos.add(naoAtendido);
+            }
+        }
+
+        List<SugestaoAlocacaoResponse.GrupoDeposito> grupos = new ArrayList<>();
+        for (Map.Entry<Long, List<ItemPedido>> entry : itensPorDeposito.entrySet()) {
+            Deposito deposito = depositosAtivos.stream().filter(d -> d.getId().equals(entry.getKey())).findFirst().orElse(null);
+            if (deposito == null) continue;
+            SugestaoAlocacaoResponse.GrupoDeposito grupo = new SugestaoAlocacaoResponse.GrupoDeposito();
+            grupo.setDepositoId(deposito.getId());
+            grupo.setDepositoNome(deposito.getNome());
+            grupo.setItens(entry.getValue().stream()
+                    .map(i -> paraItemAlocado(i, disponibilidade.get(deposito.getId()).get(i.getId())))
+                    .collect(Collectors.toList()));
+            grupos.add(grupo);
+        }
+
+        resposta.setAtendeUmDeposito(false);
+        resposta.setGrupos(grupos);
+        resposta.setItensNaoAtendidos(naoAtendidos);
+        return resposta;
+    }
+
+    private SugestaoAlocacaoResponse.ItemAlocado paraItemAlocado(ItemPedido item, long disponivel) {
+        SugestaoAlocacaoResponse.ItemAlocado alocado = new SugestaoAlocacaoResponse.ItemAlocado();
+        alocado.setItemPedidoId(item.getId());
+        alocado.setEquipamentoId(item.getEquipamento().getId());
+        alocado.setEquipamentoNome(item.getEquipamento().getNome());
+        alocado.setQuantidade(item.getQuantidade());
+        alocado.setDisponivelNoDeposito(disponivel);
+        return alocado;
+    }
+
+    // ======================================================================
     // FLUXO DE DECISÃO
     // ======================================================================
 
-    // Consultor confirma o pedido como está e manda pra análise de crédito.
+    // Consultor confirma o pedido: precisa dizer de qual depósito cada item
+    // vai sair (normalmente aceitando a sugestão do sistema, ver
+    // sugerirAlocacaoDepositos). Revalida a disponibilidade real na hora —
+    // outro pedido pode ter consumido o estoque entre a sugestão e a
+    // confirmação — e grava o depósito escolhido em cada ItemPedido.
     @Transactional
-    public PedidoResponse confirmar(Long id, PedidoDecisaoRequest request) {
+    public PedidoResponse confirmar(Long id, ConfirmarPedidoRequest request) {
         Pedido pedido = buscarEntidade(id);
         if (pedido.getStatus() != StatusPedido.SOLICITADO) {
             throw new BusinessException("Só é possível confirmar pedidos com status SOLICITADO.");
         }
+
+        List<ItemPedido> itens = itemRepository.findByPedidoId(pedido.getId());
+        List<AlocacaoItemRequest> alocacoes = (request != null && request.getAlocacoes() != null)
+                ? request.getAlocacoes() : List.of();
+
+        if (alocacoes.size() != itens.size()) {
+            throw new BusinessException("Informe o depósito de todos os itens do pedido antes de confirmar.");
+        }
+
+        Map<Long, Long> depositoPorItem = new HashMap<>();
+        for (AlocacaoItemRequest a : alocacoes) {
+            if (a.getItemPedidoId() == null || a.getDepositoId() == null) {
+                throw new BusinessException("Alocação inválida: item e depósito são obrigatórios.");
+            }
+            depositoPorItem.put(a.getItemPedidoId(), a.getDepositoId());
+        }
+
+        Set<Long> idsDosItens = itens.stream().map(ItemPedido::getId).collect(Collectors.toSet());
+        if (!depositoPorItem.keySet().equals(idsDosItens)) {
+            throw new BusinessException("A lista de alocações não cobre exatamente os itens desse pedido.");
+        }
+
+        // Revalida disponibilidade em tempo real antes de gravar — a
+        // sugestão pode ter ficado desatualizada.
+        for (ItemPedido item : itens) {
+            Long depositoId = depositoPorItem.get(item.getId());
+            Deposito deposito = depositoRepository.findById(depositoId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Depósito não encontrado: " + depositoId));
+            long disponivel = unidadeRepository.countByEquipamentoIdAndStatusAndDepositoId(
+                    item.getEquipamento().getId(), StatusUnidade.DISPONIVEL, depositoId);
+            if (disponivel < item.getQuantidade()) {
+                throw new BusinessException("Depósito " + deposito.getNome() + " não tem mais "
+                        + item.getQuantidade() + " unidade(s) disponível(is) de " + item.getEquipamento().getNome()
+                        + " (tem " + disponivel + "). Escolha outro depósito pra esse item.");
+            }
+            item.setDeposito(deposito);
+            itemRepository.save(item);
+        }
+
         pedido.setConsultor(resolverFuncionarioLogado());
         pedido.setObservacoesConsultor(request != null ? request.getObservacoes() : null);
         pedido.setStatus(StatusPedido.CONFIRMADO);
@@ -297,5 +503,43 @@ public class PedidoService {
         }
         return funcionarioRepository.findById(usuario.getIdFuncionario())
                 .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado."));
+    }
+
+    // Depósito fixo do funcionário logado, se houver — usado pra filtrar a
+    // fila do conferente. Retorna null pra quem não está vinculado a um
+    // funcionário (ex.: login ADMIN) ou cujo funcionário não tem depósito
+    // fixo (ex.: GERENTE_OPERACOES, que enxerga tudo).
+    private Long depositoDoFuncionarioLogadoOuNull() {
+        try {
+            Funcionario funcionario = resolverFuncionarioLogado();
+            return funcionario.getDeposito() != null ? funcionario.getDeposito().getId() : null;
+        } catch (BusinessException e) {
+            return null;
+        }
+    }
+
+    // Agrupa os itens de um pedido APROVADO por depósito e descarta os
+    // grupos que já têm uma expedição ativa (não CANCELADO) gerada — o que
+    // sobra são os grupos ainda pendentes de expedição.
+    private List<PedidoResponse.GrupoPendenteResponse> montarGruposPendentes(Pedido pedido, List<ItemPedido> itens) {
+        Map<Long, List<ItemPedido>> porDeposito = new LinkedHashMap<>();
+        for (ItemPedido item : itens) {
+            if (item.getDeposito() == null) continue; // pedido ainda não confirmado direito — não deveria acontecer em APROVADO
+            porDeposito.computeIfAbsent(item.getDeposito().getId(), k -> new ArrayList<>()).add(item);
+        }
+
+        List<PedidoResponse.GrupoPendenteResponse> grupos = new ArrayList<>();
+        for (Map.Entry<Long, List<ItemPedido>> entry : porDeposito.entrySet()) {
+            boolean jaTemExpedicao = expedicaoRepository.existsByPedidoIdAndDepositoOrigemIdAndStatusNot(
+                    pedido.getId(), entry.getKey(), StatusExpedicao.CANCELADO);
+            if (jaTemExpedicao) continue;
+
+            String depositoNome = entry.getValue().get(0).getDeposito().getNome();
+            List<ItemPedidoResponse> itensResponse = entry.getValue().stream()
+                    .map(ItemPedidoResponse::from)
+                    .collect(Collectors.toList());
+            grupos.add(new PedidoResponse.GrupoPendenteResponse(entry.getKey(), depositoNome, itensResponse));
+        }
+        return grupos;
     }
 }

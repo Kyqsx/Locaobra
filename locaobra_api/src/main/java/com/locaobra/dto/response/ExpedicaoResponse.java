@@ -25,6 +25,8 @@ public class ExpedicaoResponse {
     private String entregaOrigemCodigo;
     private Long pedidoId;
     private String pedidoCodigo;
+    private Long depositoOrigemId;
+    private String depositoOrigemNome;
     private java.util.List<String> nomesAutorizados;
     private String placaVeiculo;
     private LocalDate dataProgramada;
@@ -55,6 +57,8 @@ public class ExpedicaoResponse {
         r.entregaOrigemCodigo = e.getEntregaOrigem() != null ? e.getEntregaOrigem().getCodigo() : null;
         r.pedidoId = e.getPedido() != null ? e.getPedido().getId() : null;
         r.pedidoCodigo = e.getPedido() != null ? e.getPedido().getCodigo() : null;
+        r.depositoOrigemId = e.getDepositoOrigem() != null ? e.getDepositoOrigem().getId() : null;
+        r.depositoOrigemNome = e.getDepositoOrigem() != null ? e.getDepositoOrigem().getNome() : null;
         r.nomesAutorizados = java.util.stream.Stream.of(e.getNomeAutorizado1(), e.getNomeAutorizado2(), e.getNomeAutorizado3())
                 .filter(n -> n != null && !n.isBlank())
                 .collect(java.util.stream.Collectors.toList());
@@ -102,6 +106,8 @@ public class ExpedicaoResponse {
     public String getEntregaOrigemCodigo() { return entregaOrigemCodigo; }
     public Long getPedidoId() { return pedidoId; }
     public String getPedidoCodigo() { return pedidoCodigo; }
+    public Long getDepositoOrigemId() { return depositoOrigemId; }
+    public String getDepositoOrigemNome() { return depositoOrigemNome; }
     public java.util.List<String> getNomesAutorizados() { return nomesAutorizados; }
     public String getPlacaVeiculo() { return placaVeiculo; }
     public LocalDate getDataProgramada() { return dataProgramada; }

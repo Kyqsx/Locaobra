@@ -23,6 +23,12 @@ public interface UnidadeEquipamentoRepository extends JpaRepository<UnidadeEquip
 
     long countByEquipamentoIdAndStatus(Long equipamentoId, StatusUnidade status);
 
+    // Quantas unidades disponíveis de um equipamento existem em um depósito
+    // específico — base do motor de sugestão de alocação (PedidoService).
+    long countByEquipamentoIdAndStatusAndDepositoId(Long equipamentoId, StatusUnidade status, Long depositoId);
+
+    List<UnidadeEquipamento> findByEquipamentoIdAndStatusAndDepositoId(Long equipamentoId, StatusUnidade status, Long depositoId);
+
     boolean existsByCodigoPatrimonio(String codigoPatrimonio);
 
     boolean existsByNumeroDeSerie(String numeroDeSerie);

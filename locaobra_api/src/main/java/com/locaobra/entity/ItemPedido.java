@@ -20,6 +20,13 @@ public class ItemPedido {
     @JoinColumn(name = "equipamento_id", nullable = false)
     private Equipamento equipamento;
 
+    // Depósito de onde essa unidade vai sair — decidido pelo consultor na
+    // hora de confirmar o pedido (com base na disponibilidade real de cada
+    // depósito). Nulo enquanto o pedido está SOLICITADO.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deposito_id")
+    private Deposito deposito;
+
     @Column(nullable = false)
     private Integer quantidade;
 
@@ -48,6 +55,9 @@ public class ItemPedido {
 
     public Equipamento getEquipamento() { return equipamento; }
     public void setEquipamento(Equipamento equipamento) { this.equipamento = equipamento; }
+
+    public Deposito getDeposito() { return deposito; }
+    public void setDeposito(Deposito deposito) { this.deposito = deposito; }
 
     public Integer getQuantidade() { return quantidade; }
     public void setQuantidade(Integer quantidade) { this.quantidade = quantidade; }

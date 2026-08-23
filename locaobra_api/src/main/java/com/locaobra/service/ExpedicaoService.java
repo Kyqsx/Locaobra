@@ -35,6 +35,8 @@ public class ExpedicaoService {
     private final EquipamentoRepository equipamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final PedidoRepository pedidoRepository;
+    private final ItemPedidoRepository itemPedidoRepository;
+    private final DepositoRepository depositoRepository;
 
     public ExpedicaoService(
             ExpedicaoRepository expedicaoRepository,
@@ -46,7 +48,9 @@ public class ExpedicaoService {
             UnidadeEquipamentoRepository unidadeRepository,
             EquipamentoRepository equipamentoRepository,
             UsuarioRepository usuarioRepository,
-            PedidoRepository pedidoRepository) {
+            PedidoRepository pedidoRepository,
+            ItemPedidoRepository itemPedidoRepository,
+            DepositoRepository depositoRepository) {
         this.expedicaoRepository = expedicaoRepository;
         this.itemRepository = itemRepository;
         this.vistoriaRepository = vistoriaRepository;
@@ -57,6 +61,8 @@ public class ExpedicaoService {
         this.equipamentoRepository = equipamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.pedidoRepository = pedidoRepository;
+        this.itemPedidoRepository = itemPedidoRepository;
+        this.depositoRepository = depositoRepository;
     }
 
     @Transactional
@@ -93,6 +99,7 @@ public class ExpedicaoService {
         // conferente): só faz sentido pra ENTREGA — COLETA é a etapa de volta,
         // que já deriva da própria expedição de entrega (entregaOrigem acima).
         Pedido pedido = null;
+        Deposito depositoOrigem = null;
         if (request.getPedidoId() != null) {
             if (request.getTipo() != TipoExpedicao.ENTREGA) {
                 throw new BusinessException("Expedição gerada a partir de um pedido só pode ser do tipo ENTREGA.");
@@ -102,8 +109,21 @@ public class ExpedicaoService {
             if (pedido.getStatus() != StatusPedido.APROVADO) {
                 throw new BusinessException("Só é possível gerar expedição a partir de um pedido com crédito APROVADO.");
             }
-            if (expedicaoRepository.existsByPedidoIdAndStatusNot(pedido.getId(), StatusExpedicao.CANCELADO)) {
-                throw new BusinessException("Esse pedido já tem uma expedição em andamento ou concluída.");
+            if (request.getDepositoId() == null) {
+                throw new BusinessException("Informe qual depósito está atendendo esse pedido.");
+            }
+            depositoOrigem = depositoRepository.findById(request.getDepositoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Depósito não encontrado: " + request.getDepositoId()));
+
+            List<ItemPedido> itensDoGrupo = itemPedidoRepository.findByPedidoIdAndDepositoId(pedido.getId(), depositoOrigem.getId());
+            if (itensDoGrupo.isEmpty()) {
+                throw new BusinessException("Esse pedido não tem itens atribuídos ao depósito informado.");
+            }
+            // Trava por (pedido, depósito), não por pedido inteiro — permite uma
+            // expedição por depósito quando o pedido foi desmembrado.
+            if (expedicaoRepository.existsByPedidoIdAndDepositoOrigemIdAndStatusNot(
+                    pedido.getId(), depositoOrigem.getId(), StatusExpedicao.CANCELADO)) {
+                throw new BusinessException("Esse pedido já tem uma expedição em andamento ou concluída pra esse depósito.");
             }
         }
 
@@ -117,6 +137,7 @@ public class ExpedicaoService {
         expedicao.setObservacoes(request.getObservacoes());
         expedicao.setEntregaOrigem(entregaOrigem);
         expedicao.setPedido(pedido);
+        expedicao.setDepositoOrigem(depositoOrigem);
 
         if (pedido != null) {
             // Cliente e endereço vêm do pedido por padrão; um override explícito
@@ -182,6 +203,19 @@ public class ExpedicaoService {
                 if (itemReq.getUnidadeId() != null) {
                     UnidadeEquipamento unidade = unidadeRepository.findById(itemReq.getUnidadeId())
                             .orElseThrow(() -> new ResourceNotFoundException("Unidade não encontrada: " + itemReq.getUnidadeId()));
+
+                    // Quando a expedição vem de um pedido, cada unidade escolhida
+                    // precisa realmente estar no depósito que essa expedição está
+                    // cobrindo — evita o conferente misturar unidade de outro
+                    // depósito por engano.
+                    if (depositoOrigem != null) {
+                        Long unidadeDepositoId = unidade.getDeposito() != null ? unidade.getDeposito().getId() : null;
+                        if (!depositoOrigem.getId().equals(unidadeDepositoId)) {
+                            throw new BusinessException("A unidade " + (unidade.getCodigoPatrimonio() != null ? unidade.getCodigoPatrimonio() : unidade.getId())
+                                    + " não pertence ao depósito " + depositoOrigem.getNome() + ".");
+                        }
+                    }
+
                     item.setUnidade(unidade);
                     item.setEquipamento(unidade.getEquipamento());
 

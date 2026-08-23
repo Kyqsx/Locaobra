@@ -1,8 +1,10 @@
 package com.locaobra.controller;
 
+import com.locaobra.dto.request.ConfirmarPedidoRequest;
 import com.locaobra.dto.request.PedidoDecisaoRequest;
 import com.locaobra.dto.request.PedidoRequest;
 import com.locaobra.dto.response.PedidoResponse;
+import com.locaobra.dto.response.SugestaoAlocacaoResponse;
 import com.locaobra.enums.StatusPedido;
 import com.locaobra.service.PedidoService;
 import jakarta.validation.Valid;
@@ -65,8 +67,15 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.buscarPorId(id));
     }
 
+    // Sugestão de depósito(s) pra atender esse pedido — o consultor usa isso
+    // antes de confirmar (ver front: modal de confirmação em Admin/pedidos.jsx).
+    @GetMapping("/{id}/sugestao-depositos")
+    public ResponseEntity<SugestaoAlocacaoResponse> sugerirAlocacaoDepositos(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.sugerirAlocacaoDepositos(id));
+    }
+
     @PatchMapping("/{id}/confirmar")
-    public ResponseEntity<PedidoResponse> confirmar(@PathVariable Long id, @RequestBody(required = false) PedidoDecisaoRequest request) {
+    public ResponseEntity<PedidoResponse> confirmar(@PathVariable Long id, @RequestBody ConfirmarPedidoRequest request) {
         return ResponseEntity.ok(pedidoService.confirmar(id, request));
     }
 
