@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom';
 import './components.css';
 import { useState } from 'react';
 import { useAuth } from '../utils/useAuth';
+import { useCart } from '../context/CartContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRightFromBracket, faUser, faShield, faNewspaper, faList, faClipboardList } from '@fortawesome/free-solid-svg-icons';
+import { faRightFromBracket, faUser, faShield, faNewspaper, faList, faClipboardList, faCartShopping } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/locaobraLogo.png';
 
 function Header() {
     const { user, logout } = useAuth();
+    const { totalItens } = useCart();
 
     const handleLogout = () => {
         logout();
@@ -43,6 +45,14 @@ function Header() {
 
                 </nav>
                 <nav>
+                    {/* ==================== CARRINHO ==================== */}
+                    {user?.tipo === 'CLIENTE' && (
+                        <Link to="/carrinho" className="abas carrinho-link" aria-label="Carrinho">
+                            <FontAwesomeIcon icon={faCartShopping} />
+                            {totalItens > 0 && <span className="carrinho-badge">{totalItens}</span>}
+                        </Link>
+                    )}
+
                     {/* ==================== PERFIL E LOGOUT ==================== */}
                     {user ? (
                         <div className="dropdown">

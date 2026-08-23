@@ -431,6 +431,22 @@
         background: var(--secondary-blue);
     }
 
+    .carrinho-confirmacao {
+        background: rgba(31, 157, 107, 0.1);
+        color: var(--success-green);
+        border: 1px solid rgba(31, 157, 107, 0.25);
+        border-radius: 5px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .carrinho-confirmacao a {
+        color: var(--success-green);
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
     /* Informações Adicionais */
     .additional-info {
         background: var(--gray-50);

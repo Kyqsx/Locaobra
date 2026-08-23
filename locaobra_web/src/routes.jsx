@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from './utils/useAuth';
+import { CartProvider } from './context/CartContext';
 import { canAccessAdminRoute, getDefaultAdminPath } from './utils/permissions';
 
 import Home from './pages/Home/index';
@@ -19,6 +20,7 @@ import AdminDepartamentos from './pages/Admin/Departamentos';
 import AdminDepositos from './pages/Admin/Depositos';
 import AdminPedidos from './pages/Admin/pedidos';
 import MeusPedidos from './pages/Pedidos/meusPedidos';
+import Carrinho from './pages/Cart/carrinho';
 
 import Header from "./components/header";
 import Sidebar from "./components/sidebar";
@@ -90,6 +92,7 @@ function ClienteRoute({ children }) {
 function RotasApp() {
     return (
         <AuthProvider>
+            <CartProvider>
             <BrowserRouter>
                 <Routes>
                     <Route path="/login" element={<Login />} />
@@ -103,6 +106,7 @@ function RotasApp() {
                             <Route path="/productview" element={<ProductView />} />
                             <Route path="/productview/:id" element={<ProductView />} />
                             <Route path="/meus-pedidos" element={<ClienteRoute><MeusPedidos /></ClienteRoute>} />
+                            <Route path="/carrinho" element={<ClienteRoute><Carrinho /></ClienteRoute>} />
                         </Route>
 
                         <Route path="/admin" element={
@@ -128,6 +132,7 @@ function RotasApp() {
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </BrowserRouter>
+            </CartProvider>
         </AuthProvider>
     );
 }
