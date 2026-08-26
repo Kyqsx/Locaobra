@@ -1,0 +1,20 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Configuração local com segredos reais — nunca commitar
+application-local.properties
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Sistema
+.DS_Store
+
+# Uploads locais (fallback em disco quando Supabase não está configurado)
+uploads/

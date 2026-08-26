@@ -1,0 +1,22 @@
+# ============================================================
+# Config local — COPIE este arquivo para "application-local.properties"
+# (sem o .example) e preencha com os MESMOS valores que estão no Render.
+# application-local.properties é ignorado pelo git, então é seguro colocar
+# segredos reais aqui.
+# ============================================================
+
+# String de conexão do Supabase (Session pooler) — copie do Render.
+# Formato: jdbc:postgresql://<host>:<porta>/postgres
+spring.datasource.url=jdbc:postgresql://SEU_HOST_AQUI:5432/postgres
+spring.datasource.username=postgres.SEU_PROJETO
+spring.datasource.password=SUA_SENHA_DO_BANCO
+
+# Mesmo segredo JWT usado no Render (ou outro qualquer, só pra dev local —
+# nesse caso os tokens gerados localmente não vão funcionar em produção e
+# vice-versa, o que é normal).
+app.jwt.secret=SEU_JWT_SECRET
+
+# Supabase Storage — mesmos valores do Render.
+supabase.apiUrl=https://gqzjzemumbhdnnuhqrvm.supabase.co
+supabase.service-key=SUA_SUPABASE_SECRET_KEY
+supabase.storage.bucket=uploads
