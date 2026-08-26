@@ -102,6 +102,7 @@ function RotasApp() {
                         
                         <Route element={<SiteLayout />}>
                             <Route path="/" element={<Home />} />
+                            <Route path="/catalogo" element={<Catalogo />} />
                             <Route path="/catalogo/:slug" element={<Catalogo />} />
                             <Route path="/productview" element={<ProductView />} />
                             <Route path="/productview/:id" element={<ProductView />} />

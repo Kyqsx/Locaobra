@@ -56,7 +56,7 @@ const Home = () => {
                 <div className="hero-content">
                     <h1>Equipamento certo,<br />na hora certa.</h1>
                     <p>Alugue o que você precisa para construir o que você imagina.</p>
-                    <button className="cta-button">Ver Catálogo Completo</button>
+                    <Link to="/catalogo" className="cta-button">Ver Catálogo Completo</Link>
                 </div>
             </section>
 

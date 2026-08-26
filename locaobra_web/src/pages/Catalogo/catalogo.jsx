@@ -11,7 +11,8 @@ function Catalogo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const nomeFormatado = slug ? slug.replace(/-/g, ' ') : "";
+  const isCatalogoCompleto = !slug;
+  const nomeFormatado = slug ? slug.replace(/-/g, ' ') : "Catálogo Completo";
 
   useEffect(() => {
     fetchEquipamentos();
@@ -30,12 +31,13 @@ function Catalogo() {
     // Faz a chamada para o seu endpoint de listagem
     api.get('/api/equipamentos')
       .then(response => {
-        // Filtra os equipamentos que pertencem à categoria atual (slug)
-        // Certifique-se de que no banco a categoria esteja salva em maiúsculas ou minúsculas conforme o slug
-        const filtrados = response.data.filter(eq =>
-          eq.categoria.toLowerCase() === slug.toLowerCase()
-        );
-        setEquipamentos(filtrados);
+        // Se houver categoria (slug) na URL, filtra; caso contrário, lista tudo
+        const lista = slug
+          ? response.data.filter(eq =>
+              eq.categoria.toLowerCase() === slug.toLowerCase()
+            )
+          : response.data;
+        setEquipamentos(lista);
       })
       .catch(err => {
         console.error(err);
@@ -99,7 +101,11 @@ function Catalogo() {
           ))
         ) : (
           <div className="vazio">
-            <p>Nenhum equipamento disponível em <strong>{nomeFormatado}</strong> no momento.</p>
+            {isCatalogoCompleto ? (
+              <p>Nenhum equipamento disponível no momento.</p>
+            ) : (
+              <p>Nenhum equipamento disponível em <strong>{nomeFormatado}</strong> no momento.</p>
+            )}
           </div>
         )}
       </div>
