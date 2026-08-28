@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
 import { useCart } from '../../context/CartContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faShoppingCart, faBox, faShield, faGear, faCreditCard, faInfo } from '@fortawesome/free-solid-svg-icons';
 import './ProductPage.css';
 
 const ProductPageLocaObra = () => {
@@ -137,24 +139,24 @@ const ProductPageLocaObra = () => {
             {/* Informações Adicionais */}
             <div className="additional-info">
               <div className="info-title">
-                <span className="info-icon">ℹ</span>
+                <span className="info-icon"><FontAwesomeIcon icon={faInfo} /></span>
                 Informações de Aluguel
               </div>
               <div className="info-list">
                 <div className="info-item">
-                  <span className="info-icon">📦</span>
+                  <span className="info-icon"><FontAwesomeIcon icon={faBox} /></span>
                   Entrega e retirada gratuitas em São Paulo
                 </div>
                 <div className="info-item">
-                  <span className="info-icon">🛡️</span>
+                  <span className="info-icon"><FontAwesomeIcon icon={faShield} /></span>
                   Produto com seguro incluído
                 </div>
                 <div className="info-item">
-                  <span className="info-icon">⚙️</span>
+                  <span className="info-icon"><FontAwesomeIcon icon={faGear} /></span>
                   Suporte técnico 24/7
                 </div>
                 <div className="info-item">
-                  <span className="info-icon">💳</span>
+                  <span className="info-icon"><FontAwesomeIcon icon={faCreditCard} /></span>
                   Pagamento seguro com parcelamento
                 </div>
               </div>
@@ -259,14 +261,14 @@ const ProductPageLocaObra = () => {
                 onClick={handleComprarAgora}
                 disabled={disponivel < 1}
               >
-                <span>🛒</span> {disponivel < 1 ? 'Indisponível no momento' : 'Comprar agora'}
+                <span><FontAwesomeIcon icon={faShoppingCart} /></span> {disponivel < 1 ? 'Indisponível no momento' : 'Comprar agora'}
               </button>
               <button
                 className="btn-secondary"
                 onClick={handleAdicionarAoCarrinho}
                 disabled={disponivel < 1}
               >
-                Adicionar ao carrinho
+                <span><FontAwesomeIcon icon={faPlus} /></span> Adicionar ao carrinho
               </button>
             </div>
           </div>

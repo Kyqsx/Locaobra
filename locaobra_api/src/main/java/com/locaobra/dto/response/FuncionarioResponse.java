@@ -19,6 +19,7 @@ public class FuncionarioResponse {
     private String departamentoNome;
     private Long depositoId;
     private String depositoNome;
+    private EnderecoResponse endereco;
     private Double salario;
     private LocalDateTime dataAdmissao;
     private LocalDateTime dataDemissao;
@@ -44,6 +45,7 @@ public class FuncionarioResponse {
             r.depositoId = f.getDeposito().getId();
             r.depositoNome = f.getDeposito().getNome();
         }
+        r.endereco = EnderecoResponse.from(f.getEndereco());
         r.salario = f.getSalario();
         r.dataAdmissao = f.getDataAdmissao();
         r.dataDemissao = f.getDataDemissao();
@@ -65,6 +67,7 @@ public class FuncionarioResponse {
     public String getDepartamentoNome() { return departamentoNome; }
     public Long getDepositoId() { return depositoId; }
     public String getDepositoNome() { return depositoNome; }
+    public EnderecoResponse getEndereco() { return endereco; }
     public Double getSalario() { return salario; }
     public LocalDateTime getDataAdmissao() { return dataAdmissao; }
     public LocalDateTime getDataDemissao() { return dataDemissao; }

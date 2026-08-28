@@ -9,7 +9,9 @@ import java.time.LocalDateTime;
 // Equipamento — o mesmo modelo pode ter unidades espalhadas em depósitos
 // diferentes.
 @Entity
-@Table(name = "depositos")
+@Table(name = "depositos", indexes = {
+        @Index(name = "idx_depositos_endereco", columnList = "endereco_id")
+})
 public class Deposito {
 
     @Id
@@ -19,8 +21,11 @@ public class Deposito {
     @Column(nullable = false, unique = true, length = 150)
     private String nome;
 
-    @Column(length = 500)
-    private String endereco;
+    // Endereço fixo do depósito — armazenado numa linha própria da tabela
+    // enderecos (sem vínculo de cliente) e referenciado por FK aqui.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "endereco_id")
+    private Endereco endereco;
 
     @Column(length = 500)
     private String descricao;
@@ -51,8 +56,8 @@ public class Deposito {
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
-    public String getEndereco() { return endereco; }
-    public void setEndereco(String endereco) { this.endereco = endereco; }
+    public Endereco getEndereco() { return endereco; }
+    public void setEndereco(Endereco endereco) { this.endereco = endereco; }
 
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }

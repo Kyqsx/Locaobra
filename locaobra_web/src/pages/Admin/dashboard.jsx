@@ -14,17 +14,15 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const [dashRes, equipRes] = await Promise.all([
-          api.get('/api/dashboard'),
-          api.get('/api/equipamentos?apenasAtivos=true'),
-        ]);
+      const dashboardRequest = api.get('/api/dashboard')
+        .then(response => setDashboardData(response.data))
+        .catch(err => console.error('Erro ao carregar dados do dashboard', err));
 
-        setDashboardData(dashRes.data);
-        setEquipamentos(Array.isArray(equipRes.data) ? equipRes.data : []);
-      } catch (err) {
-        console.error('Erro ao carregar dados do dashboard', err);
-      }
+      const equipamentosRequest = api.get('/api/equipamentos?apenasAtivos=true')
+        .then(response => setEquipamentos(Array.isArray(response.data) ? response.data : []))
+        .catch(err => console.error('Erro ao carregar equipamentos do dashboard', err));
+
+      await Promise.all([dashboardRequest, equipamentosRequest]);
     };
 
     fetchData();
@@ -59,9 +57,21 @@ const AdminDashboard = () => {
                       <div className="statCardTop">
                         <div className="statInfo">
                           <p className="statTitle">Usuários</p>
-                          <p className="statValue">{dashboardData.totalClientes ?? 0}</p>
+                          <p className="statValue">{dashboardData.totalUsuarios ?? 0}</p>
                         </div>
                         <div className="statIcon" style={{ '--icon-color': '#D9820F' }}>
+                          <FontAwesomeIcon icon={faUsers} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="statCard">
+                      <div className="statCardTop">
+                        <div className="statInfo">
+                          <p className="statTitle">Clientes</p>
+                          <p className="statValue">{dashboardData.totalClientes ?? 0}</p>
+                        </div>
+                        <div className="statIcon" style={{ '--icon-color': '#4CAF50' }}>
                           <FontAwesomeIcon icon={faUsers} />
                         </div>
                       </div>
@@ -108,7 +118,7 @@ const AdminDashboard = () => {
                 )}
               </div>
 
-              {/* Charts Section */}
+              {/* Charts Section 
               <div className="chartsSection">
                 <div className="chartCard">
                   <div className="chartHeader">
@@ -148,9 +158,9 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div>*/}
 
-              {/* Equipamentos ativos */}
+              {/* Equipamentos ativos 
               <div className="recentUsersSection">
                 <div className="sectionHeader">
                   <h3><FontAwesomeIcon icon={faToolbox} /> Equipamentos Ativos</h3>
@@ -181,7 +191,7 @@ const AdminDashboard = () => {
                     <div className="emptyState">Nenhum equipamento ativo.</div>
                   )}
                 </div>
-              </div>
+              </div>*/}
             </div>
 
     </div>

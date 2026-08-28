@@ -74,15 +74,9 @@ const Signup = () => {
             const response = await api.post('/api/auth/signup', payload);
             console.log("Resposta do servidor (Sucesso):", response.data);
 
-            if (response.data.token || response.status === 201) {
-                // Se o backend retornar o token no signup (login automático)
-                if (response.data.token) {
-                    const { token, email: e_resp } = response.data;
-                    await login(e_resp || email, token);
-                }
-
-                console.log("Cadastro concluído! Redirecionando...");
-                navigate('/');
+            if (response.status === 201) {
+                // Conta criada, mas exige verificação de email antes do login
+                navigate(`/verificar-email?email=${encodeURIComponent(email)}`);
             }
         } catch (error) {
             console.error("Erro detalhado na requisição:", error);

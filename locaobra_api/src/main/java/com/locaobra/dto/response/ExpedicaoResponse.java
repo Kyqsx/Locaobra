@@ -31,7 +31,7 @@ public class ExpedicaoResponse {
     private String placaVeiculo;
     private LocalDate dataProgramada;
     private String horarioProgramado;
-    private String enderecoEntrega;
+    private EnderecoResponse enderecoEntrega;
     private String observacoes;
     private LocalDateTime checkoutEm;
     private LocalDateTime checkinEm;
@@ -65,7 +65,7 @@ public class ExpedicaoResponse {
         r.placaVeiculo = e.getPlacaVeiculo();
         r.dataProgramada = e.getDataProgramada();
         r.horarioProgramado = e.getHorarioProgramado();
-        r.enderecoEntrega = e.getEnderecoEntrega();
+        r.enderecoEntrega = EnderecoResponse.from(e.getEnderecoEntrega());
         r.observacoes = e.getObservacoes();
         r.checkoutEm = e.getCheckoutEm();
         r.checkinEm = e.getCheckinEm();
@@ -112,7 +112,7 @@ public class ExpedicaoResponse {
     public String getPlacaVeiculo() { return placaVeiculo; }
     public LocalDate getDataProgramada() { return dataProgramada; }
     public String getHorarioProgramado() { return horarioProgramado; }
-    public String getEnderecoEntrega() { return enderecoEntrega; }
+    public EnderecoResponse getEnderecoEntrega() { return enderecoEntrega; }
     public String getObservacoes() { return observacoes; }
     public LocalDateTime getCheckoutEm() { return checkoutEm; }
     public LocalDateTime getCheckinEm() { return checkinEm; }

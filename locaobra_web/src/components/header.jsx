@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useAuth } from '../utils/useAuth';
 import { useCart } from '../context/CartContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRightFromBracket, faUser, faShield, faNewspaper, faList, faClipboardList, faCartShopping } from '@fortawesome/free-solid-svg-icons';
+import { faRightFromBracket, faUser, faShield, faNewspaper, faList, faClipboardList, faCartShopping, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/locaobraLogo.png';
 
 function Header() {
@@ -70,9 +70,14 @@ function Header() {
                                     </>
                                 )}
                                 {user?.tipo === 'CLIENTE' && (
-                                    <Link to="/meus-pedidos" className="sub-item">
-                                        <FontAwesomeIcon icon={faClipboardList} /> Meus Pedidos
-                                    </Link>
+                                    <>
+                                        <Link to="/meus-pedidos" className="sub-item">
+                                            <FontAwesomeIcon icon={faClipboardList} /> Meus Pedidos
+                                        </Link>
+                                        <Link to="/meus-enderecos" className="sub-item">
+                                            <FontAwesomeIcon icon={faLocationDot} /> Meus Endereços
+                                        </Link>
+                                    </>
                                 )}
                                 <Link to="/perfil" className="sub-item">
                                     <FontAwesomeIcon icon={faUser} /> Ver Perfil

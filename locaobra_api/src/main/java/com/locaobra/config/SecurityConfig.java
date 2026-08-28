@@ -73,10 +73,20 @@ public class SecurityConfig {
                     .hasAnyRole("ADMIN", "RH", "GERENTE_OPERACOES")
 
                 // ===================== CLIENTES =====================
-                // Perfil do próprio cliente logado (usado pra pré-preencher o
-                // checkout de aluguel). Precisa vir antes da regra genérica de
-                // GET /api/clientes/**, que não libera ROLE_CLIENTE.
+                // Autoatendimento: o próprio cliente logado gerencia os endereços
+                // e o perfil dele. Precisa vir antes das regras genéricas de
+                // /api/clientes/**, que não liberam ROLE_CLIENTE.
+                .requestMatchers("/api/clientes/meus-enderecos/**").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.GET, "/api/clientes/perfil").hasRole("CLIENTE")
+                // Crédito (limite/situação/observações) é editado só por quem
+                // avalia o cliente — mais restrito que o CRUD normal de cliente.
+                .requestMatchers(HttpMethod.PATCH, "/api/clientes/*/credito")
+                    .hasAnyRole("ADMIN", "ANALISTA_CREDENCIAMENTO", "ANALISTA_FINANCEIRO")
+                // Remover um endereço de um cliente é uma ação mais corriqueira do
+                // que excluir o cadastro inteiro — liberada pra quem já cria/edita
+                // clientes no dia a dia, não só ADMIN/RH/GERENTE_OPERACOES.
+                .requestMatchers(HttpMethod.DELETE, "/api/clientes/*/enderecos/**")
+                    .hasAnyRole("ADMIN", "RH", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO", "ANALISTA_CREDENCIAMENTO")
                 // Excluir cadastro de cliente é ação sensível (apaga histórico) —
                 // mais restrita do que ver/editar clientes no dia a dia.
                 .requestMatchers(HttpMethod.DELETE, "/api/clientes/**")

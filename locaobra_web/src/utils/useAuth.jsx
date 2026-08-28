@@ -55,8 +55,7 @@ export function AuthProvider({ children }) {
 
                         userData.nome = perfil.nome || userData.nome;
                         userData.id_cliente = perfil.id; // ID da tabela de clientes, se for diferente do user_id
-                        userData.enderecoFormatado = perfil.enderecoFormatado || null;
-                        userData.idEndereco = perfil.idEndereco || null;
+                        userData.enderecos = perfil.enderecos || [];
                     } catch (err) {
                         console.warn("⚠️ Perfil detalhado não encontrado. Usando dados básicos da conta.");
                     }
@@ -104,6 +103,19 @@ export function AuthProvider({ children }) {
         setLoading(false);
     };
 
+    // Recarrega só a lista de endereços do cliente logado (ex.: depois de
+    // adicionar/editar/remover um endereço na tela "Meus Endereços"), sem
+    // precisar re-buscar a sessão inteira.
+    const recarregarEnderecos = async () => {
+        if (!user || user.tipo !== 'CLIENTE') return;
+        try {
+            const response = await api.get('/api/clientes/meus-enderecos');
+            setUser(prev => (prev ? { ...prev, enderecos: response.data } : prev));
+        } catch (err) {
+            console.warn('⚠️ Não foi possível recarregar os endereços.');
+        }
+    };
+
     const value = {
         user,
         userId: user?.id,
@@ -114,6 +126,7 @@ export function AuthProvider({ children }) {
         isAdmin: user?.tipo === 'ADMIN',
         login,
         logout,
+        recarregarEnderecos,
         loading,
     };
 

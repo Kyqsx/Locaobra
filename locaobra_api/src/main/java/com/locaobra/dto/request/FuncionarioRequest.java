@@ -25,6 +25,8 @@ public class FuncionarioRequest {
 
     private Long depositoId;
 
+    private EnderecoRequest endereco;
+
     private String salario;
 
     private String dataNascimento;
@@ -53,6 +55,8 @@ public class FuncionarioRequest {
     public void setDepartamentoId(Long departamentoId) { this.departamentoId = departamentoId; }
     public Long getDepositoId() { return depositoId; }
     public void setDepositoId(Long depositoId) { this.depositoId = depositoId; }
+    public EnderecoRequest getEndereco() { return endereco; }
+    public void setEndereco(EnderecoRequest endereco) { this.endereco = endereco; }
     public String getSalario() { return salario; }
     public void setSalario(String salario) { this.salario = salario; }
     public String getDataNascimento() { return dataNascimento; }

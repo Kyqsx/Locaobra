@@ -21,7 +21,7 @@ export const ADMIN_ALLOWED_PATHS = {
   TECNICO_MANUTENCAO: ['/admin/equipamentos', '/admin/ordens-servico'],
   ENTREGADOR: ['/admin/expedicao'],
   CONFERENTE: ['/admin/expedicao', '/admin/equipamentos', '/admin/pedidos'],
-  ANALISTA_FINANCEIRO: ['/admin/notificacoes'],
+  ANALISTA_FINANCEIRO: ['/admin/notificacoes', '/admin/clientes'],
   CONSULTOR_LOCACAO: ['/admin/clientes', '/admin/expedicao', '/admin/equipamentos', '/admin/pedidos'],
   ANALISTA_CREDENCIAMENTO: ['/admin/clientes', '/admin/pedidos'],
   FAXINEIRO: ['/admin/equipamentos'],

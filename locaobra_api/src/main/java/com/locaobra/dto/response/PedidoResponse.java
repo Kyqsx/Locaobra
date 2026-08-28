@@ -27,7 +27,7 @@ public class PedidoResponse {
     private LocalDate dataInicio;
     private LocalDate dataFim;
     private Long diasLocacao;
-    private String enderecoEntrega;
+    private EnderecoResponse enderecoEntrega;
     private String observacoesCliente;
     private String observacoesConsultor;
     private String motivoRecusa;
@@ -61,7 +61,7 @@ public class PedidoResponse {
         r.diasLocacao = (p.getDataInicio() != null && p.getDataFim() != null)
                 ? Math.max(1, ChronoUnit.DAYS.between(p.getDataInicio(), p.getDataFim()))
                 : null;
-        r.enderecoEntrega = p.getEnderecoEntrega();
+        r.enderecoEntrega = EnderecoResponse.from(p.getEnderecoEntrega());
         r.observacoesCliente = p.getObservacoesCliente();
         r.observacoesConsultor = p.getObservacoesConsultor();
         r.motivoRecusa = p.getMotivoRecusa();
@@ -91,7 +91,7 @@ public class PedidoResponse {
     public LocalDate getDataInicio() { return dataInicio; }
     public LocalDate getDataFim() { return dataFim; }
     public Long getDiasLocacao() { return diasLocacao; }
-    public String getEnderecoEntrega() { return enderecoEntrega; }
+    public EnderecoResponse getEnderecoEntrega() { return enderecoEntrega; }
     public String getObservacoesCliente() { return observacoesCliente; }
     public String getObservacoesConsultor() { return observacoesConsultor; }
     public String getMotivoRecusa() { return motivoRecusa; }

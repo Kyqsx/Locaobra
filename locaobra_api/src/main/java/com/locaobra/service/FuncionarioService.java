@@ -35,19 +35,22 @@ public class FuncionarioService {
     private final CargoRepository cargoRepository;
     private final DepartamentoRepository departamentoRepository;
     private final DepositoRepository depositoRepository;
+    private final EnderecoService enderecoService;
 
     public FuncionarioService(FuncionarioRepository funcionarioRepository,
                               UsuarioRepository usuarioRepository,
                               PasswordEncoder passwordEncoder,
                               CargoRepository cargoRepository,
                               DepartamentoRepository departamentoRepository,
-                              DepositoRepository depositoRepository) {
+                              DepositoRepository depositoRepository,
+                              EnderecoService enderecoService) {
         this.funcionarioRepository = funcionarioRepository;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.cargoRepository = cargoRepository;
         this.departamentoRepository = departamentoRepository;
         this.depositoRepository = depositoRepository;
+        this.enderecoService = enderecoService;
     }
 
     @Transactional
@@ -223,6 +226,11 @@ public class FuncionarioService {
                         .orElseThrow(() -> new BusinessException("Depósito não encontrado: " + request.getDepositoId()));
                 funcionario.setDeposito(deposito);
             }
+        }
+        if (request.getEndereco() != null) {
+            // Endereço do funcionário: atualiza em place a linha já vinculada
+            // (ou cria uma nova na 1ª vez). Vazio → desvincula (endereco = null).
+            funcionario.setEndereco(enderecoService.salvarAvulso(funcionario.getEndereco(), request.getEndereco()));
         }
     }
     private FuncionarioResponse toResponse(Funcionario funcionario) {

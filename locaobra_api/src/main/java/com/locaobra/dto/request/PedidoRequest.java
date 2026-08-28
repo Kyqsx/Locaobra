@@ -11,7 +11,13 @@ public class PedidoRequest {
 
     private LocalDate dataInicio;
     private LocalDate dataFim;
-    private String enderecoEntrega;
+
+    // Duas formas de informar o endereço de entrega — o service usa
+    // enderecoId quando presente (endereço já salvo, tirado do carrinho/
+    // checkout) e cai pra enderecoEntrega (digitado na hora) caso contrário.
+    private Long enderecoId;
+    private EnderecoRequest enderecoEntrega;
+
     private String observacoesCliente;
     private List<ItemPedidoRequest> itens = new ArrayList<>();
 
@@ -21,8 +27,11 @@ public class PedidoRequest {
     public LocalDate getDataFim() { return dataFim; }
     public void setDataFim(LocalDate dataFim) { this.dataFim = dataFim; }
 
-    public String getEnderecoEntrega() { return enderecoEntrega; }
-    public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
+    public Long getEnderecoId() { return enderecoId; }
+    public void setEnderecoId(Long enderecoId) { this.enderecoId = enderecoId; }
+
+    public EnderecoRequest getEnderecoEntrega() { return enderecoEntrega; }
+    public void setEnderecoEntrega(EnderecoRequest enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
 
     public String getObservacoesCliente() { return observacoesCliente; }
     public void setObservacoesCliente(String observacoesCliente) { this.observacoesCliente = observacoesCliente; }

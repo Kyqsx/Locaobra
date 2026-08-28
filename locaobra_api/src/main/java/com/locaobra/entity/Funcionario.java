@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "funcionarios")
+@Table(name = "funcionarios", indexes = {
+        @Index(name = "idx_funcionarios_endereco", columnList = "endereco_id")
+})
 public class Funcionario {
 
     @Id
@@ -40,6 +42,13 @@ public class Funcionario {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "deposito_id")
     private Deposito deposito;
+
+    // Endereço do funcionário — armazenado numa linha própria da tabela
+    // enderecos (sem vínculo de cliente) e referenciado por FK aqui.
+    // Nullable: endereço é opcional no cadastro.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "endereco_id")
+    private Endereco endereco;
 
     @Column(name = "salario", nullable = false)
     private Double salario;
@@ -121,6 +130,14 @@ public class Funcionario {
 
     public void setDeposito(Deposito deposito) {
         this.deposito = deposito;
+    }
+
+    public Endereco getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(Endereco endereco) {
+        this.endereco = endereco;
     }
 
     public Double getSalario() {

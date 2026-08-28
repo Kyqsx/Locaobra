@@ -31,7 +31,7 @@ public class ExpedicaoRequest {
     private String placaVeiculo;
     private LocalDate dataProgramada;
     private String horarioProgramado;
-    private String enderecoEntrega;
+    private EnderecoRequest enderecoEntrega;
     private String observacoes;
     private List<ItemExpedicaoRequest> itens = new ArrayList<>();
 
@@ -65,8 +65,8 @@ public class ExpedicaoRequest {
     public String getHorarioProgramado() { return horarioProgramado; }
     public void setHorarioProgramado(String horarioProgramado) { this.horarioProgramado = horarioProgramado; }
 
-    public String getEnderecoEntrega() { return enderecoEntrega; }
-    public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
+    public EnderecoRequest getEnderecoEntrega() { return enderecoEntrega; }
+    public void setEnderecoEntrega(EnderecoRequest enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
 
     public String getObservacoes() { return observacoes; }
     public void setObservacoes(String observacoes) { this.observacoes = observacoes; }

@@ -87,7 +87,7 @@ function MeusPedidos() {
                     <span><strong>Período:</strong> {formatarData(pedido.dataInicio)} a {formatarData(pedido.dataFim)} ({pedido.diasLocacao} dia{pedido.diasLocacao > 1 ? 's' : ''})</span>
                   </div>
                   <div className="pedido-info-row">
-                    <span><strong>Endereço:</strong> {pedido.enderecoEntrega}</span>
+                    <span><strong>Endereço:</strong> {pedido.enderecoEntrega?.formatado || '---'}</span>
                   </div>
 
                   <div className="pedido-itens">

@@ -388,3 +388,60 @@
         position: static;
     }
 }
+
+/* ============================================
+   SELETOR DE ENDEREÇO SALVO
+   ============================================ */
+
+.carrinho-enderecos-salvos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.carrinho-endereco-opcao {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1.5px solid var(--gray-200, #e2e2e2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.carrinho-endereco-opcao input[type="radio"] {
+    margin-top: 3px;
+}
+
+.carrinho-endereco-tag {
+    display: inline-block;
+    background: rgba(31, 157, 107, 0.12);
+    color: var(--success-green, #1f9d6b);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-left: 8px;
+}
+
+.carrinho-endereco-detalhe {
+    color: var(--gray-500, #777);
+    font-size: 13px;
+}
+
+.carrinho-endereco-novo {
+    margin-top: 12px;
+    padding: 14px;
+    background: var(--gray-50, #fafafa);
+    border-radius: 10px;
+}
+
+.carrinho-link-salvar-endereco {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--primary-color, #f39200);
+}

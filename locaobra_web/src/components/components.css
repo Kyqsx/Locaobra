@@ -255,7 +255,7 @@ nav {
     background-color: transparent;
     color: var(--primary-color);
     text-decoration: none;
-    transform: translateX(var(--space-2));
+    transform: scale(1.05);
 }
 
 .dropdown-content .sub-item:hover::before {
@@ -361,6 +361,7 @@ nav {
 
 .sidebar-group-header:hover {
     color: var(--primary-color);
+    transform: scale(1.05);
 }
 
 .sidebar-group-content {
@@ -396,11 +397,6 @@ nav {
     height: 1px;
     background-color: var(--gray-200);
     margin: var(--space-4) 0;
-}
-
-/* Garante que o efeito do ::before (barrinha azul) funcione na Sidebar */
-.sidebar-nav.user-dropdown-content .sub-item:hover::before {
-    width: 4px;
 }
 
 @keyframes dropdownSlide {
@@ -465,12 +461,9 @@ nav {
     background-color: transparent;
     color: var(--primary-color);
     text-decoration: none;
-    transform: translateX(var(--space-2));
+    transform: scale(1.05);
 }
 
-.user-dropdown-content .sub-item:hover::before {
-    width: 4px;
-}
 
 .logout-dropdown {
     color: var(--error-red) !important;

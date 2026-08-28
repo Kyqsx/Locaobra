@@ -149,6 +149,51 @@ body {
     transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
+input[type='checkbox'] {
+    appearance: none;
+    width: 2.5rem;
+    height: 1.5rem;
+    flex: 0 0 auto;
+    position: relative;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-full);
+    background-color: var(--gray-200);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+input[type='checkbox']::before {
+    content: '';
+    position: absolute;
+    width: 1.125rem;
+    height: 1.125rem;
+    top: 0.125rem;
+    left: 0.125rem;
+    border-radius: 50%;
+    background-color: var(--white);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+}
+
+input[type='checkbox']:checked {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+}
+
+input[type='checkbox']:checked::before {
+    transform: translateX(1rem);
+}
+
+input[type='checkbox']:focus-visible {
+    outline: 2px solid var(--primary-color-light);
+    outline-offset: 2px;
+}
+
+input[type='checkbox']:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 /* ============================================
    TYPOGRAPHY
    ============================================ */

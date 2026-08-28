@@ -222,7 +222,7 @@ body {
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(224px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 
@@ -729,7 +729,8 @@ body {
 }
 
 .equipImage {
-  height: 128px;
+  height: 100px;
+  aspect-ratio: 1/1;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   display: flex;
   align-items: center;

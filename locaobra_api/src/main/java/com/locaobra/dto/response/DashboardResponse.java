@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class DashboardResponse {
 
     private Long totalClientes;
+    private Long totalUsuarios;
     private Long totalEquipamentos;
     private Long equipamentosDisponiveis;
     private Long equipamentosAlugados;
@@ -18,6 +19,9 @@ public class DashboardResponse {
 
     public Long getTotalClientes() { return totalClientes; }
     public void setTotalClientes(Long totalClientes) { this.totalClientes = totalClientes; }
+
+    public Long getTotalUsuarios() { return totalUsuarios; }
+    public void setTotalUsuarios(Long totalUsuarios) { this.totalUsuarios = totalUsuarios; }
 
     public Long getTotalEquipamentos() { return totalEquipamentos; }
     public void setTotalEquipamentos(Long totalEquipamentos) { this.totalEquipamentos = totalEquipamentos; }

@@ -70,3 +70,11 @@
   background: rgba(214, 48, 49, 0.12);
   color: var(--danger-color);
 }
+
+.enderecoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+

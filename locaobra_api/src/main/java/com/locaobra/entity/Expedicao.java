@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "expedicoes")
+@Table(name = "expedicoes", indexes = {
+        @Index(name = "idx_expedicoes_endereco", columnList = "endereco_id")
+})
 public class Expedicao {
 
     @Id
@@ -82,8 +84,12 @@ public class Expedicao {
     @Column(name = "horario_programado")
     private String horarioProgramado;
 
-    @Column(name = "endereco_entrega", length = 500)
-    private String enderecoEntrega;
+    // Endereço de entrega/coleta — aponta por FK pra uma linha própria da tabela
+    // enderecos (cópia "avulsa"), como no Pedido. Vem copiado do pedido de
+    // origem (ou digitado na hora, pra expedições avulsas / override manual).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "endereco_id")
+    private Endereco enderecoEntrega;
 
     @Column(name = "observacoes", length = 1000)
     private String observacoes;
@@ -177,8 +183,8 @@ public class Expedicao {
     public String getHorarioProgramado() { return horarioProgramado; }
     public void setHorarioProgramado(String horarioProgramado) { this.horarioProgramado = horarioProgramado; }
 
-    public String getEnderecoEntrega() { return enderecoEntrega; }
-    public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
+    public Endereco getEnderecoEntrega() { return enderecoEntrega; }
+    public void setEnderecoEntrega(Endereco enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
 
     public String getObservacoes() { return observacoes; }
     public void setObservacoes(String observacoes) { this.observacoes = observacoes; }

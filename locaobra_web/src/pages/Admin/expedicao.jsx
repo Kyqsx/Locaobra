@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
+import EnderecoFields from '../../components/EnderecoFields';
 
 const STATUS_EXPEDICAO_LABEL = {
     AGENDADO: 'Agendado',
@@ -312,7 +313,17 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
         placaVeiculo: '',
         dataProgramada: pedidoOrigem?.dataInicio || new Date().toISOString().split('T')[0],
         horarioProgramado: '08:00',
-        enderecoEntrega: pedidoOrigem?.enderecoEntrega || '',
+        enderecoEntrega: pedidoOrigem?.enderecoEntrega
+            ? {
+                cep: pedidoOrigem.enderecoEntrega.cep || '',
+                rua: pedidoOrigem.enderecoEntrega.rua || '',
+                numero: pedidoOrigem.enderecoEntrega.numero || '',
+                complemento: pedidoOrigem.enderecoEntrega.complemento || '',
+                bairro: pedidoOrigem.enderecoEntrega.bairro || '',
+                cidade: pedidoOrigem.enderecoEntrega.cidade || '',
+                estado: pedidoOrigem.enderecoEntrega.estado || '',
+            }
+            : { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' },
         observacoes: '',
         nomeAutorizado1: '',
         nomeAutorizado2: '',
@@ -364,7 +375,28 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
 
     function handleSelectEntregaOrigem(e) {
         const entregaOrigemId = e.target.value;
-        setForm(prev => ({ ...prev, entregaOrigemId }));
+        const entrega = entregasParaColeta.find(en => String(en.id) === String(entregaOrigemId));
+        setForm(prev => ({
+            ...prev,
+            entregaOrigemId,
+            // Pré-preenche com o endereço da entrega original — o conferente
+            // pode editar se a coleta for buscar em outro lugar.
+            enderecoEntrega: entrega?.enderecoEntrega
+                ? {
+                    cep: entrega.enderecoEntrega.cep || '',
+                    rua: entrega.enderecoEntrega.rua || '',
+                    numero: entrega.enderecoEntrega.numero || '',
+                    complemento: entrega.enderecoEntrega.complemento || '',
+                    bairro: entrega.enderecoEntrega.bairro || '',
+                    cidade: entrega.enderecoEntrega.cidade || '',
+                    estado: entrega.enderecoEntrega.estado || '',
+                }
+                : prev.enderecoEntrega,
+        }));
+    }
+
+    function handleEnderecoChange(novoEndereco) {
+        setForm(prev => ({ ...prev, enderecoEntrega: novoEndereco }));
     }
 
     function handleItemChange(e) {
@@ -601,13 +633,10 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
 
                     <div className="formField">
                         <label>Endereço de Entrega/Coleta</label>
-                        <input
-                            className="equipInput"
-                            name="enderecoEntrega"
-                            placeholder={ehColeta ? 'Padrão: mesmo endereço da entrega (edite se mudou)' : 'Endereço completo...'}
-                            value={ehColeta ? (form.enderecoEntrega || entregaSelecionada?.enderecoEntrega || '') : form.enderecoEntrega}
-                            onChange={handleChange}
-                        />
+                        {ehColeta && (
+                            <p className="enderecoHintColeta">Pré-preenchido com o endereço da entrega original — edite se a coleta for buscar em outro lugar.</p>
+                        )}
+                        <EnderecoFields value={form.enderecoEntrega || {}} onChange={handleEnderecoChange} prefixo="expedicao" />
                     </div>
 
                     {ehColeta ? (
@@ -979,7 +1008,7 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                         <strong>Horário:</strong> {expedicao.horarioProgramado || '---'}
                     </div>
                     <div className="detalheInfoItem">
-                        <strong>Endereço:</strong> {expedicao.enderecoEntrega || '---'}
+                        <strong>Endereço:</strong> {expedicao.enderecoEntrega?.formatado || '---'}
                     </div>
                     {ehColetaDetalhe && (
                         <div className="detalheInfoItem">

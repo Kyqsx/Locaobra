@@ -1,0 +1,58 @@
+.enderecoFieldsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+}
+
+.enderecoField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.enderecoField label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-700, #444);
+}
+
+.enderecoFieldWide {
+    grid-column: span 2;
+}
+
+.enderecoFieldFull {
+    grid-column: 1 / -1;
+}
+
+.enderecoInput {
+    border: 1.5px solid var(--gray-200, #e2e2e2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--gray-900, #222);
+}
+
+.enderecoInput:focus {
+    outline: none;
+    border-color: var(--primary-color, #f39200);
+}
+
+.enderecoPrincipalCheck {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--gray-700, #444);
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .enderecoFieldsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .enderecoFieldWide {
+        grid-column: span 2;
+    }
+}

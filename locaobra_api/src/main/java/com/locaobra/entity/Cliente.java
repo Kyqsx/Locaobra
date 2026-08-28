@@ -1,6 +1,10 @@
 package com.locaobra.entity;
 
+import com.locaobra.enums.SituacaoCredito;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -22,6 +26,25 @@ public class Cliente {
 
     @Column(nullable = false)
     private Boolean ativo = true;
+
+    // ===================== CRÉDITO =====================
+    // Todo cliente novo nasce EM_ANALISE (sem limite ainda) — só pode fazer
+    // pedidos depois que um analista de credenciamento/financeiro libera.
+    // O "crédito utilizado" NÃO é uma coluna: é calculado na hora (soma do
+    // valorTotalEstimado dos pedidos ainda em aberto do cliente), pra nunca
+    // ficar desatualizado — ver ClienteService.calcularCreditoUtilizado().
+    @Column(name = "limite_credito", precision = 12, scale = 2)
+    private BigDecimal limiteCredito;
+
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'EM_ANALISE'")
+    @Column(name = "situacao_credito", nullable = false, length = 20)
+    private SituacaoCredito situacaoCredito = SituacaoCredito.EM_ANALISE;
+
+    // Anotações internas do analista (ex.: histórico de inadimplência,
+    // motivo do bloqueio) — não aparece pro cliente, só pra equipe.
+    @Column(name = "observacoes_credito", length = 1000)
+    private String observacoesCredito;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
@@ -71,6 +94,30 @@ public class Cliente {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public BigDecimal getLimiteCredito() {
+        return limiteCredito;
+    }
+
+    public void setLimiteCredito(BigDecimal limiteCredito) {
+        this.limiteCredito = limiteCredito;
+    }
+
+    public SituacaoCredito getSituacaoCredito() {
+        return situacaoCredito;
+    }
+
+    public void setSituacaoCredito(SituacaoCredito situacaoCredito) {
+        this.situacaoCredito = situacaoCredito;
+    }
+
+    public String getObservacoesCredito() {
+        return observacoesCredito;
+    }
+
+    public void setObservacoesCredito(String observacoesCredito) {
+        this.observacoesCredito = observacoesCredito;
     }
 
     public LocalDateTime getCriadoEm() {

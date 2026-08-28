@@ -207,7 +207,7 @@
 }
 
 .preco-diaria .valor::after {
-    content: "/dia";
+    content: "/ dia";
     font-size: var(--text-xs);
     font-weight: 500;
     color: var(--gray-400);

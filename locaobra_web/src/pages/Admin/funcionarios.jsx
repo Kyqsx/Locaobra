@@ -16,7 +16,7 @@ function FormField({ label, children }) {
     );
 }
 
-function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting, cargos, departamentos, depositos }) {
+function FuncionariosModal({ open, onClose, editingId, form, onChange, onEnderecoChange, onSubmit, onReset, submitting, cargos, departamentos, depositos }) {
     if (!open) return null;
 
     return (
@@ -112,6 +112,20 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit,
                                 <input className="equipInput" name="senha" type="password" placeholder="Deixe em branco para 123456" value={form.senha} onChange={onChange} />
                             </FormField>
                         </div>
+
+                        <div className="formRow full">
+                            <FormField label="Endereço (opcional)">
+                                <div className="enderecoGrid">
+                                    <input className="equipInput" name="cep" placeholder="CEP" value={form.endereco?.cep || ''} onChange={onEnderecoChange} />
+                                    <input className="equipInput" name="rua" placeholder="Rua / Logradouro" value={form.endereco?.rua || ''} onChange={onEnderecoChange} />
+                                    <input className="equipInput" name="numero" placeholder="Número" value={form.endereco?.numero || ''} onChange={onEnderecoChange} />
+                                    <input className="equipInput" name="complemento" placeholder="Complemento" value={form.endereco?.complemento || ''} onChange={onEnderecoChange} />
+                                    <input className="equipInput" name="bairro" placeholder="Bairro" value={form.endereco?.bairro || ''} onChange={onEnderecoChange} />
+                                    <input className="equipInput" name="cidade" placeholder="Cidade" value={form.endereco?.cidade || ''} onChange={onEnderecoChange} />
+                                    <input className="equipInput" name="estado" placeholder="UF (2 letras)" maxLength={2} value={form.endereco?.estado || ''} onChange={onEnderecoChange} />
+                                </div>
+                            </FormField>
+                        </div>
                     </div>
 
                     <label className="checkboxRow">
@@ -133,6 +147,8 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onSubmit,
     );
 }
 
+const enderecoVazio = { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };
+
 const initialForm = {
     nome: '',
     cpf: '',
@@ -147,7 +163,8 @@ const initialForm = {
     dataDemissao: '',
     status: true,
     senha: '',
-    depositoId: ''
+    depositoId: '',
+    endereco: { ...enderecoVazio }
 };
 export default function Funcionarios() {
     const { user } = useAuth();
@@ -231,6 +248,13 @@ export default function Funcionarios() {
         });
     }
 
+    // Edita os campos aninhados de form.endereco (vira linha própria na tabela
+    // enderecos, referenciada por FK pelo backend).
+    function handleEnderecoChange(e) {
+        const { name, value } = e.target;
+        setForm(prev => ({ ...prev, endereco: { ...(prev.endereco || {}), [name]: value } }));
+    }
+
     function resetForm() {
         setForm(initialForm);
         setEditingId(null);
@@ -239,6 +263,7 @@ export default function Funcionarios() {
     }
 
     function handleEdit(funcionario) {
+        const end = funcionario.endereco || {};
         setEditingId(funcionario.id);
         setModalOpen(true);
         setForm({
@@ -255,7 +280,16 @@ export default function Funcionarios() {
             dataDemissao: funcionario.dataDemissao ? funcionario.dataDemissao.slice(0, 10) : '',
             status: funcionario.status ?? true,
             senha: '',
-            depositoId: funcionario.depositoId || ''
+            depositoId: funcionario.depositoId || '',
+            endereco: {
+                cep: end.cep || '',
+                rua: end.rua || '',
+                numero: end.numero || '',
+                complemento: end.complemento || '',
+                bairro: end.bairro || '',
+                cidade: end.cidade || '',
+                estado: end.estado || '',
+            }
         });
     }
 function handleSubmit(e) {
@@ -263,6 +297,7 @@ function handleSubmit(e) {
         setSubmitting(true);
         setMessage({ type: 'info', text: editingId ? 'Atualizando funcionario...' : 'Salvando funcionario...' });
 
+        const end = form.endereco || {};
         const payload = {
             ...form,
             status: Boolean(form.status),
@@ -270,6 +305,15 @@ function handleSubmit(e) {
             departamentoId: form.departamentoId ? Number(form.departamentoId) : null,
             depositoId: form.depositoId ? Number(form.depositoId) : 0,
             salario: form.salario ? form.salario.toString() : '',
+            endereco: {
+                cep: (end.cep || '').trim() || null,
+                rua: (end.rua || '').trim() || null,
+                numero: (end.numero || '').trim() || null,
+                complemento: (end.complemento || '').trim() || null,
+                bairro: (end.bairro || '').trim() || null,
+                cidade: (end.cidade || '').trim() || null,
+                estado: (end.estado || '').trim() || null,
+            },
         };
 
         const request = editingId
@@ -355,6 +399,7 @@ return (
                                 <th>Cargo</th>
                                 <th>Departamento</th>
                                 <th>Depósito</th>
+                                <th>Endereço</th>
                                 <th>Usuario</th>
                                 <th>Status</th>
                                 <th>Acoes</th>
@@ -378,6 +423,7 @@ return (
                                         <td>{funcionario.cargoNome || '---'}</td>
                                         <td>{funcionario.departamentoNome || '---'}</td>
                                         <td>{funcionario.depositoNome || '---'}</td>
+                                        <td>{funcionario.endereco?.formatado || '---'}</td>
                                         <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vinculo'}</td>
                                         <td>{funcionario.status ? 'Ativo' : 'Inativo'}</td>
                                         <td className="actionsCell">
@@ -402,6 +448,7 @@ return (
                 editingId={editingId}
                 form={form}
                 onChange={handleChange}
+                onEnderecoChange={handleEnderecoChange}
                 onSubmit={handleSubmit}
                 onReset={resetForm}
                 submitting={submitting}

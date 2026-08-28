@@ -35,12 +35,16 @@ CREATE TABLE IF NOT EXISTS departamentos (
 CREATE TABLE IF NOT EXISTS depositos (
     id             BIGSERIAL PRIMARY KEY,
     nome           VARCHAR(150) NOT NULL UNIQUE,
-    endereco       VARCHAR(500),
+    endereco_id    BIGINT,
     descricao      VARCHAR(500),
     ativo          BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em      TIMESTAMP,
-    atualizado_em  TIMESTAMP
+    atualizado_em  TIMESTAMP,
+    CONSTRAINT fk_deposito_endereco FOREIGN KEY (endereco_id)
+        REFERENCES enderecos (id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_depositos_endereco ON depositos (endereco_id);
 
 -- ============================================================================
 -- 2) CARGOS
@@ -67,31 +71,47 @@ CREATE INDEX IF NOT EXISTS idx_cargos_departamento ON cargos (departamento_id);
 --    Entidade: Cliente -> @Table(name = "clientes")
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS clientes (
-    id        BIGSERIAL PRIMARY KEY,
-    nome      VARCHAR(150) NOT NULL,
-    cpf_cnpj  VARCHAR(20)  NOT NULL,
-    telefone  VARCHAR(20),
-    ativo     BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em TIMESTAMP NOT NULL
+    id                  BIGSERIAL PRIMARY KEY,
+    nome                VARCHAR(150) NOT NULL,
+    cpf_cnpj            VARCHAR(20)  NOT NULL,
+    telefone            VARCHAR(20),
+    ativo               BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Crédito: todo cliente nasce EM_ANALISE (sem limite). "Crédito
+    -- utilizado" NÃO é uma coluna — é calculado na hora somando os pedidos
+    -- em aberto do cliente (ver PedidoRepository.somarValorEstimadoPorClienteEStatus).
+    situacao_credito    VARCHAR(20) NOT NULL DEFAULT 'EM_ANALISE', -- SituacaoCredito: EM_ANALISE | LIBERADO | BLOQUEADO
+    limite_credito      NUMERIC(12,2),
+    observacoes_credito VARCHAR(1000),
+    criado_em           TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_clientes_cpf_cnpj ON clientes (cpf_cnpj);
 
 -- ============================================================================
--- 4) ENDERECO
---    Entidade: Endereco -> @Table(name = "Endereco")  (nome/colunas em caixa
---    alta direta na definição; exigem aspas duplas no PostgreSQL).
+-- 4) ENDERECOS
+--    Entidade: Endereco -> @Table(name = "enderecos")
+--    Tabela única de endereços. Fonte de verdade pra TODO endereço do sistema:
+--    os endereços salvos de um cliente (cliente_id preenchido, com apelido e
+--    flag de principal) e as linhas "avulsas" referenciadas por FK por
+--    depositos, funcionarios, pedidos e expedicoes (cliente_id nulo, apelido
+--    nulo, principal = false).
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS "Endereco" (
-    id_endereco BIGSERIAL PRIMARY KEY,
-    "Cep"        VARCHAR(15),
-    "Rua"        VARCHAR(100),
-    "Bairro"     VARCHAR(50),
-    "Cidade"     VARCHAR(50),
-    "Estado"     VARCHAR(50),
-    "Complemento" VARCHAR(20),
-    "Numero"      VARCHAR(10)
+CREATE TABLE IF NOT EXISTS enderecos (
+    id           BIGSERIAL PRIMARY KEY,
+    apelido      VARCHAR(60),
+    cep          VARCHAR(15),
+    rua          VARCHAR(150),
+    numero       VARCHAR(10),
+    complemento  VARCHAR(100),
+    bairro       VARCHAR(80),
+    cidade       VARCHAR(80),
+    estado       VARCHAR(2),
+    principal    BOOLEAN NOT NULL DEFAULT FALSE,
+    cliente_id   BIGINT,
+    criado_em    TIMESTAMP NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_enderecos_cliente ON enderecos (cliente_id);
 
 -- ============================================================================
 -- 5) FUNCIONARIOS
@@ -107,6 +127,7 @@ CREATE TABLE IF NOT EXISTS funcionarios (
     cargo_id         BIGINT,
     departamento_id  BIGINT,
     deposito_id      BIGINT,
+    endereco_id      BIGINT,
     salario          DOUBLE PRECISION NOT NULL,
     data_admissao    TIMESTAMP NOT NULL,
     data_demissao    TIMESTAMP,
@@ -116,12 +137,15 @@ CREATE TABLE IF NOT EXISTS funcionarios (
     CONSTRAINT fk_funcionario_departamento FOREIGN KEY (departamento_id)
         REFERENCES departamentos (id),
     CONSTRAINT fk_funcionario_deposito FOREIGN KEY (deposito_id)
-        REFERENCES depositos (id)
+        REFERENCES depositos (id),
+    CONSTRAINT fk_funcionario_endereco FOREIGN KEY (endereco_id)
+        REFERENCES enderecos (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_funcionarios_cargo ON funcionarios (cargo_id);
 CREATE INDEX IF NOT EXISTS idx_funcionarios_departamento ON funcionarios (departamento_id);
 CREATE INDEX IF NOT EXISTS idx_funcionarios_deposito ON funcionarios (deposito_id);
+CREATE INDEX IF NOT EXISTS idx_funcionarios_endereco ON funcionarios (endereco_id);
 
 -- ============================================================================
 -- 6) USUARIOS
@@ -252,7 +276,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     analista_credito_id    BIGINT,
     data_inicio            DATE NOT NULL,
     data_fim               DATE NOT NULL,
-    endereco_entrega       VARCHAR(500) NOT NULL,
+    endereco_id            BIGINT,
     observacoes_cliente    VARCHAR(1000),
     observacoes_consultor  VARCHAR(1000),
     motivo_recusa          VARCHAR(1000),
@@ -268,6 +292,8 @@ CREATE TABLE IF NOT EXISTS pedidos (
         REFERENCES funcionarios (id),
     CONSTRAINT fk_pedido_analista_credito FOREIGN KEY (analista_credito_id)
         REFERENCES funcionarios (id),
+    CONSTRAINT fk_pedido_endereco FOREIGN KEY (endereco_id)
+        REFERENCES enderecos (id),
     CONSTRAINT ck_pedido_status CHECK (status IN (
         'SOLICITADO', 'CONFIRMADO', 'APROVADO', 'RECUSADO', 'REPROVADO', 'CANCELADO'
     ))
@@ -275,6 +301,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
 
 CREATE INDEX IF NOT EXISTS idx_pedidos_cliente ON pedidos (cliente_id);
 CREATE INDEX IF NOT EXISTS idx_pedidos_status ON pedidos (status);
+CREATE INDEX IF NOT EXISTS idx_pedidos_endereco ON pedidos (endereco_id);
 
 -- ============================================================================
 -- 11-C) ITENS_PEDIDO
@@ -322,7 +349,7 @@ CREATE TABLE IF NOT EXISTS expedicoes (
     placa_veiculo       VARCHAR(20),
     data_programada     DATE NOT NULL,
     horario_programado  VARCHAR(255),
-    endereco_entrega    VARCHAR(500),
+    endereco_id         BIGINT,
     observacoes         VARCHAR(1000),
     checkout_em         TIMESTAMP,
     checkin_em          TIMESTAMP,
@@ -340,6 +367,8 @@ CREATE TABLE IF NOT EXISTS expedicoes (
         REFERENCES expedicoes (id),
     CONSTRAINT fk_expedicao_pedido FOREIGN KEY (pedido_id)
         REFERENCES pedidos (id),
+    CONSTRAINT fk_expedicao_endereco FOREIGN KEY (endereco_id)
+        REFERENCES enderecos (id),
     CONSTRAINT ck_expedicao_status CHECK (status IN (
         'AGENDADO', 'EM_TRANSITO', 'ENTREGUE', 'CONCLUIDO', 'CANCELADO'
     )),
@@ -350,6 +379,7 @@ CREATE INDEX IF NOT EXISTS idx_expedicoes_cliente ON expedicoes (cliente_id);
 CREATE INDEX IF NOT EXISTS idx_expedicoes_motorista ON expedicoes (motorista_id);
 CREATE INDEX IF NOT EXISTS idx_expedicoes_origem ON expedicoes (entrega_origem_id);
 CREATE INDEX IF NOT EXISTS idx_expedicoes_pedido ON expedicoes (pedido_id);
+CREATE INDEX IF NOT EXISTS idx_expedicoes_endereco ON expedicoes (endereco_id);
 
 -- ============================================================================
 -- 13) ITENS_EXPEDICAO

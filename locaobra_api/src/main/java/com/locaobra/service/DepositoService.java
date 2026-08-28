@@ -20,14 +20,17 @@ public class DepositoService {
     private final DepositoRepository depositoRepository;
     private final UnidadeEquipamentoRepository unidadeRepository;
     private final FuncionarioRepository funcionarioRepository;
+    private final EnderecoService enderecoService;
 
     public DepositoService(
             DepositoRepository depositoRepository,
             UnidadeEquipamentoRepository unidadeRepository,
-            FuncionarioRepository funcionarioRepository) {
+            FuncionarioRepository funcionarioRepository,
+            EnderecoService enderecoService) {
         this.depositoRepository = depositoRepository;
         this.unidadeRepository = unidadeRepository;
         this.funcionarioRepository = funcionarioRepository;
+        this.enderecoService = enderecoService;
     }
 
     @Transactional
@@ -42,7 +45,7 @@ public class DepositoService {
 
         Deposito deposito = new Deposito();
         deposito.setNome(nome);
-        deposito.setEndereco(request.getEndereco());
+        deposito.setEndereco(enderecoService.persistirAvulso(request.getEndereco()));
         deposito.setDescricao(request.getDescricao());
         deposito.setAtivo(request.getAtivo() != null ? request.getAtivo() : true);
 
@@ -79,7 +82,11 @@ public class DepositoService {
             }
             deposito.setNome(nome);
         }
-        if (request.getEndereco() != null) deposito.setEndereco(request.getEndereco());
+        if (request.getEndereco() != null) {
+            // Atualiza a linha de endereço já vinculada (em place) em vez de
+            // criar uma nova a cada edição — que deixaria linhas órfãs.
+            deposito.setEndereco(enderecoService.salvarAvulso(deposito.getEndereco(), request.getEndereco()));
+        }
         if (request.getDescricao() != null) deposito.setDescricao(request.getDescricao());
         if (request.getAtivo() != null) deposito.setAtivo(request.getAtivo());
 

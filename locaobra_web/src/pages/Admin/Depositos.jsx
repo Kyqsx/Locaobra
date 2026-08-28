@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faPlus, faEdit, faTrash, faList, faWarehouse } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
+import EnderecoFields from '../../components/EnderecoFields';
 
 function FormField({ label, children }) {
     return (
@@ -16,7 +17,7 @@ function FormField({ label, children }) {
     );
 }
 
-function DepositosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting }) {
+function DepositosModal({ open, onClose, editingId, form, onChange, onEnderecoChange, onSubmit, onReset, submitting }) {
     if (!open) return null;
 
     return (
@@ -37,7 +38,7 @@ function DepositosModal({ open, onClose, editingId, form, onChange, onSubmit, on
 
                         <div className="formRow full">
                             <FormField label="Endereço">
-                                <input className="equipInput" name="endereco" placeholder="Endereço completo" value={form.endereco} onChange={onChange} />
+                                <EnderecoFields value={form.endereco} onChange={onEnderecoChange} prefixo="deposito" />
                             </FormField>
                         </div>
 
@@ -67,9 +68,11 @@ function DepositosModal({ open, onClose, editingId, form, onChange, onSubmit, on
     );
 }
 
+const enderecoVazioDeposito = { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };
+
 const initialForm = {
     nome: '',
-    endereco: '',
+    endereco: { ...enderecoVazioDeposito },
     descricao: '',
     ativo: true
 };
@@ -111,7 +114,7 @@ export default function Depositos() {
             const term = searchTerm.toLowerCase();
             return (
                 d.nome?.toLowerCase().includes(term) ||
-                d.endereco?.toLowerCase().includes(term) ||
+                d.endereco?.formatado?.toLowerCase().includes(term) ||
                 d.descricao?.toLowerCase().includes(term)
             );
         });
@@ -120,6 +123,10 @@ export default function Depositos() {
     function handleChange(e) {
         const { name, value, type, checked } = e.target;
         setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    }
+
+    function handleEnderecoChange(novoEndereco) {
+        setForm(prev => ({ ...prev, endereco: novoEndereco }));
     }
 
     function resetForm() {
@@ -133,7 +140,17 @@ export default function Depositos() {
         setModalOpen(true);
         setForm({
             nome: deposito.nome || '',
-            endereco: deposito.endereco || '',
+            endereco: deposito.endereco
+                ? {
+                    cep: deposito.endereco.cep || '',
+                    rua: deposito.endereco.rua || '',
+                    numero: deposito.endereco.numero || '',
+                    complemento: deposito.endereco.complemento || '',
+                    bairro: deposito.endereco.bairro || '',
+                    cidade: deposito.endereco.cidade || '',
+                    estado: deposito.endereco.estado || '',
+                }
+                : { ...enderecoVazioDeposito },
             descricao: deposito.descricao || '',
             ativo: deposito.ativo ?? true
         });
@@ -239,7 +256,7 @@ export default function Depositos() {
                             {!loading && filteredDepositos.map(d => (
                                 <tr key={d.id} className="tableRow">
                                     <td><strong><FontAwesomeIcon icon={faWarehouse} /> {d.nome}</strong></td>
-                                    <td>{d.endereco || '---'}</td>
+                                    <td>{d.endereco?.formatado || '---'}</td>
                                     <td>{d.quantidadeUnidades ?? 0}</td>
                                     <td>{d.quantidadeFuncionarios ?? 0}</td>
                                     <td>{d.ativo ? 'Sim' : 'Não'}</td>
@@ -269,6 +286,7 @@ export default function Depositos() {
                 editingId={editingId}
                 form={form}
                 onChange={handleChange}
+                onEnderecoChange={handleEnderecoChange}
                 onSubmit={handleSubmit}
                 onReset={resetForm}
                 submitting={submitting}

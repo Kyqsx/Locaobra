@@ -8,7 +8,7 @@ public class DepositoResponse {
 
     private Long id;
     private String nome;
-    private String endereco;
+    private EnderecoResponse endereco;
     private String descricao;
     private Boolean ativo;
     // Contagens de apoio pra tela de listagem (quantas unidades de equipamento
@@ -23,7 +23,7 @@ public class DepositoResponse {
         DepositoResponse r = new DepositoResponse();
         r.id = d.getId();
         r.nome = d.getNome();
-        r.endereco = d.getEndereco();
+        r.endereco = EnderecoResponse.from(d.getEndereco());
         r.descricao = d.getDescricao();
         r.ativo = d.getAtivo();
         r.criadoEm = d.getCriadoEm();
@@ -33,7 +33,7 @@ public class DepositoResponse {
 
     public Long getId() { return id; }
     public String getNome() { return nome; }
-    public String getEndereco() { return endereco; }
+    public EnderecoResponse getEndereco() { return endereco; }
     public String getDescricao() { return descricao; }
     public Boolean getAtivo() { return ativo; }
     public Long getQuantidadeUnidades() { return quantidadeUnidades; }

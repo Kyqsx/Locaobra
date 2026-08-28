@@ -45,6 +45,9 @@ public class PedidoService {
     private final DepositoRepository depositoRepository;
     private final UnidadeEquipamentoRepository unidadeRepository;
     private final ExpedicaoRepository expedicaoRepository;
+    private final EnderecoRepository enderecoRepository;
+    private final EnderecoService enderecoService;
+    private final ClienteService clienteService;
 
     public PedidoService(
             PedidoRepository pedidoRepository,
@@ -55,7 +58,10 @@ public class PedidoService {
             UsuarioRepository usuarioRepository,
             DepositoRepository depositoRepository,
             UnidadeEquipamentoRepository unidadeRepository,
-            ExpedicaoRepository expedicaoRepository) {
+            ExpedicaoRepository expedicaoRepository,
+            EnderecoRepository enderecoRepository,
+            EnderecoService enderecoService,
+            ClienteService clienteService) {
         this.pedidoRepository = pedidoRepository;
         this.itemRepository = itemRepository;
         this.clienteRepository = clienteRepository;
@@ -65,6 +71,9 @@ public class PedidoService {
         this.depositoRepository = depositoRepository;
         this.unidadeRepository = unidadeRepository;
         this.expedicaoRepository = expedicaoRepository;
+        this.enderecoRepository = enderecoRepository;
+        this.enderecoService = enderecoService;
+        this.clienteService = clienteService;
     }
 
     // ======================================================================
@@ -81,9 +90,7 @@ public class PedidoService {
         if (request.getDataFim().isBefore(request.getDataInicio())) {
             throw new BusinessException("A data de fim não pode ser anterior à data de início.");
         }
-        if (request.getEnderecoEntrega() == null || request.getEnderecoEntrega().isBlank()) {
-            throw new BusinessException("Endereço de entrega é obrigatório.");
-        }
+        Endereco enderecoEntrega = resolverEnderecoEntrega(cliente, request);
         if (request.getItens() == null || request.getItens().isEmpty()) {
             throw new BusinessException("Adicione ao menos um equipamento ao pedido.");
         }
@@ -94,7 +101,7 @@ public class PedidoService {
         pedido.setCliente(cliente);
         pedido.setDataInicio(request.getDataInicio());
         pedido.setDataFim(request.getDataFim());
-        pedido.setEnderecoEntrega(request.getEnderecoEntrega());
+        pedido.setEnderecoEntrega(enderecoEntrega);
         pedido.setObservacoesCliente(request.getObservacoesCliente());
 
         long dias = Math.max(1, ChronoUnit.DAYS.between(request.getDataInicio(), request.getDataFim()));
@@ -126,6 +133,13 @@ public class PedidoService {
                             .multiply(BigDecimal.valueOf(dias))
             );
         }
+
+        // Trava de crédito: barra o pedido se o cliente não estiver liberado
+        // ou se esse valor estourar o limite disponível. Feito por último
+        // (depois de somar os itens) pra usar o valor real do pedido; como o
+        // método é @Transactional, o pedido/itens já salvos são desfeitos
+        // junto com a exceção.
+        clienteService.validarCreditoParaNovoPedido(cliente, valorTotal);
 
         pedido.setValorTotalEstimado(valorTotal);
         pedido = pedidoRepository.save(pedido);
@@ -456,6 +470,28 @@ public class PedidoService {
     // ======================================================================
     // AUXILIARES
     // ======================================================================
+
+    // Resolve o endereço de entrega do pedido: se o cliente escolheu um
+    // endereço já salvo (enderecoId), cria uma cópia avulsa; senão, persiste a
+    // linha digitada na hora (enderecoEntrega). Ambas viram uma linha própria
+    // na tabela enderecos referenciada por FK — pra não mudar retroativamente
+    // pedidos já feitos quando o cliente editar/apagar o endereço salvo.
+    private Endereco resolverEnderecoEntrega(Cliente cliente, PedidoRequest request) {
+        if (request.getEnderecoId() != null) {
+            Endereco endereco = enderecoRepository.findById(request.getEnderecoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + request.getEnderecoId()));
+            if (endereco.getCliente() == null || !endereco.getCliente().getId().equals(cliente.getId())) {
+                throw new BusinessException("Esse endereço não pertence a esse cliente.");
+            }
+            return enderecoService.copiarAvulso(endereco);
+        }
+
+        var enderecoDigitado = request.getEnderecoEntrega();
+        if (enderecoDigitado == null || enderecoDigitado.getRua() == null || enderecoDigitado.getRua().isBlank()) {
+            throw new BusinessException("Escolha um endereço salvo ou informe um endereço de entrega.");
+        }
+        return enderecoService.persistirAvulso(enderecoDigitado);
+    }
 
     private Pedido buscarEntidade(Long id) {
         return pedidoRepository.findById(id)

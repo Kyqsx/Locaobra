@@ -21,6 +21,7 @@ import AdminDepositos from './pages/Admin/Depositos';
 import AdminPedidos from './pages/Admin/pedidos';
 import MeusPedidos from './pages/Pedidos/meusPedidos';
 import Carrinho from './pages/Cart/carrinho';
+import MeusEnderecos from './pages/Perfil/meusEnderecos';
 
 import Header from "./components/header";
 import Sidebar from "./components/sidebar";
@@ -107,6 +108,7 @@ function RotasApp() {
                             <Route path="/productview" element={<ProductView />} />
                             <Route path="/productview/:id" element={<ProductView />} />
                             <Route path="/meus-pedidos" element={<ClienteRoute><MeusPedidos /></ClienteRoute>} />
+                            <Route path="/meus-enderecos" element={<ClienteRoute><MeusEnderecos /></ClienteRoute>} />
                             <Route path="/carrinho" element={<ClienteRoute><Carrinho /></ClienteRoute>} />
                         </Route>
 

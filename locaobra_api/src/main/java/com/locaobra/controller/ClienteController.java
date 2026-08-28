@@ -1,5 +1,6 @@
 package com.locaobra.controller;
 
+import com.locaobra.dto.request.ClienteCreditoRequest;
 import com.locaobra.dto.request.ClienteRequest;
 import com.locaobra.dto.response.ClienteResponse;
 import com.locaobra.dto.response.PerfilClienteResponse;
@@ -73,6 +74,15 @@ public class ClienteController {
     public ResponseEntity<Void> desativar(@PathVariable Long id) {
         clienteService.desativar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Edição do crédito (limite/situação/observações) — restrita a
+    // ADMIN/analista de credenciamento/analista financeiro (ver SecurityConfig).
+    @PatchMapping("/{id}/credito")
+    public ResponseEntity<ClienteResponse> atualizarCredito(
+            @PathVariable Long id,
+            @Valid @RequestBody ClienteCreditoRequest request) {
+        return ResponseEntity.ok(clienteService.atualizarCredito(id, request));
     }
 
     @DeleteMapping("/{id}")

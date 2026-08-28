@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
 import { useCart } from '../../context/CartContext';
+import EnderecoFields from '../../components/EnderecoFields';
 import './Cart.css';
 
 const hojeISO = () => new Date().toISOString().split('T')[0];
@@ -19,6 +20,8 @@ const imageUrl = (path) => {
   return `${api.defaults.baseURL}${path}`;
 };
 
+const enderecoNovoVazio = { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };
+
 function Carrinho() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -26,7 +29,12 @@ function Carrinho() {
 
   const [dataInicio, setDataInicio] = useState(hojeISO());
   const [dataFim, setDataFim] = useState(somarDias(hojeISO(), 1));
-  const [enderecoEntrega, setEnderecoEntrega] = useState(user?.enderecoFormatado || '');
+
+  const enderecosSalvos = user?.enderecos || [];
+  const principalSalvo = enderecosSalvos.find((e) => e.principal) || enderecosSalvos[0] || null;
+  const [enderecoSelecionadoId, setEnderecoSelecionadoId] = useState(principalSalvo ? principalSalvo.id : 'novo');
+  const [enderecoNovo, setEnderecoNovo] = useState(enderecoNovoVazio);
+
   const [observacoesCliente, setObservacoesCliente] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -51,9 +59,15 @@ function Carrinho() {
       setErro('A data de fim não pode ser anterior à data de início.');
       return;
     }
-    if (!enderecoEntrega.trim()) {
-      setErro('Informe o endereço de entrega.');
-      return;
+    let enderecoPayload = {};
+    if (enderecoSelecionadoId === 'novo') {
+      if (!enderecoNovo.rua.trim() || !enderecoNovo.cidade.trim() || !enderecoNovo.estado.trim()) {
+        setErro('Preencha ao menos rua, cidade e UF do endereço de entrega.');
+        return;
+      }
+      enderecoPayload = { enderecoEntrega: enderecoNovo };
+    } else {
+      enderecoPayload = { enderecoId: Number(enderecoSelecionadoId) };
     }
 
     setEnviando(true);
@@ -61,7 +75,7 @@ function Carrinho() {
       const response = await api.post('/api/pedidos', {
         dataInicio,
         dataFim,
-        enderecoEntrega: enderecoEntrega.trim(),
+        ...enderecoPayload,
         observacoesCliente: observacoesCliente.trim() || null,
         itens: itens.map((i) => ({
           equipamentoId: i.equipamentoId,
@@ -225,13 +239,44 @@ function Carrinho() {
 
           <div className="checkoutField">
             <label>Endereço de entrega</label>
-            <textarea
-              rows={2}
-              value={enderecoEntrega}
-              onChange={(e) => setEnderecoEntrega(e.target.value)}
-              placeholder="Rua, número, bairro, cidade/UF"
-              required
-            />
+            {enderecosSalvos.length > 0 && (
+              <div className="carrinho-enderecos-salvos">
+                {enderecosSalvos.map((endereco) => (
+                  <label key={endereco.id} className="carrinho-endereco-opcao">
+                    <input
+                      type="radio"
+                      name="enderecoSalvo"
+                      checked={String(enderecoSelecionadoId) === String(endereco.id)}
+                      onChange={() => setEnderecoSelecionadoId(endereco.id)}
+                    />
+                    <span>
+                      <strong>{endereco.apelido || 'Endereço'}</strong>
+                      {endereco.principal && <span className="carrinho-endereco-tag">Principal</span>}
+                      <br />
+                      <span className="carrinho-endereco-detalhe">{endereco.formatado}</span>
+                    </span>
+                  </label>
+                ))}
+                <label className="carrinho-endereco-opcao">
+                  <input
+                    type="radio"
+                    name="enderecoSalvo"
+                    checked={enderecoSelecionadoId === 'novo'}
+                    onChange={() => setEnderecoSelecionadoId('novo')}
+                  />
+                  <span><strong>Usar outro endereço</strong></span>
+                </label>
+              </div>
+            )}
+
+            {enderecoSelecionadoId === 'novo' && (
+              <div className="carrinho-endereco-novo">
+                <EnderecoFields value={enderecoNovo} onChange={setEnderecoNovo} prefixo="carrinho" />
+                <Link to="/meus-enderecos" className="carrinho-link-salvar-endereco">
+                  Prefere salvar endereços pra usar depois? Gerencie em "Meus Endereços".
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="checkoutField">

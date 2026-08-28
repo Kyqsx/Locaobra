@@ -1,6 +1,7 @@
 package com.locaobra.service;
 
 import com.locaobra.dto.request.ExpedicaoRequest;
+import com.locaobra.dto.request.EnderecoRequest;
 import com.locaobra.dto.request.ItemExpedicaoRequest;
 import com.locaobra.dto.response.ExpedicaoResponse;
 import com.locaobra.dto.response.VistoriaResponse;
@@ -37,6 +38,7 @@ public class ExpedicaoService {
     private final PedidoRepository pedidoRepository;
     private final ItemPedidoRepository itemPedidoRepository;
     private final DepositoRepository depositoRepository;
+    private final EnderecoService enderecoService;
 
     public ExpedicaoService(
             ExpedicaoRepository expedicaoRepository,
@@ -50,7 +52,8 @@ public class ExpedicaoService {
             UsuarioRepository usuarioRepository,
             PedidoRepository pedidoRepository,
             ItemPedidoRepository itemPedidoRepository,
-            DepositoRepository depositoRepository) {
+            DepositoRepository depositoRepository,
+            EnderecoService enderecoService) {
         this.expedicaoRepository = expedicaoRepository;
         this.itemRepository = itemRepository;
         this.vistoriaRepository = vistoriaRepository;
@@ -63,6 +66,7 @@ public class ExpedicaoService {
         this.pedidoRepository = pedidoRepository;
         this.itemPedidoRepository = itemPedidoRepository;
         this.depositoRepository = depositoRepository;
+        this.enderecoService = enderecoService;
     }
 
     @Transactional
@@ -144,16 +148,16 @@ public class ExpedicaoService {
             // no request (ex.: conferente ajustou o endereço na hora) prevalece.
             expedicao.setCliente(pedido.getCliente());
             expedicao.setEnderecoEntrega(
-                    request.getEnderecoEntrega() != null && !request.getEnderecoEntrega().isBlank()
-                            ? request.getEnderecoEntrega() : pedido.getEnderecoEntrega());
+                    temEnderecoEntrega(request.getEnderecoEntrega())
+                            ? enderecoService.persistirAvulso(request.getEnderecoEntrega()) : pedido.getEnderecoEntrega());
             aplicarNomesAutorizados(expedicao, request.getNomesAutorizados());
         } else if (entregaOrigem != null) {
             // Herdado da entrega de origem — endereço é o mesmo local onde o
             // equipamento foi deixado; cliente idem, a não ser que venha um
             // override explícito no request.
             expedicao.setEnderecoEntrega(
-                    request.getEnderecoEntrega() != null && !request.getEnderecoEntrega().isBlank()
-                            ? request.getEnderecoEntrega() : entregaOrigem.getEnderecoEntrega());
+                    temEnderecoEntrega(request.getEnderecoEntrega())
+                            ? enderecoService.persistirAvulso(request.getEnderecoEntrega()) : entregaOrigem.getEnderecoEntrega());
             expedicao.setCliente(entregaOrigem.getCliente());
             aplicarNomesAutorizados(expedicao,
                     request.getNomesAutorizados() != null && !request.getNomesAutorizados().isEmpty()
@@ -163,7 +167,7 @@ public class ExpedicaoService {
                                     nvl(entregaOrigem.getNomeAutorizado2()),
                                     nvl(entregaOrigem.getNomeAutorizado3())));
         } else {
-            expedicao.setEnderecoEntrega(request.getEnderecoEntrega());
+            expedicao.setEnderecoEntrega(enderecoService.persistirAvulso(request.getEnderecoEntrega()));
             if (request.getClienteId() != null) {
                 expedicao.setCliente(clienteRepository.findById(request.getClienteId())
                         .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado: " + request.getClienteId())));
@@ -263,6 +267,10 @@ public class ExpedicaoService {
     }
 
     private String nvl(String s) { return s == null ? "" : s; }
+
+    private boolean temEnderecoEntrega(EnderecoRequest r) {
+        return r != null && r.getRua() != null && !r.getRua().isBlank();
+    }
 
     @Transactional(readOnly = true)
     public List<ExpedicaoResponse> listarTodos() {

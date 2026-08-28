@@ -648,14 +648,14 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
 
                                 {canManageFrota && (
                                     <form onSubmit={handleUnidadeSubmit} className="unidadeFormRow">
-                                        <input className="equipInput" name="codigoPatrimonio" placeholder="Código de Patrimônio (ex: MAR-001)" value={unidadeForm.codigoPatrimonio} onChange={handleUnidadeChange} />
-                                        <input className="equipInput" name="numeroDeSerie" placeholder="Nº de Série do Fabricante" value={unidadeForm.numeroDeSerie} onChange={handleUnidadeChange} />
+                                        <input className="equipInput" name="codigoPatrimonio" placeholder="Código de Patrimônio (ex: MAR-001)" value={unidadeForm.codigoPatrimonio} onChange={handleUnidadeChange} required/>
+                                        <input className="equipInput" name="numeroDeSerie" placeholder="Nº de Série do Fabricante" value={unidadeForm.numeroDeSerie} onChange={handleUnidadeChange} required/>
                                         <select className="unidadeStatusSelect" name="status" value={unidadeForm.status} onChange={handleUnidadeChange}>
                                             {Object.entries(STATUS_UNIDADE_LABEL).map(([value, label]) => (
                                                 <option key={value} value={value}>{label}</option>
                                             ))}
                                         </select>
-                                        <select className="unidadeStatusSelect" name="depositoId" value={unidadeForm.depositoId} onChange={handleUnidadeChange}>
+                                        <select className="unidadeStatusSelect" name="depositoId" value={unidadeForm.depositoId} onChange={handleUnidadeChange} required>
                                             <option value="">Sem depósito</option>
                                             {depositos.map(d => (
                                                 <option key={d.id} value={d.id}>{d.nome}</option>

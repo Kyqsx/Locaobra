@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "pedidos")
+@Table(name = "pedidos", indexes = {
+        @Index(name = "idx_pedidos_endereco", columnList = "endereco_id")
+})
 public class Pedido {
 
     @Id
@@ -43,8 +45,13 @@ public class Pedido {
     @Column(name = "data_fim", nullable = false)
     private LocalDate dataFim;
 
-    @Column(name = "endereco_entrega", nullable = false, length = 500)
-    private String enderecoEntrega;
+    // Endereço de entrega — aponta por FK pra uma linha própria da tabela
+    // enderecos (cópia "avulsa", sem vínculo de cliente), persistida no momento
+    // do pedido. Se o cliente editar/apagar o endereço salvo depois, este pedido
+    // não muda (mesmo princípio do valorDiariaSnapshot em ItemPedido).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "endereco_id")
+    private Endereco enderecoEntrega;
 
     @Column(name = "observacoes_cliente", length = 1000)
     private String observacoesCliente;
@@ -114,8 +121,8 @@ public class Pedido {
     public LocalDate getDataFim() { return dataFim; }
     public void setDataFim(LocalDate dataFim) { this.dataFim = dataFim; }
 
-    public String getEnderecoEntrega() { return enderecoEntrega; }
-    public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
+    public Endereco getEnderecoEntrega() { return enderecoEntrega; }
+    public void setEnderecoEntrega(Endereco enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
 
     public String getObservacoesCliente() { return observacoesCliente; }
     public void setObservacoesCliente(String observacoesCliente) { this.observacoesCliente = observacoesCliente; }

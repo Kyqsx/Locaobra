@@ -1,148 +1,91 @@
 package com.locaobra.controller;
 
-import com.locaobra.entity.Endereco;
-import com.locaobra.entity.Usuario;
-import com.locaobra.dto.EnderecoDTO;
-import com.locaobra.config.JwtService;
-import com.locaobra.repository.UsuarioRepository;
+import com.locaobra.dto.request.EnderecoRequest;
+import com.locaobra.dto.response.EnderecoResponse;
+import com.locaobra.service.ClienteService;
 import com.locaobra.service.EnderecoService;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
+// Duas famílias de endpoints pro mesmo CRUD de endereços:
+// - /api/clientes/meus-enderecos      → o próprio cliente logado gerencia os dele
+// - /api/clientes/{clienteId}/enderecos → funcionário/admin gerencia os de qualquer cliente
+// Ambas delegam pro mesmo EnderecoService, só muda de onde vem o clienteId.
 @RestController
-@CrossOrigin
-@RequestMapping("/api/v1") // Raiz da API
+@RequestMapping("/api/clientes")
 public class EnderecoController {
 
-    @Autowired
-    private EnderecoService service;
+    private final EnderecoService enderecoService;
+    private final ClienteService clienteService;
 
-    @Autowired
-    private JwtService jwtService;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    // --- Endpoints Gerais para Endereços (se ainda forem necessários) ---
-
-    @GetMapping("/enderecos")
-    public ResponseEntity<List<EnderecoDTO>> listarEnderecos() {
-        return ResponseEntity.ok(service.listarEnderecos());
+    public EnderecoController(EnderecoService enderecoService, ClienteService clienteService) {
+        this.enderecoService = enderecoService;
+        this.clienteService = clienteService;
     }
 
-    @GetMapping("/enderecos/{id}")
-    public ResponseEntity<EnderecoDTO> get(@PathVariable("id") Long id) {
-        return service.getEnderecoById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    // ===================== AUTOATENDIMENTO (cliente logado) =====================
+
+    @GetMapping("/meus-enderecos")
+    public ResponseEntity<List<EnderecoResponse>> listarMeus(Authentication authentication) {
+        Long clienteId = clienteService.resolverClienteIdLogado(authentication.getName());
+        return ResponseEntity.ok(enderecoService.listarPorCliente(clienteId));
     }
 
-    // Este endpoint agora é mais específico para criação geral, se necessário.
-    // O endpoint principal para criação associada ao usuário é /endereco
-    @PostMapping("/enderecos")
-    public ResponseEntity<Endereco> incluir(@RequestBody Endereco endereco) {
-        Endereco novo = service.incluir(endereco);
-        return ResponseEntity.status(201).body(novo);
+    @PostMapping("/meus-enderecos")
+    public ResponseEntity<EnderecoResponse> adicionarMeu(Authentication authentication, @Valid @RequestBody EnderecoRequest request) {
+        Long clienteId = clienteService.resolverClienteIdLogado(authentication.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(enderecoService.adicionar(clienteId, request));
     }
 
-    @PutMapping("/enderecos/{id}")
-    public ResponseEntity<Endereco> atualizar(@PathVariable Long id, @RequestBody Endereco endereco) {
-        Endereco atualizado = service.atualizar(id, endereco);
-        if (atualizado != null) {
-            return ResponseEntity.ok(atualizado);
-        }
-        return ResponseEntity.notFound().build();
+    @PutMapping("/meus-enderecos/{enderecoId}")
+    public ResponseEntity<EnderecoResponse> atualizarMeu(Authentication authentication, @PathVariable Long enderecoId, @Valid @RequestBody EnderecoRequest request) {
+        Long clienteId = clienteService.resolverClienteIdLogado(authentication.getName());
+        return ResponseEntity.ok(enderecoService.atualizar(clienteId, enderecoId, request));
     }
 
-    @DeleteMapping("/enderecos/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        boolean deletado = service.deletar(id);
-        if (deletado) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+    @DeleteMapping("/meus-enderecos/{enderecoId}")
+    public ResponseEntity<Void> removerMeu(Authentication authentication, @PathVariable Long enderecoId) {
+        Long clienteId = clienteService.resolverClienteIdLogado(authentication.getName());
+        enderecoService.remover(clienteId, enderecoId);
+        return ResponseEntity.noContent().build();
     }
 
-    // --- Novo Endpoint: Cadastrar Endereço e Associar ao Usuário Logado ---
-
-    /**
-     * Endpoint para cadastrar um endereço e associá-lo ao usuário logado (Cliente ou Funcionario).
-     * O usuário é identificado pelo token JWT.
-     */
-    @PostMapping("/endereco") // Endpoint específico para o usuário logado
-    public ResponseEntity<?> cadastrarEnderecoUsuarioLogado(
-            @RequestBody Endereco endereco,
-            HttpServletRequest request) {
-
-        try {
-            // 1. Extrair o token do cabeçalho Authorization
-            String token = extractTokenFromRequest(request);
-            if (token == null) {
-                return ResponseEntity.status(401).body("Token não fornecido.");
-            }
-
-            // 2. Validar o token e extrair o email
-            String email;
-            try {
-                if (!jwtService.validateToken(token, jwtService.extractEmail(token))) {
-                    return ResponseEntity.status(401).body("Token inválido ou expirado.");
-                }
-                email = jwtService  .extractEmail(token);
-            } catch (Exception e) {
-                return ResponseEntity.status(401).body("Token inválido: " + e.getMessage());
-            }
-
-            // 3. Buscar o usuário pelo email
-            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-            if (usuarioOpt.isEmpty()) {
-                return ResponseEntity.status(404).body("Usuário não encontrado com o email: " + email);
-            }
-            Usuario usuario = usuarioOpt.get();
-
-            // 4. Salvar o novo endereço
-            Endereco novoEndereco = service.incluir(endereco);
-            Long idNovoEndereco = novoEndereco.getId_endereco(); // getId() retorna id_endereco
-
-            // 5. Associar o endereço diretamente ao usuário logado
-            usuario.setIdEndereco(idNovoEndereco);
-            usuarioRepository.save(usuario);
-
-            // 6. Retornar sucesso com o DTO do endereço criado
-            // Certifique-se de que o construtor do EnderecoDTO corresponde aos campos
-            EnderecoDTO enderecoDTO = new EnderecoDTO(
-                    novoEndereco.getId_endereco(), // id_endereco
-                    novoEndereco.getCep(),
-                    novoEndereco.getRua(),
-                    novoEndereco.getBairro(),
-                    novoEndereco.getCidade(),
-                    novoEndereco.getEstado(),
-                    novoEndereco.getComplemento(),
-                    novoEndereco.getNumero()
-            );
-
-            return ResponseEntity.ok(enderecoDTO);
-
-        } catch (Exception e) {
-            // Log do erro para depuração (opcional, use logger em produção)
-            // e.printStackTrace();
-            return ResponseEntity.badRequest().body("Erro ao cadastrar endereço: " + e.getMessage());
-        }
+    @PatchMapping("/meus-enderecos/{enderecoId}/principal")
+    public ResponseEntity<EnderecoResponse> definirPrincipalMeu(Authentication authentication, @PathVariable Long enderecoId) {
+        Long clienteId = clienteService.resolverClienteIdLogado(authentication.getName());
+        return ResponseEntity.ok(enderecoService.definirPrincipal(clienteId, enderecoId));
     }
 
-    /**
-     * Método auxiliar para extrair o token Bearer do cabeçalho Authorization.
-     */
-    private String extractTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // Remove "Bearer "
-        }
-        return null;
+    // ===================== GESTÃO PELA EQUIPE (admin/funcionário) =====================
+
+    @GetMapping("/{clienteId}/enderecos")
+    public ResponseEntity<List<EnderecoResponse>> listar(@PathVariable Long clienteId) {
+        return ResponseEntity.ok(enderecoService.listarPorCliente(clienteId));
     }
 
+    @PostMapping("/{clienteId}/enderecos")
+    public ResponseEntity<EnderecoResponse> adicionar(@PathVariable Long clienteId, @Valid @RequestBody EnderecoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(enderecoService.adicionar(clienteId, request));
+    }
+
+    @PutMapping("/{clienteId}/enderecos/{enderecoId}")
+    public ResponseEntity<EnderecoResponse> atualizar(@PathVariable Long clienteId, @PathVariable Long enderecoId, @Valid @RequestBody EnderecoRequest request) {
+        return ResponseEntity.ok(enderecoService.atualizar(clienteId, enderecoId, request));
+    }
+
+    @DeleteMapping("/{clienteId}/enderecos/{enderecoId}")
+    public ResponseEntity<Void> remover(@PathVariable Long clienteId, @PathVariable Long enderecoId) {
+        enderecoService.remover(clienteId, enderecoId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{clienteId}/enderecos/{enderecoId}/principal")
+    public ResponseEntity<EnderecoResponse> definirPrincipal(@PathVariable Long clienteId, @PathVariable Long enderecoId) {
+        return ResponseEntity.ok(enderecoService.definirPrincipal(clienteId, enderecoId));
+    }
 }

@@ -1,0 +1,162 @@
+.meusEnderecosContainer {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: var(--space-10, 40px) var(--space-4, 16px);
+}
+
+.meusEnderecosHeader h1 {
+    font-size: var(--text-2xl, 24px);
+    font-weight: 700;
+    color: var(--gray-900, #222);
+    margin: 0 0 4px;
+}
+
+.meusEnderecosHeader p {
+    color: var(--gray-500, #777);
+    font-size: var(--text-sm, 13px);
+    margin: 0 0 24px;
+}
+
+.enderecosLista {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.enderecosVazio {
+    text-align: center;
+    padding: 40px;
+    color: var(--gray-500, #777);
+    background: var(--gray-100, #f5f5f5);
+    border-radius: 12px;
+}
+
+.enderecoCard {
+    background: var(--white, #fff);
+    border: 1px solid var(--gray-100, #eee);
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: var(--shadow-md, 0 1px 4px rgba(0,0,0,0.06));
+}
+
+.enderecoCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.enderecoApelido {
+    font-weight: 700;
+    color: var(--gray-800, #333);
+}
+
+.enderecoBadgePrincipal {
+    background: rgba(31, 157, 107, 0.12);
+    color: var(--success-green, #1f9d6b);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.enderecoFormatado {
+    color: var(--gray-600, #555);
+    font-size: 14px;
+    margin: 0 0 10px;
+}
+
+.enderecoCardAcoes {
+    display: flex;
+    gap: 16px;
+}
+
+.btnLink {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary-color, #f39200);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btnLinkDanger {
+    color: var(--error-red, #dc4c4c);
+}
+
+.enderecoFormCard {
+    background: var(--white, #fff);
+    border: 1px solid var(--gray-100, #eee);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 10px;
+}
+
+.enderecoFormCard h3 {
+    margin: 0 0 14px;
+    font-size: 16px;
+    color: var(--gray-800, #333);
+}
+
+.enderecoFormAcoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btnPrimary,
+.btnSecondary {
+    padding: 8px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    border: none;
+}
+
+.btnPrimary {
+    background-color: var(--primary-color, #f39200);
+    color: #fff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+    background-color: var(--primary-color-dark, #cf7c00);
+}
+
+.btnPrimary:disabled,
+.btnSecondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnSecondary {
+    background-color: #fff;
+    color: var(--gray-700, #444);
+    border: 1.5px solid var(--gray-300, #ccc);
+}
+
+.btnSecondary:hover:not(:disabled) {
+    background-color: var(--gray-100, #f5f5f5);
+}
+
+.messageBanner {
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.messageBanner.positive {
+    background: rgba(31, 157, 107, 0.1);
+    color: var(--success-green, #1f9d6b);
+}
+
+.messageBanner.negative {
+    background: rgba(220, 76, 76, 0.1);
+    color: var(--error-red, #dc4c4c);
+}
