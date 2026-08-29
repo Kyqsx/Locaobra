@@ -1,3 +1,2 @@
-2026/08/27-20:06:13.587 2f70 Reusing MANIFEST C:\Users\ryan0\AppData\Local\Temp\flutter_tools.93a4a576\flutter_tools_chrome_device.df99217c\Default\Sync Data\LevelDB/MANIFEST-000001
-2026/08/27-20:06:13.590 2f70 Recovering log #3
-2026/08/27-20:06:13.591 2f70 Reusing old log C:\Users\ryan0\AppData\Local\Temp\flutter_tools.93a4a576\flutter_tools_chrome_device.df99217c\Default\Sync Data\LevelDB/000003.log 
+2026/08/28-21:02:06.960 22dc Creating DB C:\Users\kaiqu\AppData\Local\Temp\flutter_tools.c9cf0dcf\flutter_tools_chrome_device.1fd95c08\Default\Sync Data\LevelDB since it was missing.
+2026/08/28-21:02:07.060 22dc Reusing MANIFEST C:\Users\kaiqu\AppData\Local\Temp\flutter_tools.c9cf0dcf\flutter_tools_chrome_device.1fd95c08\Default\Sync Data\LevelDB/MANIFEST-000001
