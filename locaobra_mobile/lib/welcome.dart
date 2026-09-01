@@ -231,6 +231,36 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: 16),
+
+              // Cards de artigo, empilhados verticalmente no mobile
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    _buildArticleCard(
+                      imagePath: 'assets/imagens/5_ferramentas.jpg',
+                      title: '5 Ferramentas essenciais para começar sua obra',
+                      description:
+                          'Descubra quais itens não podem faltar no seu canteiro para evitar atrasos...',
+                      onTap: () {
+                        // TODO: navegar para o artigo completo
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildArticleCard(
+                      imagePath: 'assets/imagens/economizar_andaimes.jpg',
+                      title: 'Como economizar no aluguel de andaimes',
+                      description:
+                          'Planejar o tempo de uso pode reduzir custos em até 30% no seu projeto final...',
+                      onTap: () {
+                        // TODO: navegar para o artigo completo
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 24),
             ],
           ),
@@ -277,6 +307,89 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Card de artigo para a seção "Dicas LocaObra"
+  Widget _buildArticleCard({
+    required String imagePath,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.white,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Imagem à esquerda
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                  child: Image.asset(
+                    imagePath,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+
+                // Texto à direita
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Ler Artigo',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
