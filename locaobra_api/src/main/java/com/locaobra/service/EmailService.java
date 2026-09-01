@@ -59,7 +59,14 @@ public class EmailService {
             return;
         }
 
-        enviarResend(usuario.getEmail(), assunto, corpo);
+        try {
+            enviarResend(usuario.getEmail(), assunto, corpo);
+        } catch (Exception e) {
+            // NÃO derruba o cadastro: a conta já existe e o usuário pode
+            // reenviar o email pela tela /verificar-email
+            System.err.println("[EmailService] AVISO: email de verificação não enviado para "
+                    + usuario.getEmail() + " — " + e.getMessage());
+        }
     }
 
     private void enviarResend(String para, String assunto, String texto) {
