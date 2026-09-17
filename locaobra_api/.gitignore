@@ -2,9 +2,6 @@
 target/
 !.mvn/wrapper/maven-wrapper.jar
 
-# Configuração local com segredos reais — nunca commitar
-application-local.properties
-
 # IDEs
 .idea/
 *.iml
