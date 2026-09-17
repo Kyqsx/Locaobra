@@ -1,0 +1,331 @@
+/* ============================================
+   EQUIPAMENTO TEST - ESTILOS COMPATÍVEIS
+   ============================================ */
+
+.equipTestContainer {
+  padding: 24px;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Reutilizando animação do seu Dashboard */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card do Formulário */
+.equipFormCard {
+  background-color: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.equipFormCard h2 {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: 0.935rem;
+  border-left: 4px solid var(--primary-color);
+  padding-left: 12px;
+}
+
+/* Inputs e Campos */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.equipInput, .equipTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.807rem;
+  transition: var(--transition);
+  background-color: var(--bg-primary);
+}
+
+.equipInput:focus, .equipTextarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(217, 130, 15, 0.1);
+}
+
+/* Especificações Técnicas */
+.height100 {
+    max-height: 100%;
+}
+
+.specsSection {
+  background-color: var(--bg-primary);
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.specRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.specsHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+/* Botões Reutilizando o Estilo do seu Dashboard */
+.btnPrimary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  opacity: 0.9;
+}
+
+.btnSmallDelete {
+  padding: 4px 8px;
+  background-color: rgba(214, 48, 49, 0.1);
+  color: var(--danger-color);
+  border: 1px solid var(--danger-color);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+/* Grid de Listagem de Equipamentos */
+.equipListGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.equipResultCard {
+  background-color: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.equipResultCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.equipResultCard h3 {
+  color: var(--primary-color);
+  font-size: 0.892rem;
+  margin-bottom: 8px;
+}
+
+.priceBadge {
+  background-color: rgba(217, 130, 15, 0.1);
+  color: var(--primary-color);
+  padding: 4px 6px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 0.765rem;
+}
+
+.imagePreviewGrid {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin: 12px 0;
+}
+
+.imageThumb {
+  width: 64px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+}
+
+.messageBanner {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.success { background-color: var(--success-green); color: #fff; }
+.error { background-color: var(--error-red); color: #fff; }
+/* ============================================
+   UNIDADES DE EQUIPAMENTO (patrimônio físico)
+   ============================================ */
+
+.unidadesToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.unidadeFormRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 8px;
+  align-items: center;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.unidadeStatusSelect {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.765rem;
+  background-color: #fff;
+}
+
+.statusTag.disponivel {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: var(--success-color);
+}
+
+.statusTag.alugado {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: var(--info-color);
+}
+
+.statusTag.em_manutencao {
+  background-color: rgba(217, 130, 15, 0.2);
+  color: var(--primary-color);
+}
+
+.quantidadeResumo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.765rem;
+  color: var(--text-secondary);
+}
+
+.quantidadeResumo strong {
+  color: var(--text-primary);
+}
+
+/* ============================================
+   MODAL DE EDIÇÃO DE EQUIPAMENTO
+   ============================================ */
+
+.equipModalCard {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  width: 656px;
+  max-width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.closeBtn {
+  cursor: pointer;
+  padding: 5px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+.closeBtn:hover {
+  background: #eee;
+}
+
+.modalTabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 15px;
+}
+
+.modalTabBtn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.modalTabBtn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.modalTabBtn:hover {
+  color: var(--primary-dark);
+}
+
+/* ImagePicker chips (com botão de remover) */
+.imagePickerWrapper .fileChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.imagePickerWrapper .fileChip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger-color);
+  font-weight: 700;
+  padding: 0 2px;
+}
+
+.messageBanner.positive {
+  background-color: rgba(0, 184, 148, 0.15);
+  color: var(--success-color);
+}
+
+.messageBanner.negative {
+  background-color: rgba(214, 48, 49, 0.15);
+  color: var(--danger-color);
+}

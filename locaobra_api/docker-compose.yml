@@ -1,0 +1,15 @@
+# Uso LOCAL (opcional): sobe a API em Docker apontando pro banco Supabase já configurado.
+# Para o DEPLOY no Render este arquivo NÃO é usado — o Render usa o render.yaml + Dockerfile.
+#
+# Rodar:  docker compose up --build
+services:
+  api:
+    build: .
+    container_name: locaobra-api
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped

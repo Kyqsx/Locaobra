@@ -1,0 +1,18 @@
+# Render Blueprint — deploy da API (locaobra_api) usando Docker.
+# Coloque este arquivo na RAIZ do repositório.
+#
+# Uso: na dashboard do Render, escolha "Blueprint" e aponte para este repo.
+# O rootDir faz o Render usar a pasta locaobra_api como contexto do build,
+# e o dockerfilePath aponta para o Dockerfile dentro dela.
+services:
+  - type: web
+    name: locaobra-api
+    runtime: docker            # usa o Dockerfile em vez de build command
+    rootDir: locaobra_api
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /actuator/health
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: JAVA_VERSION
+        value: "17"

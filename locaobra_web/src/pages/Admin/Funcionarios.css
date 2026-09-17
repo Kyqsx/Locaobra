@@ -1,0 +1,80 @@
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--text-primary);
+}
+
+.secondaryBtn {
+  background: #ececec;
+  color: var(--text-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+
+.formGridFuncionarios {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.formRow {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.formRow.full {
+  width: 100%;
+}
+
+.formRow.split-2 > .formField {
+  flex: 1 1 50%;
+}
+
+.formRow.split-3 > .formField {
+  flex: 1 1 33.33%;
+}
+
+.formRow.email-phone > .formField:first-child {
+  flex: 0 0 60%;
+}
+
+.formRow.email-phone > .formField:last-child {
+  flex: 0 0 40%;
+}
+
+.fieldLabel {
+  font-size: 0.765rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.actionBtn.edit {
+  background: rgba(217, 130, 15, 0.12);
+  color: var(--primary-color);
+}
+
+.actionBtn.delete {
+  background: rgba(214, 48, 49, 0.12);
+  color: var(--danger-color);
+}
+
+.enderecoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+

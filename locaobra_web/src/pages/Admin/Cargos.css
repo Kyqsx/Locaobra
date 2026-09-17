@@ -1,0 +1,48 @@
+.formGridCargos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.textareaInput {
+  resize: vertical;
+  font-family: inherit;
+  min-height: 48px;
+}
+
+.formGridCargos .formField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.formGridCargos .formRow {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.formGridCargos .formRow.full {
+  width: 100%;
+}
+
+.formGridCargos .formRow.split-2 > .formField {
+  flex: 1 1 50%;
+}
+
+.formGridCargos .formRow.split-3 > .formField {
+  flex: 1 1 33.33%;
+}
+
+.formGridCargos .fieldLabel {
+  font-size: 0.765rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.formGridCargos .actionBtn.edit {
+  background: rgba(217, 130, 15, 0.12);
+  color: var(--primary-color);
+}

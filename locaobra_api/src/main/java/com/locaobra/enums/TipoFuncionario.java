@@ -1,0 +1,13 @@
+package com.locaobra.enums;
+
+public enum TipoFuncionario {
+    ENTREGADOR,
+    TECNICO_MANUTENCAO,
+    CONFERENTE,
+    CONSULTOR_LOCACAO,
+    ANALISTA_CREDENCIAMENTO,
+    ANALISTA_FINANCEIRO,
+    GERENTE_OPERACOES,
+    RH,
+    FAXINEIRO,
+}
