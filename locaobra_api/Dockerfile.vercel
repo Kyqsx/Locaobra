@@ -1,0 +1,52 @@
+# ------------------------------------------------------------------
+# Dockerfile.vercel — API LocaObra (Spring Boot 3 / Java 17) como Vercel Function
+# A Vercel detecta este arquivo na raiz do projeto, builda a imagem a cada
+# commit e serve o container atrás do domínio do projeto.
+# O Dockerfile original (usado pelo Render / docker-compose) não é alterado.
+# ------------------------------------------------------------------
+
+# ---------- Estágio 1 — BUILD ----------
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /build
+
+COPY pom.xml .
+RUN mvn -B dependency:go-offline -q || true
+
+COPY src ./src
+# Segurança: application-local.properties tem credenciais reais (banco,
+# Supabase, JWT). Garante que nunca entra no jar/imagem enviados à Vercel.
+RUN rm -f src/main/resources/application-local.properties
+RUN mvn -B clean package -DskipTests
+
+# ---------- Estágio 2 — RUNTIME ----------
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+COPY --from=build /build/target/*.jar app.jar
+
+RUN useradd --create-home appuser && chown -R appuser:appuser /app
+USER appuser
+
+# A Vercel espera o servidor HTTP na porta definida em PORT (padrão 80, que um
+# usuário não-root não consegue abrir). Use PORT=8080 aqui E nas variáveis de
+# ambiente do projeto na Vercel.
+ENV PORT=8080
+EXPOSE 8080
+
+# JVM enxuta para container serverless: GC simples, só compilador C1 (sobe
+# mais rápido) e heap proporcional à memória do container.
+ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+
+# Menos ruído nos logs de runtime da Vercel (o application.properties tem
+# DEBUG e show-sql ligados, pensados para desenvolvimento local).
+ENV SPRING_JPA_SHOW_SQL=false \
+    SPRING_JMX_ENABLED=false \
+    LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=INFO \
+    LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_MULTIPART=INFO \
+    LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_SERVLET_RESOURCE=INFO \
+    LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=INFO \
+    LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY_WEB=INFO
+
+# Forma "exec": o java vira PID 1 e recebe o SIGTERM da Vercel (30 s de
+# tolerância) para encerrar o Spring e o pool do Hikari com elegância.
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

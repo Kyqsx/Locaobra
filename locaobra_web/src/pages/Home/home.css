@@ -12,18 +12,31 @@
 
 /* Hero Banner */
 .hero-banner {
-    height: 340px;
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0)), url('../../assets/homebanner1.png') no-repeat;
-    background-size: 100% auto;
+    height: 400px;
+    background: url('../../assets/homebanner1.png') no-repeat;
+    
+    background-size: cover; /* Ajuste para preencher melhor o espaço */
     background-position: center;
     display: flex;
     align-items: center;
     padding: 0 8%;
-    color: var(--white);
+    /* Removido o color: var(--white); para que o texto use a cor padrão (cinza escuro) no fundo que agora é claro na base */
+    position: relative; /* Para garantir o posicionamento correto se houver elementos sobrepostos */
 }
 
-.hero-content h1 { font-size: var(--text-4xl); line-height: 1.1; margin-bottom: 13px; color: var(--white); }
-.hero-content p { font-size: var(--text-lg); margin-bottom: 20px; opacity: 0.9; }
+/* Ajuste a cor do texto do banner para garantir leitura sobre o novo fundo */
+.hero-content h1 { 
+    font-size: var(--text-4xl); 
+    line-height: 1.1; 
+    margin-bottom: 13px; 
+    color: var(--dark-grey); /* Cor de texto padrão (escuro) para o título */
+}
+
+.hero-content p { 
+    font-size: var(--text-lg); 
+    margin-bottom: 20px; 
+    color: var(--dark-grey); /* Cor de texto padrão (escuro) para o parágrafo */
+}
 
 .cta-button {
     padding: 9px 22px;

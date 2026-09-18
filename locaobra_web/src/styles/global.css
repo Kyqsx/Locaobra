@@ -10,12 +10,12 @@
    ============================================ */
 :root {
     /* Cor primária — âmbar de obra (substitui o laranja anterior) */
-    --primary-color: #D9820F;
-    --primary-color-dark: #B5690A;
-    --primary-color-light: #E9A64B;
-    --primary-blue: #D9820F;
-    --primary-blue-dark: #B5690A;
-    --primary-blue-light: #E9A64B;
+    --primary-color: #ff6600;
+    --primary-color-dark: #af4600;
+    --primary-color-light: #ff934b;
+    --primary-blue: #ff6600;
+    --primary-blue-dark: #af4600;
+    --primary-blue-light: #ff934b;
     --secondary-blue: rgba(217, 130, 15, 0.10);
 
     /* Cor secundária — aço/marinho, usada em navegação, sidebar, headers técnicos */
