@@ -4,7 +4,7 @@ import axios from "axios"
 // produção. Em produção (build), o Vite injeta o valor de VITE_API_URL no bundle
 // (definido no painel da Vercel, ou usa o .env versionado como fallback).
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'https://locaobra.onrender.com',
+    baseURL: import.meta.env.VITE_API_URL || 'https://locaobra-7c7d.vercel.app',
     // sem Content-Type fixo — Axios detecta automaticamente:
     // JSON object → application/json
     // FormData   → multipart/form-data; boundary=...
