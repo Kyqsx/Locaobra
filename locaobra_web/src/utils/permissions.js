@@ -19,7 +19,7 @@ export const ADMIN_ALLOWED_PATHS = {
     '/admin/artigos',
   ],
   RH: ['/admin/clientes', '/admin/funcionarios', '/admin/cargos', '/admin/departamentos', '/admin/depositos'],
-  TECNICO_MANUTENCAO: ['/admin/equipamentos', '/admin/ordens-servico'],
+  TECNICO_MANUTENCAO: ['/admin/equipamentos', '/admin/ordens-servico', '/admin/expedicao'],
   ENTREGADOR: ['/admin/expedicao'],
   CONFERENTE: ['/admin/expedicao', '/admin/equipamentos', '/admin/pedidos'],
   ANALISTA_FINANCEIRO: ['/admin/notificacoes', '/admin/clientes'],

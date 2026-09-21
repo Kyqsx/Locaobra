@@ -107,16 +107,16 @@ const initialForm = {
             .finally(() => setLoading(false));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/cargos')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredCargos = useMemo(() => {
         return cargos.filter(cargo => {
             const term = searchTerm.toLowerCase();
             return cargo.nome?.toLowerCase().includes(term) || cargo.descricao?.toLowerCase().includes(term);
         });
     }, [cargos, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/cargos')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     function handleChange(e) {
         const { name, value, type, checked } = e.target;

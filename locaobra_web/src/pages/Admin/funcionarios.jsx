@@ -208,10 +208,6 @@ export default function Funcionarios() {
             .finally(() => setLoading(false));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/funcionarios')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredFuncionarios = useMemo(() => {
         return funcionarios.filter(funcionario => {
             const term = searchTerm.toLowerCase();
@@ -222,6 +218,10 @@ export default function Funcionarios() {
             );
         });
     }, [funcionarios, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/funcionarios')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     function handleChange(e) {
         const { name, value, type, checked } = e.target;
@@ -395,12 +395,9 @@ return (
                             <tr>
                                 <th>Nome</th>
                                 <th>Matricula</th>
-                                <th>CPF</th>
                                 <th>Cargo</th>
-                                <th>Departamento</th>
                                 <th>Depósito</th>
                                 <th>Endereço</th>
-                                <th>Usuario</th>
                                 <th>Status</th>
                                 <th>Acoes</th>
                             </tr>
@@ -419,12 +416,10 @@ return (
                                             </div>
                                         </td>
                                         <td>{funcionario.matricula || '---'}</td>
-                                        <td>{funcionario.cpf || '---'}</td>
                                         <td>{funcionario.cargoNome || '---'}</td>
-                                        <td>{funcionario.departamentoNome || '---'}</td>
                                         <td>{funcionario.depositoNome || '---'}</td>
                                         <td>{funcionario.endereco?.formatado || '---'}</td>
-                                        <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vinculo'}</td>
+                                        {/* <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vinculo'}</td> */}
                                         <td>{funcionario.status ? 'Ativo' : 'Inativo'}</td>
                                         <td className="actionsCell">
                                             <button className="actionBtn edit" title="Editar" onClick={() => handleEdit(funcionario)}>

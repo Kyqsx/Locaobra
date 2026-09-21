@@ -1,7 +1,9 @@
 package com.locaobra.controller;
 
+import com.locaobra.config.AcessoUtil;
 import com.locaobra.dto.request.EquipamentoRequest;
 import com.locaobra.dto.response.EquipamentoResponse;
+import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.service.EquipamentoService;
 import com.locaobra.service.StorageService;
 import jakarta.validation.Valid;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/equipamentos")
@@ -50,23 +53,53 @@ public class EquipamentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(equipamentoService.criar(request));
     }
 
+    // Rotas de leitura são públicas (catálogo da loja). Visitantes e clientes só
+    // enxergam equipamentos ATIVOS e sem os dados internos das unidades físicas
+    // (patrimônio, número de série, horímetro, depósito) — só as quantidades.
+    // A equipe (ADMIN / FUNCIONARIO) continua recebendo o detalhe completo.
+    private boolean equipeInterna() {
+        return AcessoUtil.temPapel("ADMIN", "FUNCIONARIO");
+    }
+
+    private static boolean estaAtivo(EquipamentoResponse e) {
+        return "ativo".equalsIgnoreCase(e.getStatus());
+    }
+
     @GetMapping
     public ResponseEntity<List<EquipamentoResponse>> listar(
             @RequestParam(required = false, defaultValue = "false") boolean apenasAtivos,
             @RequestParam(required = false) String categoria) {
 
+        boolean interno = equipeInterna();
+        List<EquipamentoResponse> lista;
+
         if (categoria != null && !categoria.isBlank()) {
-            return ResponseEntity.ok(equipamentoService.listarPorCategoria(categoria));
+            lista = equipamentoService.listarPorCategoria(categoria);
+        } else if (apenasAtivos || !interno) {
+            lista = equipamentoService.listarAtivos();
+        } else {
+            lista = equipamentoService.listarTodos();
         }
-        if (apenasAtivos) {
-            return ResponseEntity.ok(equipamentoService.listarAtivos());
+
+        if (!interno) {
+            lista = lista.stream()
+                    .filter(EquipamentoController::estaAtivo)
+                    .map(EquipamentoResponse::semUnidades)
+                    .collect(Collectors.toList());
         }
-        return ResponseEntity.ok(equipamentoService.listarTodos());
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EquipamentoResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(equipamentoService.buscarPorId(id));
+        EquipamentoResponse equipamento = equipamentoService.buscarPorId(id);
+        if (!equipeInterna()) {
+            if (!estaAtivo(equipamento)) {
+                throw new ResourceNotFoundException("Equipamento não encontrado");
+            }
+            equipamento.semUnidades();
+        }
+        return ResponseEntity.ok(equipamento);
     }
 
     @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

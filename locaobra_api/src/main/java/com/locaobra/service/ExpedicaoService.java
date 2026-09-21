@@ -20,7 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -131,6 +138,27 @@ public class ExpedicaoService {
             }
         }
 
+        // ---- Campos operacionais obrigatórios ----
+        // Sem motorista, nenhum entregador enxerga a expedição (a lista é filtrada
+        // por motorista); sem placa/autorizados, não há como conferir quem sai e
+        // quem recebe. Por isso são exigidos aqui, e não só na tela.
+        Funcionario motorista = resolverMotorista(request.getMotoristaId());
+        if (request.getPlacaVeiculo() == null || request.getPlacaVeiculo().isBlank()) {
+            throw new BusinessException("Informe a placa do veículo.");
+        }
+        if (request.getTipo() == TipoExpedicao.ENTREGA && nomesLimpos(request.getNomesAutorizados()).isEmpty()) {
+            throw new BusinessException("Informe ao menos uma pessoa autorizada a receber o equipamento.");
+        }
+
+        // ---- Unidades da ENTREGA: reservadas com trava e conferidas contra o pedido ----
+        Map<Long, UnidadeEquipamento> unidadesReservadas = new LinkedHashMap<>();
+        if (request.getTipo() == TipoExpedicao.ENTREGA) {
+            unidadesReservadas = reservarUnidades(request.getItens(), depositoOrigem);
+            if (pedido != null) {
+                validarItensContraPedido(pedido, depositoOrigem, unidadesReservadas.values());
+            }
+        }
+
         Expedicao expedicao = new Expedicao();
         expedicao.setCodigo(gerarCodigo());
         expedicao.setTipo(request.getTipo());
@@ -168,21 +196,20 @@ public class ExpedicaoService {
                                     nvl(entregaOrigem.getNomeAutorizado3())));
         } else {
             expedicao.setEnderecoEntrega(enderecoService.persistirAvulso(request.getEnderecoEntrega()));
-            if (request.getClienteId() != null) {
-                expedicao.setCliente(clienteRepository.findById(request.getClienteId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado: " + request.getClienteId())));
+            // Entrega avulsa (sem pedido): o cliente é obrigatório — sem ele a
+            // coleta herdaria "ninguém" e o equipamento ficaria sem responsável.
+            if (request.getClienteId() == null) {
+                throw new BusinessException("Selecione o cliente da entrega.");
             }
+            expedicao.setCliente(clienteRepository.findById(request.getClienteId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado: " + request.getClienteId())));
             aplicarNomesAutorizados(expedicao, request.getNomesAutorizados());
         }
 
-        if (request.getMotoristaId() != null) {
-            Funcionario motorista = funcionarioRepository.findById(request.getMotoristaId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado: " + request.getMotoristaId()));
-            if (!motorista.getStatus()) {
-                throw new BusinessException("Funcionário está inativo: " + motorista.getNome());
-            }
-            expedicao.setMotorista(motorista);
+        if (expedicao.getEnderecoEntrega() == null) {
+            throw new BusinessException("Informe o endereço de entrega/coleta.");
         }
+        expedicao.setMotorista(motorista);
 
         expedicao = expedicaoRepository.save(expedicao);
 
@@ -197,50 +224,141 @@ public class ExpedicaoService {
                 item.setObservacaoItem(itemOrigem.getObservacaoItem());
                 itemRepository.save(item);
             }
-        } else if (request.getItens() != null && !request.getItens().isEmpty()) {
+        } else {
+            // ENTREGA: cada item é UMA unidade física (patrimônio) já validada e
+            // travada acima — quantidade é sempre 1.
             for (ItemExpedicaoRequest itemReq : request.getItens()) {
+                UnidadeEquipamento unidade = unidadesReservadas.get(itemReq.getUnidadeId());
+
                 ItemExpedicao item = new ItemExpedicao();
                 item.setExpedicao(expedicao);
-                item.setQuantidade(itemReq.getQuantidade() != null ? itemReq.getQuantidade() : 1);
+                item.setUnidade(unidade);
+                item.setEquipamento(unidade.getEquipamento());
+                item.setQuantidade(1);
                 item.setObservacaoItem(itemReq.getObservacaoItem());
-
-                if (itemReq.getUnidadeId() != null) {
-                    UnidadeEquipamento unidade = unidadeRepository.findById(itemReq.getUnidadeId())
-                            .orElseThrow(() -> new ResourceNotFoundException("Unidade não encontrada: " + itemReq.getUnidadeId()));
-
-                    // Quando a expedição vem de um pedido, cada unidade escolhida
-                    // precisa realmente estar no depósito que essa expedição está
-                    // cobrindo — evita o conferente misturar unidade de outro
-                    // depósito por engano.
-                    if (depositoOrigem != null) {
-                        Long unidadeDepositoId = unidade.getDeposito() != null ? unidade.getDeposito().getId() : null;
-                        if (!depositoOrigem.getId().equals(unidadeDepositoId)) {
-                            throw new BusinessException("A unidade " + (unidade.getCodigoPatrimonio() != null ? unidade.getCodigoPatrimonio() : unidade.getId())
-                                    + " não pertence ao depósito " + depositoOrigem.getNome() + ".");
-                        }
-                    }
-
-                    item.setUnidade(unidade);
-                    item.setEquipamento(unidade.getEquipamento());
-
-                    // Unidade sai da vitrine quando é expedida (ENTREGA)
-                    if (request.getTipo() == TipoExpedicao.ENTREGA && unidade.getStatus() == StatusUnidade.DISPONIVEL) {
-                        unidade.setStatus(StatusUnidade.ALUGADO);
-                        unidadeRepository.save(unidade);
-                    }
-                } else if (itemReq.getEquipamentoId() != null) {
-                    Equipamento equipamento = equipamentoRepository.findById(itemReq.getEquipamentoId())
-                            .orElseThrow(() -> new ResourceNotFoundException("Equipamento não encontrado: " + itemReq.getEquipamentoId()));
-                    item.setEquipamento(equipamento);
-                } else {
-                    throw new BusinessException("Cada item deve ter unidadeId ou equipamentoId");
-                }
-
                 itemRepository.save(item);
+
+                // Unidade sai da vitrine assim que a entrega é agendada; se a
+                // expedição for cancelada, liberarUnidades() devolve pra DISPONIVEL.
+                unidade.setStatus(StatusUnidade.ALUGADO);
+                unidadeRepository.save(unidade);
             }
         }
 
         return construirResponse(expedicao);
+    }
+
+    // ======================================================================
+    // Validações da criação
+    // ======================================================================
+
+    private Funcionario resolverMotorista(Long motoristaId) {
+        if (motoristaId == null) {
+            throw new BusinessException("Informe o motorista (entregador) da expedição.");
+        }
+        Funcionario motorista = funcionarioRepository.findById(motoristaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado: " + motoristaId));
+        if (!Boolean.TRUE.equals(motorista.getStatus())) {
+            throw new BusinessException("Funcionário está inativo: " + motorista.getNome());
+        }
+        if (motorista.getCargo() == null || !"ENTREGADOR".equals(motorista.getCargo().getNome())) {
+            throw new BusinessException("O motorista precisa ter o cargo ENTREGADOR.");
+        }
+        return motorista;
+    }
+
+    private List<String> nomesLimpos(List<String> nomes) {
+        return nomes == null ? List.of() : nomes.stream()
+                .filter(n -> n != null && !n.isBlank())
+                .map(String::trim)
+                .limit(3)
+                .collect(Collectors.toList());
+    }
+
+    private String rotuloUnidade(UnidadeEquipamento unidade) {
+        return unidade.getCodigoPatrimonio() != null ? unidade.getCodigoPatrimonio() : String.valueOf(unidade.getId());
+    }
+
+    // Carrega as unidades da ENTREGA com trava de escrita (SELECT ... FOR UPDATE),
+    // em ordem crescente de id (evita deadlock entre duas expedições simultâneas),
+    // e garante que todas estão DISPONIVEL e no depósito certo. Antes, só a tela
+    // filtrava por DISPONIVEL: pela API dava pra reservar a mesma unidade duas vezes.
+    private Map<Long, UnidadeEquipamento> reservarUnidades(List<ItemExpedicaoRequest> itens, Deposito depositoOrigem) {
+        if (itens == null || itens.isEmpty()) {
+            throw new BusinessException("Adicione pelo menos um item à expedição.");
+        }
+        List<Long> ids = new ArrayList<>();
+        for (ItemExpedicaoRequest item : itens) {
+            if (item.getUnidadeId() == null) {
+                throw new BusinessException("Cada item da entrega precisa de uma unidade física (patrimônio).");
+            }
+            if (ids.contains(item.getUnidadeId())) {
+                throw new BusinessException("A mesma unidade foi adicionada mais de uma vez.");
+            }
+            ids.add(item.getUnidadeId());
+        }
+
+        List<Long> ordenados = new ArrayList<>(ids);
+        java.util.Collections.sort(ordenados);
+
+        Map<Long, UnidadeEquipamento> travadas = new HashMap<>();
+        for (Long unidadeId : ordenados) {
+            UnidadeEquipamento unidade = unidadeRepository.findByIdParaReserva(unidadeId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Unidade não encontrada: " + unidadeId));
+
+            if (unidade.getStatus() != StatusUnidade.DISPONIVEL) {
+                throw new BusinessException("A unidade " + rotuloUnidade(unidade)
+                        + " não está disponível (situação atual: " + unidade.getStatus() + ").");
+            }
+            if (depositoOrigem != null) {
+                Long unidadeDepositoId = unidade.getDeposito() != null ? unidade.getDeposito().getId() : null;
+                if (!depositoOrigem.getId().equals(unidadeDepositoId)) {
+                    throw new BusinessException("A unidade " + rotuloUnidade(unidade)
+                            + " não pertence ao depósito " + depositoOrigem.getNome() + ".");
+                }
+            }
+            travadas.put(unidadeId, unidade);
+        }
+
+        Map<Long, UnidadeEquipamento> naOrdemInformada = new LinkedHashMap<>();
+        for (Long unidadeId : ids) {
+            naOrdemInformada.put(unidadeId, travadas.get(unidadeId));
+        }
+        return naOrdemInformada;
+    }
+
+    // O que o conferente monta precisa bater com o que o cliente pediu (naquele
+    // depósito): mesmo equipamento, mesma quantidade. Sem isso dava pra despachar
+    // outro modelo, ou mais/menos unidades do que o pedido aprovado.
+    private void validarItensContraPedido(Pedido pedido, Deposito deposito, Collection<UnidadeEquipamento> unidades) {
+        Map<Long, Integer> esperado = new LinkedHashMap<>();
+        Map<Long, String> nomes = new HashMap<>();
+        for (ItemPedido itemPedido : itemPedidoRepository.findByPedidoIdAndDepositoId(pedido.getId(), deposito.getId())) {
+            Long equipamentoId = itemPedido.getEquipamento().getId();
+            esperado.merge(equipamentoId, itemPedido.getQuantidade(), Integer::sum);
+            nomes.put(equipamentoId, itemPedido.getEquipamento().getNome());
+        }
+
+        Map<Long, Integer> atual = new HashMap<>();
+        for (UnidadeEquipamento unidade : unidades) {
+            Long equipamentoId = unidade.getEquipamento().getId();
+            atual.merge(equipamentoId, 1, Integer::sum);
+            nomes.putIfAbsent(equipamentoId, unidade.getEquipamento().getNome());
+        }
+
+        for (Long equipamentoId : atual.keySet()) {
+            if (!esperado.containsKey(equipamentoId)) {
+                throw new BusinessException("O equipamento \"" + nomes.get(equipamentoId)
+                        + "\" não faz parte deste pedido (neste depósito).");
+            }
+        }
+        for (Map.Entry<Long, Integer> e : esperado.entrySet()) {
+            int qtdAtual = atual.getOrDefault(e.getKey(), 0);
+            if (qtdAtual != e.getValue()) {
+                throw new BusinessException("O pedido pede " + e.getValue() + " × " + nomes.get(e.getKey())
+                        + " neste depósito, mas a expedição tem " + qtdAtual + ".");
+            }
+        }
     }
 
     // Entregas concluídas ainda sem coleta ativa vinculada — alimenta o select
@@ -348,66 +466,132 @@ public class ExpedicaoService {
         }
     }
 
+    // Máquina de estados aplicada NO BACK (antes só a tela impedia pular etapas):
+    //   AGENDADO  -> EM_TRANSITO : check-out (conferente) — exige conferência dos itens
+    //                               e, na ENTREGA, uma vistoria aprovada por unidade
+    //   EM_TRANSITO -> ENTREGUE  : só por confirmarEntrega() (assinatura + documento + foto)
+    //   ENTREGUE  -> CONCLUIDO   : check-in (conferente), só COLETA
+    //   AGENDADO/EM_TRANSITO -> CANCELADO : cancelar()
+    // Qualquer outra transição é recusada.
     @Transactional
-    public ExpedicaoResponse atualizarStatus(Long id, StatusExpedicao status) {
+    public ExpedicaoResponse atualizarStatus(Long id, StatusExpedicao status, List<Long> itensConferidos) {
         Expedicao expedicao = findOrThrow(id);
 
-        // ENTREGA termina no passo 3 (confirmação de entrega no local), que já
-        // deixa o status em ENTREGUE — não existe passo 4/check-in pra ela, porque
-        // o equipamento fica com o cliente, não volta pro depósito. Só a COLETA
-        // (que é quem efetivamente busca o equipamento de volta) passa por CONCLUIDO.
-        if (status == StatusExpedicao.CONCLUIDO && expedicao.getTipo() == TipoExpedicao.ENTREGA) {
-            throw new BusinessException("Uma expedição de ENTREGA termina na confirmação de entrega (passo 3); não há check-in aqui. Quando for buscar o equipamento, crie uma expedição do tipo COLETA.");
+        if (status == StatusExpedicao.CANCELADO) {
+            return cancelarInterno(expedicao, null);
         }
-
-        validarPermissaoTransicao(status);
-
-        if (status == StatusExpedicao.CONCLUIDO && expedicao.getEntregaConfirmadaEm() == null) {
-            throw new BusinessException("Confirme a entrega no local (assinatura + foto do entregador) antes do check-in.");
-        }
-
-        expedicao.setStatus(status);
-
         if (status == StatusExpedicao.EM_TRANSITO) {
-            expedicao.setCheckoutEm(LocalDateTime.now());
-        }
-        if (status == StatusExpedicao.CONCLUIDO) {
-            expedicao.setCheckinEm(LocalDateTime.now());
-
-            // O check-in da COLETA é o que efetivamente traz o equipamento de volta
-            // pro depósito: só aí a unidade sai de ALUGADO e fica AGUARDANDO_MANUTENCAO
-            // pro Conferente decidir o destino final. O check-in da ENTREGA é só o
-            // motorista/conferente confirmando que o veículo voltou — o equipamento
-            // continua com o cliente, então a unidade permanece ALUGADO.
-            if (expedicao.getTipo() == TipoExpedicao.COLETA) {
-                for (ItemExpedicao item : itemRepository.findByExpedicaoId(id)) {
-                    if (item.getUnidade() != null && item.getUnidade().getStatus() == StatusUnidade.ALUGADO) {
-                        item.getUnidade().setStatus(StatusUnidade.AGUARDANDO_MANUTENCAO);
-                        unidadeRepository.save(item.getUnidade());
-                    }
-                }
-            }
+            iniciarCheckout(expedicao, itensConferidos);
+        } else if (status == StatusExpedicao.CONCLUIDO) {
+            concluirCheckin(expedicao);
+        } else {
+            throw new BusinessException("O status " + status + " não pode ser definido manualmente. "
+                    + "A entrega é confirmada pelo entregador no local (assinatura, documento e foto).");
         }
 
         expedicao = expedicaoRepository.save(expedicao);
         return construirResponse(expedicao);
     }
 
-    @Transactional
-    public void atualizarAssinatura(Long id, String assinatura) {
-        Expedicao expedicao = findOrThrow(id);
-        expedicao.setAssinaturaCliente(assinatura);
-        expedicaoRepository.save(expedicao);
+    private void iniciarCheckout(Expedicao expedicao, List<Long> itensConferidos) {
+        exigirCargo("CONFERENTE", "Somente o conferente pode registrar a saída (check-out) desta expedição.");
+
+        if (expedicao.getStatus() != StatusExpedicao.AGENDADO) {
+            throw new BusinessException("O check-out só pode ser feito em uma expedição Agendada.");
+        }
+
+        List<ItemExpedicao> itens = itemRepository.findByExpedicaoId(expedicao.getId());
+        if (itens.isEmpty()) {
+            throw new BusinessException("A expedição não tem itens.");
+        }
+
+        // Conferência: o conferente marca cada item antes de liberar a saída.
+        Set<Long> esperados = itens.stream().map(ItemExpedicao::getId).collect(Collectors.toSet());
+        Set<Long> conferidos = new HashSet<>(itensConferidos == null ? List.<Long>of() : itensConferidos);
+        if (!conferidos.containsAll(esperados)) {
+            throw new BusinessException("Confira todos os itens da expedição antes de liberar a saída.");
+        }
+
+        if (expedicao.getTipo() == TipoExpedicao.ENTREGA) {
+            validarVistoriasDeSaida(expedicao, itens);
+        }
+
+        expedicao.setStatus(StatusExpedicao.EM_TRANSITO);
+        expedicao.setCheckoutEm(LocalDateTime.now());
+    }
+
+    // Cada unidade da ENTREGA precisa ter sua vistoria de pré-saída, e nenhuma
+    // pode ter sido reprovada (condição RUIM). Antes bastava UMA vistoria
+    // qualquer pra liberar a expedição inteira — e só a tela conferia.
+    private void validarVistoriasDeSaida(Expedicao expedicao, List<ItemExpedicao> itens) {
+        List<String> semVistoria = new ArrayList<>();
+        List<String> reprovadas = new ArrayList<>();
+
+        for (ItemExpedicao item : itens) {
+            UnidadeEquipamento unidade = item.getUnidade();
+            if (unidade == null) continue;
+
+            Vistoria vistoria = vistoriaRepository.findByExpedicaoIdAndUnidadeId(expedicao.getId(), unidade.getId())
+                    .stream()
+                    .filter(v -> v.getTipo() == com.locaobra.enums.TipoVistoria.ENTREGA)
+                    .findFirst()
+                    .orElse(null);
+
+            if (vistoria == null) {
+                semVistoria.add(rotuloUnidade(unidade));
+            } else if ("RUIM".equals(vistoria.getCondicaoGeral())) {
+                reprovadas.add(rotuloUnidade(unidade));
+            }
+        }
+
+        if (!semVistoria.isEmpty()) {
+            throw new BusinessException("Falta a vistoria de entrega da(s) unidade(s): " + String.join(", ", semVistoria) + ".");
+        }
+        if (!reprovadas.isEmpty()) {
+            throw new BusinessException("Unidade(s) reprovada(s) na vistoria (condição RUIM): " + String.join(", ", reprovadas)
+                    + ". Cancele a expedição para encaminhar a unidade à manutenção e crie outra com um equipamento em bom estado.");
+        }
+    }
+
+    private void concluirCheckin(Expedicao expedicao) {
+        // ENTREGA termina no passo 3 (confirmação no local, status ENTREGUE): o
+        // equipamento fica com o cliente, não existe check-in pra ela. Só a COLETA
+        // (que traz o equipamento de volta) passa por CONCLUIDO.
+        if (expedicao.getTipo() == TipoExpedicao.ENTREGA) {
+            throw new BusinessException("Uma expedição de ENTREGA termina na confirmação de entrega (passo 3); não há check-in aqui. Quando for buscar o equipamento, crie uma expedição do tipo COLETA.");
+        }
+        exigirCargo("CONFERENTE", "Somente o conferente pode registrar a entrada (check-in) desta expedição.");
+
+        if (expedicao.getStatus() != StatusExpedicao.ENTREGUE || expedicao.getEntregaConfirmadaEm() == null) {
+            throw new BusinessException("Confirme a coleta no local (assinatura, documento e foto do entregador) antes do check-in.");
+        }
+
+        expedicao.setStatus(StatusExpedicao.CONCLUIDO);
+        expedicao.setCheckinEm(LocalDateTime.now());
+
+        // O check-in da COLETA é o que efetivamente traz o equipamento de volta
+        // pro depósito: só aí a unidade sai de ALUGADO e fica AGUARDANDO_MANUTENCAO
+        // pro Conferente decidir o destino final.
+        for (ItemExpedicao item : itemRepository.findByExpedicaoId(expedicao.getId())) {
+            if (item.getUnidade() != null && item.getUnidade().getStatus() == StatusUnidade.ALUGADO) {
+                item.getUnidade().setStatus(StatusUnidade.AGUARDANDO_MANUTENCAO);
+                unidadeRepository.save(item.getUnidade());
+            }
+        }
     }
 
     // Passo intermediário entre o check-out e o check-in: o ENTREGADOR confirma,
-    // no local do cliente, que a entrega foi feita — com assinatura de quem
-    // recebeu e foto do equipamento entregue. A data/hora é sempre a do
-    // servidor no momento do clique, nunca informada pelo front.
+    // no local do cliente, que a entrega (ou coleta) foi feita. Prova exigida:
+    // nome + documento de quem assinou, a assinatura desenhada e a foto. A
+    // data/hora é sempre a do servidor no momento do clique.
     @Transactional
-    public ExpedicaoResponse confirmarEntrega(Long id, String assinatura, String fotoUrl) {
+    public ExpedicaoResponse confirmarEntrega(Long id, String assinaturaNome, String documento,
+                                              String assinaturaImagemUrl, String fotoUrl, String observacao) {
         Expedicao expedicao = findOrThrow(id);
         exigirCargo("ENTREGADOR", "Somente o entregador pode confirmar a entrega no local do cliente.");
+        // O entregador só mexe nas expedições em que é o motorista designado
+        // (a mesma regra que já valia pra listar e abrir o detalhe).
+        validarAcessoMotorista(expedicao);
 
         if (expedicao.getStatus() != StatusExpedicao.EM_TRANSITO) {
             throw new BusinessException("A entrega só pode ser confirmada depois do check-out (saída do depósito).");
@@ -415,39 +599,81 @@ public class ExpedicaoService {
         if (expedicao.getEntregaConfirmadaEm() != null) {
             throw new BusinessException("A entrega já foi confirmada para esta expedição.");
         }
-        if (assinatura == null || assinatura.isBlank()) {
-            throw new BusinessException("Assinatura de quem recebeu o equipamento é obrigatória.");
+        if (assinaturaNome == null || assinaturaNome.isBlank()) {
+            throw new BusinessException("Informe o nome de quem recebeu o equipamento.");
+        }
+        if (documento == null || documento.trim().length() < 5) {
+            throw new BusinessException("Informe o documento (CPF ou RG) de quem assinou.");
+        }
+        if (assinaturaImagemUrl == null || assinaturaImagemUrl.isBlank()) {
+            throw new BusinessException("A assinatura de quem recebeu é obrigatória.");
         }
         if (fotoUrl == null || fotoUrl.isBlank()) {
             throw new BusinessException("Foto da entrega no local é obrigatória.");
         }
 
-        expedicao.setAssinaturaEntrega(assinatura);
+        // Na ENTREGA, quem assina precisa estar na lista de autorizados definida
+        // na criação (antes só a tela restringia; a API aceitava qualquer nome).
+        String nome = assinaturaNome.trim();
+        if (expedicao.getTipo() == TipoExpedicao.ENTREGA) {
+            List<String> autorizados = java.util.stream.Stream.of(
+                            expedicao.getNomeAutorizado1(), expedicao.getNomeAutorizado2(), expedicao.getNomeAutorizado3())
+                    .filter(n -> n != null && !n.isBlank())
+                    .collect(Collectors.toList());
+            boolean autorizado = autorizados.stream().anyMatch(n -> n.trim().equalsIgnoreCase(nome));
+            if (!autorizados.isEmpty() && !autorizado) {
+                throw new BusinessException("\"" + nome + "\" não está na lista de pessoas autorizadas a receber esta entrega.");
+            }
+        }
+
+        expedicao.setAssinaturaEntrega(nome);
+        expedicao.setDocumentoRecebedor(documento.trim());
+        expedicao.setAssinaturaEntregaImagem(assinaturaImagemUrl);
         expedicao.setFotoEntrega(fotoUrl);
+        expedicao.setObservacaoEntrega(limitar(observacao, 1000));
         expedicao.setEntregaConfirmadaEm(LocalDateTime.now());
-        // A entrega foi feita no local: o status passa de EM_TRANSITO para ENTREGUE.
-        // O check-in (passo 4) depois transforma ENTREGUE em CONCLUIDO.
+        // A entrega foi feita no local: EM_TRANSITO -> ENTREGUE. Na COLETA, o check-in
+        // (passo 3) depois transforma ENTREGUE em CONCLUIDO.
         expedicao.setStatus(StatusExpedicao.ENTREGUE);
 
         expedicao = expedicaoRepository.save(expedicao);
         return construirResponse(expedicao);
     }
 
-    // Confere se quem está logado tem o cargo certo pra fazer essa transição
-    // de status. Regra de negócio: quem registra a SAÍDA (check-out) e a
-    // ENTRADA (check-in) é o CONFERENTE.
-    // ADMIN e GERENTE_OPERACOES sempre podem, por supervisionarem a operação.
-    private void validarPermissaoTransicao(StatusExpedicao novoStatus) {
-        if (novoStatus == StatusExpedicao.EM_TRANSITO) {
-            exigirCargo("CONFERENTE", "Somente o conferente pode registrar a saída (check-out) desta expedição.");
-        } else if (novoStatus == StatusExpedicao.CONCLUIDO) {
-            exigirCargo("CONFERENTE", "Somente o conferente pode registrar a entrada (check-in) desta expedição.");
+    // O entregador chegou e não deu pra entregar/coletar (cliente ausente, recusou,
+    // endereço não encontrado...). A expedição é encerrada como CANCELADO com o
+    // motivo registrado; na ENTREGA as unidades voltam pro estoque e o pedido volta
+    // pra fila do conferente, que gera uma nova expedição. Antes o único caminho era
+    // o conferente cancelar (e as unidades ficavam presas em ALUGADO).
+    @Transactional
+    public ExpedicaoResponse registrarNaoRealizada(Long id, String motivo) {
+        Expedicao expedicao = findOrThrow(id);
+        exigirCargo("ENTREGADOR", "Somente o entregador pode registrar que a entrega/coleta não foi realizada.");
+        validarAcessoMotorista(expedicao);
+
+        if (expedicao.getStatus() != StatusExpedicao.EM_TRANSITO) {
+            throw new BusinessException("Só é possível registrar \"não realizada\" com a expedição em trânsito.");
         }
-        // CANCELADO fica liberado pra qualquer cargo com acesso à expedição
-        // (já filtrado no SecurityConfig) — cancelar é uma exceção, não uma
-        // etapa do fluxo normal.
+        if (motivo == null || motivo.trim().length() < 5) {
+            throw new BusinessException("Informe o motivo (ex.: cliente ausente, recusou receber, endereço não encontrado).");
+        }
+
+        expedicao.setStatus(StatusExpedicao.CANCELADO);
+        expedicao.setMotivoCancelamento(limitar("Não realizada: " + motivo.trim(), 500));
+        liberarUnidades(expedicao);
+
+        expedicao = expedicaoRepository.save(expedicao);
+        return construirResponse(expedicao);
     }
 
+    private String limitar(String texto, int max) {
+        if (texto == null || texto.isBlank()) return null;
+        String limpo = texto.trim();
+        return limpo.length() > max ? limpo.substring(0, max) : limpo;
+    }
+
+    // Confere se quem está logado tem o cargo certo pra fazer essa etapa.
+    // ADMIN e GERENTE_OPERACOES sempre podem, por supervisionarem a operação.
     private void exigirCargo(String cargoEsperado, String mensagemErro) {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         boolean temPermissao = auth != null && auth.getAuthorities().stream().anyMatch(a ->
@@ -460,15 +686,58 @@ public class ExpedicaoService {
     }
 
     @Transactional
-    public void cancelar(Long id) {
-        Expedicao expedicao = findOrThrow(id);
+    public void cancelar(Long id, String motivo) {
+        cancelarInterno(findOrThrow(id), motivo);
+    }
+
+    private ExpedicaoResponse cancelarInterno(Expedicao expedicao, String motivo) {
+        StatusExpedicao atual = expedicao.getStatus();
+        if (atual == StatusExpedicao.CANCELADO) {
+            throw new BusinessException("Esta expedição já está cancelada.");
+        }
+        if (atual == StatusExpedicao.ENTREGUE || atual == StatusExpedicao.CONCLUIDO) {
+            throw new BusinessException("Uma expedição já entregue/concluída não pode ser cancelada.");
+        }
+        // Depois do check-out o equipamento já está na estrada: só o gerente cancela.
+        // O entregador tem o caminho próprio "não realizada".
+        if (atual == StatusExpedicao.EM_TRANSITO) {
+            exigirCargo("GERENTE_OPERACOES", "Só o gerente de operações pode cancelar uma expedição que já saiu do depósito.");
+        }
+
         expedicao.setStatus(StatusExpedicao.CANCELADO);
-        expedicaoRepository.save(expedicao);
+        expedicao.setMotivoCancelamento(limitar(motivo, 500));
+        liberarUnidades(expedicao);
+
+        expedicao = expedicaoRepository.save(expedicao);
+        return construirResponse(expedicao);
+    }
+
+    // Ao agendar uma ENTREGA as unidades viram ALUGADO (saem da vitrine). Se a
+    // entrega não acontece, elas precisam voltar — senão ficam presas: o modal só
+    // lista DISPONIVEL. Unidade reprovada na vistoria (RUIM) vai pra manutenção, não
+    // pro estoque. COLETA não mexe: o equipamento continua com o cliente.
+    private void liberarUnidades(Expedicao expedicao) {
+        if (expedicao.getTipo() != TipoExpedicao.ENTREGA) return;
+
+        for (ItemExpedicao item : itemRepository.findByExpedicaoId(expedicao.getId())) {
+            UnidadeEquipamento unidade = item.getUnidade();
+            if (unidade == null || unidade.getStatus() != StatusUnidade.ALUGADO) continue;
+
+            boolean reprovada = vistoriaRepository.findByExpedicaoIdAndUnidadeId(expedicao.getId(), unidade.getId())
+                    .stream()
+                    .anyMatch(v -> v.getTipo() == com.locaobra.enums.TipoVistoria.ENTREGA && "RUIM".equals(v.getCondicaoGeral()));
+
+            unidade.setStatus(reprovada ? StatusUnidade.AGUARDANDO_MANUTENCAO : StatusUnidade.DISPONIVEL);
+            unidadeRepository.save(unidade);
+        }
     }
 
     @Transactional
     public void deletar(Long id) {
         Expedicao expedicao = findOrThrow(id);
+        if (expedicao.getStatus() == StatusExpedicao.AGENDADO || expedicao.getStatus() == StatusExpedicao.EM_TRANSITO) {
+            liberarUnidades(expedicao);
+        }
         expedicaoRepository.delete(expedicao);
     }
 

@@ -21,6 +21,7 @@ public class VistoriaResponse {
     private String danosCausados;
     private String observacoes;
     private LocalDateTime realizadaEm;
+    private String nomeResponsavel;
     private List<FotoVistoriaResponse> fotos;
 
     public static VistoriaResponse from(Vistoria v) {
@@ -35,6 +36,7 @@ public class VistoriaResponse {
         r.danosCausados = v.getDanosCausados();
         r.observacoes = v.getObservacoes();
         r.realizadaEm = v.getRealizadaEm();
+        r.nomeResponsavel = v.getResponsavel();
         // Não lemos v.getFotos() aqui: essa coleção é @OneToMany(orphanRemoval = true) e um
         // clear() feito em outro lugar apagaria as fotos no banco. Use from(v, fotos) para
         // montar a resposta com uma lista buscada direto do repositório.
@@ -60,5 +62,6 @@ public class VistoriaResponse {
     public String getDanosCausados() { return danosCausados; }
     public String getObservacoes() { return observacoes; }
     public LocalDateTime getRealizadaEm() { return realizadaEm; }
+    public String getNomeResponsavel() { return nomeResponsavel; }
     public List<FotoVistoriaResponse> getFotos() { return fotos; }
 }

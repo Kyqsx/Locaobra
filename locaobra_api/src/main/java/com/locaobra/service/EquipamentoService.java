@@ -6,6 +6,7 @@ import com.locaobra.entity.Equipamento;
 import com.locaobra.entity.EspecificacaoEquipamento;
 import com.locaobra.entity.ImagemEquipamento;
 import com.locaobra.exception.ResourceNotFoundException;
+import com.locaobra.repository.AvaliacaoRepository;
 import com.locaobra.repository.EquipamentoRepository;
 import com.locaobra.repository.EspecificacaoEquipamentoRepository;
 import com.locaobra.repository.ImagemEquipamentoRepository;
@@ -26,18 +27,21 @@ public class EquipamentoService {
     private final ImagemEquipamentoRepository imagemRepository;
     private final UnidadeEquipamentoRepository unidadeRepository;
     private final StorageService storageService;
+    private final AvaliacaoRepository avaliacaoRepository;
 
     public EquipamentoService(
             EquipamentoRepository equipamentoRepository,
             EspecificacaoEquipamentoRepository especificacaoRepository,
             ImagemEquipamentoRepository imagemRepository,
             UnidadeEquipamentoRepository unidadeRepository,
-            StorageService storageService) {
+            StorageService storageService,
+            AvaliacaoRepository avaliacaoRepository) {
         this.equipamentoRepository = equipamentoRepository;
         this.especificacaoRepository = especificacaoRepository;
         this.imagemRepository = imagemRepository;
         this.unidadeRepository = unidadeRepository;
         this.storageService = storageService;
+        this.avaliacaoRepository = avaliacaoRepository;
     }
 
     @Transactional
@@ -63,7 +67,7 @@ public class EquipamentoService {
                 .stream()
                 .map(eq -> carregarEquipamentoCompletoPorObj(eq))
                 .map(EquipamentoResponse::from)
-                .collect(Collectors.toList());
+                .collect(Collectors.collectingAndThen(Collectors.toList(), this::comAvaliacoes));
     }
 
     @Transactional(readOnly = true)
@@ -72,7 +76,7 @@ public class EquipamentoService {
                 .stream()
                 .map(eq -> carregarEquipamentoCompletoPorObj(eq))
                 .map(EquipamentoResponse::from)
-                .collect(Collectors.toList());
+                .collect(Collectors.collectingAndThen(Collectors.toList(), this::comAvaliacoes));
     }
 
     @Transactional(readOnly = true)
@@ -81,12 +85,33 @@ public class EquipamentoService {
                 .stream()
                 .map(eq -> carregarEquipamentoCompletoPorObj(eq))
                 .map(EquipamentoResponse::from)
-                .collect(Collectors.toList());
+                .collect(Collectors.collectingAndThen(Collectors.toList(), this::comAvaliacoes));
     }
 
     @Transactional(readOnly = true)
     public EquipamentoResponse buscarPorId(Long id) {
-        return EquipamentoResponse.from(carregarEquipamentoCompleto(findOrThrow(id).getId()));
+        Long equipamentoId = findOrThrow(id).getId();
+        Double media = avaliacaoRepository.mediaPorEquipamento(equipamentoId);
+        Double mediaArredondada = media == null ? null : Math.round(media * 10.0) / 10.0;
+        return EquipamentoResponse.from(carregarEquipamentoCompleto(equipamentoId))
+                .comAvaliacoes(mediaArredondada, avaliacaoRepository.countByEquipamentoId(equipamentoId));
+    }
+
+    // Decora uma lista de respostas com média/total de avaliações, usando uma
+    // única consulta agregada (evita N consultas no catálogo).
+    private List<EquipamentoResponse> comAvaliacoes(List<EquipamentoResponse> lista) {
+        Map<Long, Object[]> resumo = new java.util.HashMap<>();
+        for (Object[] linha : avaliacaoRepository.resumoPorEquipamento()) {
+            resumo.put(((Number) linha[0]).longValue(), linha);
+        }
+        for (EquipamentoResponse r : lista) {
+            Object[] linha = resumo.get(r.getId());
+            if (linha != null) {
+                double media = Math.round(((Number) linha[1]).doubleValue() * 10.0) / 10.0;
+                r.comAvaliacoes(media, ((Number) linha[2]).longValue());
+            }
+        }
+        return lista;
     }
 
     @Transactional

@@ -15,7 +15,8 @@ public class SignupRequest {
     @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres")
     private String senha;
 
-    @NotBlank(message = "O cargo (tipo) é obrigatório")
+    // Mantido só por compatibilidade com clientes antigos do front. É IGNORADO
+    // no cadastro público: toda conta criada por /api/auth/signup é CLIENTE.
     private String tipo;
 
     // Getters e Setters

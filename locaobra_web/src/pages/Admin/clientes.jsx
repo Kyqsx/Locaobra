@@ -62,16 +62,16 @@ export default function Clientes() {
         }
     }
 
-    if (!canAccessAdminRoute(user, '/admin/clientes')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredClientes = useMemo(() => {
         return clientes.filter(cli =>
             cli.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (cli.cpfCnpj && cli.cpfCnpj.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [clientes, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/clientes')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     function handleChange(e) {
         const { name, value } = e.target;

@@ -1,7 +1,9 @@
 package com.locaobra.controller;
 
+import com.locaobra.config.AcessoUtil;
 import com.locaobra.dto.request.ArtigoRequest;
 import com.locaobra.dto.response.ArtigoResponse;
+import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.service.ArtigoService;
 import com.locaobra.service.StorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,10 +49,23 @@ public class ArtigoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(artigoService.criar(request));
     }
 
+    // Leitura é pública (blog), mas rascunhos (publicado=false) só aparecem para
+    // quem gerencia conteúdo (mesmos papéis que podem escrever em /api/artigos).
+    private boolean podeVerRascunhos() {
+        return AcessoUtil.temPapel("ADMIN", "GERENTE_OPERACOES");
+    }
+
+    private ArtigoResponse somenteSeVisivel(ArtigoResponse artigo) {
+        if (!Boolean.TRUE.equals(artigo.getPublicado()) && !podeVerRascunhos()) {
+            throw new ResourceNotFoundException("Artigo não encontrado");
+        }
+        return artigo;
+    }
+
     @GetMapping
     public ResponseEntity<List<ArtigoResponse>> listar(
             @RequestParam(required = false, defaultValue = "false") boolean apenasPublicados) {
-        if (apenasPublicados) {
+        if (apenasPublicados || !podeVerRascunhos()) {
             return ResponseEntity.ok(artigoService.listarPublicados());
         }
         return ResponseEntity.ok(artigoService.listarTodos());
@@ -58,12 +73,12 @@ public class ArtigoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ArtigoResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(artigoService.buscarPorId(id));
+        return ResponseEntity.ok(somenteSeVisivel(artigoService.buscarPorId(id)));
     }
 
     @GetMapping("/slug/{slug}")
     public ResponseEntity<ArtigoResponse> buscarPorSlug(@PathVariable String slug) {
-        return ResponseEntity.ok(artigoService.buscarPorSlug(slug));
+        return ResponseEntity.ok(somenteSeVisivel(artigoService.buscarPorSlug(slug)));
     }
 
     @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

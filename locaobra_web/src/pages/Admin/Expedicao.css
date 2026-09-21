@@ -427,3 +427,42 @@
     color: var(--gray-500, #777);
     margin: 0 0 8px;
 }
+
+
+/* Conferência dos itens no check-out */
+.conferenciaLista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0 12px;
+}
+
+.conferenciaItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.conferenciaItem input {
+    width: 18px;
+    height: 18px;
+}
+
+/* Prova de entrega */
+.assinaturaImagem {
+    display: block;
+    max-width: 260px;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.entregaAcoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+}

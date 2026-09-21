@@ -105,10 +105,6 @@ export default function Depositos() {
             .finally(() => setLoading(false));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/depositos')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredDepositos = useMemo(() => {
         return depositos.filter(d => {
             const term = searchTerm.toLowerCase();
@@ -119,6 +115,10 @@ export default function Depositos() {
             );
         });
     }, [depositos, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/depositos')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     function handleChange(e) {
         const { name, value, type, checked } = e.target;

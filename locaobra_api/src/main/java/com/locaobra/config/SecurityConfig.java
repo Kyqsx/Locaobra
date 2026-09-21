@@ -55,6 +55,19 @@ public class SecurityConfig {
                 // Consulta de CEP é usada no cadastro, antes do login
                 .requestMatchers(HttpMethod.GET, "/api/v1/enderecos/**").permitAll()
 
+                // ===================== AVALIAÇÕES =====================
+                // Leitura pública (média/lista aparecem na página do produto, sem login).
+                // "*" = um segmento só, então /equipamento/{id}/minha NÃO cai aqui.
+                .requestMatchers(HttpMethod.GET, "/api/avaliacoes/equipamento/*").permitAll()
+                // Situação do cliente logado (já avaliou? pode avaliar?) e escrita: só CLIENTE.
+                .requestMatchers(HttpMethod.GET, "/api/avaliacoes/equipamento/*/minha").hasRole("CLIENTE")
+                .requestMatchers(HttpMethod.POST, "/api/avaliacoes").hasRole("CLIENTE")
+                .requestMatchers(HttpMethod.PUT, "/api/avaliacoes/*").hasRole("CLIENTE")
+                // Excluir: o cliente a própria avaliação (o service confere o dono);
+                // ADMIN / GERENTE_OPERACOES moderam qualquer uma.
+                .requestMatchers(HttpMethod.DELETE, "/api/avaliacoes/*")
+                    .hasAnyRole("CLIENTE", "ADMIN", "GERENTE_OPERACOES")
+
                 // ===================== ADMINISTRAÇÃO DE USUÁRIOS =====================
                 // Criar/editar/excluir conta de login é só ADMIN. Mas RH e
                 // GERENTE_OPERACOES precisam LER a lista pra vincular um

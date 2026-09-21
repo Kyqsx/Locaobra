@@ -3,10 +3,15 @@ package com.locaobra.repository;
 import com.locaobra.entity.UnidadeEquipamento;
 import com.locaobra.enums.StatusUnidade;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
+
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UnidadeEquipamentoRepository extends JpaRepository<UnidadeEquipamento, Long> {
@@ -40,4 +45,10 @@ public interface UnidadeEquipamentoRepository extends JpaRepository<UnidadeEquip
     boolean existsByDepositoId(Long depositoId);
 
     long countByDepositoId(Long depositoId);
+
+    // Leitura com trava (SELECT ... FOR UPDATE): usada ao reservar unidades numa
+    // expedição de ENTREGA, para duas expedições simultâneas não pegarem a mesma unidade.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UnidadeEquipamento u WHERE u.id = :id")
+    Optional<UnidadeEquipamento> findByIdParaReserva(@Param("id") Long id);
 }

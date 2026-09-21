@@ -503,3 +503,66 @@ CREATE INDEX IF NOT EXISTS idx_notificacoes_destinatario
     ON notificacoes (destinatario_tipo, destinatario_id);
 CREATE INDEX IF NOT EXISTS idx_notificacoes_referencia
     ON notificacoes (referencia_tipo, referencia_id);
+
+-- ============================================================================
+-- 19) AVALIACOES
+--    Entidade: Avaliacao — nota (1 a 5) + comentário de um cliente sobre um
+--    equipamento que ele recebeu. Uma avaliação por (cliente, equipamento).
+--    (Com spring.jpa.hibernate.ddl-auto=update a tabela é criada sozinha;
+--    este script serve para criar manualmente / documentar o modelo.)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS avaliacoes (
+    id             BIGSERIAL PRIMARY KEY,
+    equipamento_id BIGINT NOT NULL,
+    cliente_id     BIGINT NOT NULL,
+    nota           INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
+    comentario     VARCHAR(1000),
+    criado_em      TIMESTAMP NOT NULL,
+    atualizado_em  TIMESTAMP,
+
+    CONSTRAINT fk_avaliacao_equipamento FOREIGN KEY (equipamento_id)
+        REFERENCES equipamentos (id) ON DELETE CASCADE,
+    CONSTRAINT fk_avaliacao_cliente FOREIGN KEY (cliente_id)
+        REFERENCES clientes (id) ON DELETE CASCADE,
+    CONSTRAINT uk_avaliacao_cliente_equipamento UNIQUE (cliente_id, equipamento_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_avaliacoes_equipamento ON avaliacoes (equipamento_id);
+
+
+-- ============================================================================
+-- 20) EXPEDIÇÃO — prova de entrega, motivo de cancelamento e auditoria de vistoria
+--    (com ddl-auto=update o Hibernate cria estas colunas sozinho; o script serve
+--    para aplicar manualmente / documentar)
+-- ============================================================================
+ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS documento_recebedor        VARCHAR(30);
+ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS assinatura_entrega_imagem  VARCHAR(500);
+ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS observacao_entrega         VARCHAR(1000);
+ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS motivo_cancelamento        VARCHAR(500);
+
+ALTER TABLE vistorias  ADD COLUMN IF NOT EXISTS responsavel                VARCHAR(150);
+
+-- ----------------------------------------------------------------------------
+-- Correção pontual (rodar UMA vez, depois de conferir o SELECT): unidades que
+-- ficaram presas em ALUGADO porque uma ENTREGA foi cancelada antes desta
+-- correção (o cancelamento não devolvia as unidades ao estoque).
+-- ----------------------------------------------------------------------------
+-- 1) Conferir quais seriam liberadas:
+-- SELECT u.id, u.codigo_patrimonio
+--   FROM unidades_equipamento u
+--  WHERE u.status = 'ALUGADO'
+--    AND NOT EXISTS (
+--          SELECT 1 FROM itens_expedicao ie
+--            JOIN expedicoes e ON e.id = ie.expedicao_id
+--           WHERE ie.unidade_id = u.id
+--             AND e.tipo = 'ENTREGA'
+--             AND e.status IN ('AGENDADO', 'EM_TRANSITO', 'ENTREGUE'));
+-- 2) Liberar (mesma condição):
+-- UPDATE unidades_equipamento u SET status = 'DISPONIVEL'
+--  WHERE u.status = 'ALUGADO'
+--    AND NOT EXISTS (
+--          SELECT 1 FROM itens_expedicao ie
+--            JOIN expedicoes e ON e.id = ie.expedicao_id
+--           WHERE ie.unidade_id = u.id
+--             AND e.tipo = 'ENTREGA'
+--             AND e.status IN ('AGENDADO', 'EM_TRANSITO', 'ENTREGUE'));

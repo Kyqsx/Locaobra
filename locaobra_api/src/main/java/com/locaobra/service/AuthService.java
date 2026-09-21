@@ -47,12 +47,11 @@ public class AuthService {
             throw new RuntimeException("Erro: Este email já está em uso!");
         }
 
-        TipoUsuario tipoUsuario;
-        try {
-            tipoUsuario = TipoUsuario.valueOf(request.getTipo().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Erro: Tipo de usuário inválido!");
-        }
+        // SEGURANÇA: o cadastro público SEMPRE cria um CLIENTE. O campo "tipo" do
+        // corpo da requisição é ignorado — aceitá-lo permitia que qualquer pessoa
+        // criasse uma conta ADMIN/FUNCIONARIO. Contas internas são criadas apenas
+        // por um ADMIN autenticado (UsuarioController / FuncionarioController).
+        TipoUsuario tipoUsuario = TipoUsuario.CLIENTE;
 
         Cliente cliente = null;
         if (tipoUsuario == TipoUsuario.CLIENTE) {

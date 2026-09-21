@@ -15,3 +15,7 @@ target/
 
 # Uploads locais (fallback em disco quando Supabase não está configurado)
 uploads/
+
+# Config local com credenciais reais (banco, Supabase, JWT) — NUNCA commitar
+application-local.properties
+src/main/resources/application-local.properties

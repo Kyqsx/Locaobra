@@ -602,10 +602,6 @@ export default function OrdensServico() {
             .finally(() => setLoading(false));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/ordens-servico')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     // Todas as unidades (achatadas), com nome do equipamento
     const todasUnidades = useMemo(() => {
         const lista = [];
@@ -640,6 +636,10 @@ export default function OrdensServico() {
                 (o.unidadeCodigoPatrimonio || '').toLowerCase().includes(searchTerm.toLowerCase())
             );
     }, [ordens, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/ordens-servico')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     return (
         <div className="adminContent">

@@ -135,10 +135,6 @@ export default function Artigos() {
             .finally(() => setLoading(false));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/artigos')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredArtigos = useMemo(() => {
         const term = searchTerm.toLowerCase();
         return artigos.filter(a =>
@@ -146,6 +142,10 @@ export default function Artigos() {
             a.autor?.toLowerCase().includes(term)
         );
     }, [artigos, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/artigos')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     function handleChange(e) {
         const { name, value, type, checked } = e.target;

@@ -114,6 +114,21 @@ public class Expedicao {
     @Column(name = "foto_entrega", length = 500)
     private String fotoEntrega;
 
+    // Prova da entrega/coleta no local: documento (CPF/RG) de quem assinou, a
+    // assinatura DESENHADA (imagem) e uma observação livre do entregador.
+    @Column(name = "documento_recebedor", length = 30)
+    private String documentoRecebedor;
+
+    @Column(name = "assinatura_entrega_imagem", length = 500)
+    private String assinaturaEntregaImagem;
+
+    @Column(name = "observacao_entrega", length = 1000)
+    private String observacaoEntrega;
+
+    // Preenchido ao cancelar ou quando o entregador registra "não realizada".
+    @Column(name = "motivo_cancelamento", length = 500)
+    private String motivoCancelamento;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
@@ -206,6 +221,18 @@ public class Expedicao {
 
     public String getFotoEntrega() { return fotoEntrega; }
     public void setFotoEntrega(String fotoEntrega) { this.fotoEntrega = fotoEntrega; }
+
+    public String getDocumentoRecebedor() { return documentoRecebedor; }
+    public void setDocumentoRecebedor(String documentoRecebedor) { this.documentoRecebedor = documentoRecebedor; }
+
+    public String getAssinaturaEntregaImagem() { return assinaturaEntregaImagem; }
+    public void setAssinaturaEntregaImagem(String assinaturaEntregaImagem) { this.assinaturaEntregaImagem = assinaturaEntregaImagem; }
+
+    public String getObservacaoEntrega() { return observacaoEntrega; }
+    public void setObservacaoEntrega(String observacaoEntrega) { this.observacaoEntrega = observacaoEntrega; }
+
+    public String getMotivoCancelamento() { return motivoCancelamento; }
+    public void setMotivoCancelamento(String motivoCancelamento) { this.motivoCancelamento = motivoCancelamento; }
 
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }

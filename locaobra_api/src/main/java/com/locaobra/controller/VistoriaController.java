@@ -2,6 +2,7 @@ package com.locaobra.controller;
 
 import com.locaobra.dto.request.VistoriaRequest;
 import com.locaobra.dto.response.VistoriaResponse;
+import com.locaobra.exception.BusinessException;
 import com.locaobra.service.StorageService;
 import com.locaobra.service.VistoriaService;
 import jakarta.validation.Valid;
@@ -41,6 +42,7 @@ public class VistoriaController {
 
             for (MultipartFile f : fotos) {
                 if (f == null || f.isEmpty()) continue;
+                exigirImagem(f);
                 String url = storageService.salvar(f, "vistorias");
                 if (url != null) urls.add(url);
             }
@@ -57,12 +59,13 @@ public class VistoriaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<VistoriaResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(vistoriaService.buscarPorId(id));
+    public ResponseEntity<VistoriaResponse> buscarPorId(@PathVariable Long expedicaoId, @PathVariable Long id) {
+        return ResponseEntity.ok(vistoriaService.buscarPorId(expedicaoId, id));
     }
 
     @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<VistoriaResponse> atualizar(
+            @PathVariable Long expedicaoId,
             @PathVariable Long id,
             @RequestPart("vistoria") String vistoriaJson,
             @RequestPart(name = "fotos", required = false) MultipartFile[] fotos) throws IOException {
@@ -72,18 +75,27 @@ public class VistoriaController {
             List<String> urls = new ArrayList<>();
             for (MultipartFile f : fotos) {
                 if (f == null || f.isEmpty()) continue;
+                exigirImagem(f);
                 String url = storageService.salvar(f, "vistorias");
                 if (url != null) urls.add(url);
             }
             request.setFotos(urls);
         }
 
-        return ResponseEntity.ok(vistoriaService.atualizar(id, request));
+        return ResponseEntity.ok(vistoriaService.atualizar(expedicaoId, id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        vistoriaService.deletar(id);
+    public ResponseEntity<Void> deletar(@PathVariable Long expedicaoId, @PathVariable Long id) {
+        vistoriaService.deletar(expedicaoId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Foto de vistoria precisa ser imagem (antes qualquer arquivo era aceito).
+    private void exigirImagem(MultipartFile f) {
+        String tipo = f.getContentType();
+        if (tipo == null || !tipo.toLowerCase().startsWith("image/")) {
+            throw new BusinessException("As fotos da vistoria precisam ser imagens.");
+        }
     }
 }

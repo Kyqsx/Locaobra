@@ -5,7 +5,20 @@ import { useAuth } from '../../utils/useAuth';
 import { useCart } from '../../context/CartContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShoppingCart, faBox, faShield, faGear, faCreditCard, faInfo } from '@fortawesome/free-solid-svg-icons';
+import { Estrelas } from '../../components/Estrelas';
+import { formatarMedia } from '../../utils/avaliacoes';
+import Avaliacoes from './Avaliacoes';
 import './ProductPage.css';
+
+function Lightbox({ src, onClose }) {
+  if (!src) return null;
+  return (
+    <div className="lightboxBackdrop" onClick={onClose}>
+      <img src={src} alt="Imagem ampliada" className="lightboxImage" onClick={e => e.stopPropagation()} />
+      <button type="button" className="lightboxCloseBtn" onClick={onClose} title="Fechar">✕</button>
+    </div>
+  );
+}
 
 const ProductPageLocaObra = () => {
   const { id } = useParams();
@@ -20,6 +33,7 @@ const ProductPageLocaObra = () => {
   const [selectedOption, setSelectedOption] = useState('daily');
   const [quantidade, setQuantidade] = useState(1);
   const [mensagemCarrinho, setMensagemCarrinho] = useState(null);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const images = equipamento?.imagens?.length > 0 ? equipamento.imagens : [null, null, null, null];
 
@@ -77,6 +91,14 @@ const ProductPageLocaObra = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Depois de avaliar/editar/excluir uma avaliação, atualiza só a média e o
+  // total exibidos no topo — sem piscar a tela de "carregando".
+  const atualizarResumoAvaliacoes = () => {
+    api.get(`/api/equipamentos/${id}`)
+      .then(response => setEquipamento(response.data))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     setQuantidade(1);
     setMensagemCarrinho(null);
@@ -115,7 +137,13 @@ const ProductPageLocaObra = () => {
           <div className="product-image-section">
             <div className="main-image-container">
               {images[activeImage] ? (
-                <img className="product-main-image" src={imageUrl(images[activeImage])} alt={`Imagem ${activeImage + 1}`} />
+                <img
+                  className="product-main-image"
+                  src={imageUrl(images[activeImage])}
+                  alt={`Imagem ${activeImage + 1}`}
+                  onClick={() => setLightboxSrc(imageUrl(images[activeImage]))}
+                  title="Clique para ver a imagem inteira"
+                />
               ) : (
                 <div className="main-image-placeholder">📐</div>
               )}
@@ -172,8 +200,16 @@ const ProductPageLocaObra = () => {
                 {equipamento.descricao || 'Sem descrição disponível.'}
               </p>
               <div className="rating-section">
-                <span className="stars">★★★★★</span>
-                <span className="rating-count">{equipamento.status || 'Disponível'}</span>
+                {equipamento.totalAvaliacoes > 0 ? (
+                  <>
+                    <Estrelas valor={equipamento.mediaAvaliacoes} tamanho={14} />
+                    <a href="#avaliacoes" className="rating-count rating-link">
+                      {formatarMedia(equipamento.mediaAvaliacoes)} · {equipamento.totalAvaliacoes} avaliaç{equipamento.totalAvaliacoes === 1 ? 'ão' : 'ões'}
+                    </a>
+                  </>
+                ) : (
+                  <a href="#avaliacoes" className="rating-count rating-link">Sem avaliações ainda</a>
+                )}
               </div>
               <div className="product-details">
                 <p><strong>Categoria:</strong> {equipamento.categoria || '—'}</p>
@@ -274,6 +310,13 @@ const ProductPageLocaObra = () => {
           </div>
         </div>
       </div>
+
+      {/* Avaliações */}
+      <div className="produto-wrapper" id="avaliacoes">
+        <Avaliacoes equipamentoId={id} onAtualizado={atualizarResumoAvaliacoes} />
+      </div>
+
+      <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 };

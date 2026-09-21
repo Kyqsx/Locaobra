@@ -1,0 +1,33 @@
+.assinatura-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.assinatura-canvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 1;
+    background: #fff;
+    border: 1px dashed #999;
+    border-radius: 6px;
+    /* impede a página de rolar enquanto a pessoa desenha no celular */
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.assinatura-limpar {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    color: #666;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.assinatura-limpar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

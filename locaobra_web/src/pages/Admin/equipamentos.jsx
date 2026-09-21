@@ -43,13 +43,29 @@ function especificacoesParaBackend(lista) {
    no componente pai força um remount limpo (sem vazar arquivo
    de uma sessão de upload pra outra).
    ============================================================ */
+function Lightbox({ src, onClose }) {
+    if (!src) return null;
+    return (
+        <div className="lightboxBackdrop" onClick={onClose}>
+            <img src={src} alt="Imagem ampliada" className="lightboxImage" onClick={e => e.stopPropagation()} />
+            <button type="button" className="lightboxCloseBtn" onClick={onClose} title="Fechar">✕</button>
+        </div>
+    );
+}
+
 function ImagePicker({ onChange }) {
     const [readyFiles, setReadyFiles] = useState([]);
+    const [lightboxSrc, setLightboxSrc] = useState(null);
+    const previewUrlsRef = useRef(new Map());
+
+    // Fila de posicionamento: cada arquivo selecionado passa por uma etapa de
+    // enquadramento 1:1 (arrastar para posicionar + zoom) antes de entrar na
+    // lista final. Isso NÃO deforma nem perde qualidade abaixo do quadro —
+    // é só o usuário escolhendo qual parte da foto aparece no quadrado.
     const [cropQueue, setCropQueue] = useState([]);
     const [currentCropIndex, setCurrentCropIndex] = useState(0);
     const [cropZoom, setCropZoom] = useState(1);
     const [cropBox, setCropBox] = useState({ left: 0, top: 0, size: 200 });
-    const [isDragging, setIsDragging] = useState(false);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -61,6 +77,24 @@ function ImagePicker({ onChange }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyFiles]);
 
+    // Libera todas as URLs de preview quando o componente é desmontado
+    // (troca de aba, fechamento do modal, "remontar limpo" após o envio).
+    useEffect(() => {
+        const urls = previewUrlsRef.current;
+        return () => urls.forEach(url => URL.revokeObjectURL(url));
+    }, []);
+
+    function previewUrlFor(file) {
+        const urls = previewUrlsRef.current;
+        if (!urls.has(file)) {
+            urls.set(file, URL.createObjectURL(file));
+        }
+        return urls.get(file);
+    }
+
+    // Desenha a imagem atual da fila no canvas de posicionamento (sempre
+    // "cover" do quadro 400x400) e recalcula o tamanho do quadro de seleção
+    // conforme o zoom.
     useEffect(() => {
         const file = cropQueue[currentCropIndex];
         const canvas = canvasRef.current;
@@ -104,7 +138,6 @@ function ImagePicker({ onChange }) {
     function onMouseDown(e) {
         if (!containerRef.current) return;
         e.preventDefault();
-        setIsDragging(true);
         const rect = containerRef.current.getBoundingClientRect();
         dragStartRef.current = { x: e.clientX, y: e.clientY, rect, box: { ...cropBox } };
         window.addEventListener('mousemove', onMouseMove);
@@ -122,13 +155,12 @@ function ImagePicker({ onChange }) {
     }
 
     function onMouseUp() {
-        setIsDragging(false);
         dragStartRef.current = null;
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
     }
 
-    async function applyCrop() {
+    async function confirmarPosicionamento() {
         const file = cropQueue[currentCropIndex];
         const ref = currentImageRef.current;
         if (!file || !ref) return;
@@ -150,17 +182,17 @@ function ImagePicker({ onChange }) {
 
         ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, outSize, outSize);
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-        const croppedFile = new File([blob], file.name, { type: 'image/jpeg' });
-        setReadyFiles(prev => [...prev, croppedFile]);
-        advanceQueue();
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+        const posicionadoFile = new File([blob], file.name, { type: 'image/jpeg' });
+        setReadyFiles(prev => [...prev, posicionadoFile]);
+        avancarFila();
     }
 
-    function skipCrop() {
-        advanceQueue();
+    function descartarImagem() {
+        avancarFila();
     }
 
-    function advanceQueue() {
+    function avancarFila() {
         if (currentCropIndex + 1 >= cropQueue.length) {
             setCropQueue([]);
             setCurrentCropIndex(0);
@@ -170,7 +202,15 @@ function ImagePicker({ onChange }) {
     }
 
     function removeReady(idx) {
-        setReadyFiles(prev => prev.filter((_, i) => i !== idx));
+        setReadyFiles(prev => {
+            const file = prev[idx];
+            const url = previewUrlsRef.current.get(file);
+            if (url) {
+                URL.revokeObjectURL(url);
+                previewUrlsRef.current.delete(file);
+            }
+            return prev.filter((_, i) => i !== idx);
+        });
     }
 
     return (
@@ -181,37 +221,47 @@ function ImagePicker({ onChange }) {
             </div>
 
             {readyFiles.length > 0 && (
-                <div className="selectedFilesList">
-                    {readyFiles.map((file, i) => (
-                        <span key={i} className="fileChip">
-                            {file.name}
-                            <button type="button" onClick={() => removeReady(i)} title="Remover">✕</button>
-                        </span>
-                    ))}
+                <div className="imagePickerPreviewGrid">
+                    {readyFiles.map((file, i) => {
+                        const url = previewUrlFor(file);
+                        return (
+                            <div key={i} className="imagePickerPreviewItem">
+                                <img
+                                    src={url}
+                                    alt={file.name}
+                                    className="imagePickerPreviewThumb"
+                                    onClick={() => setLightboxSrc(url)}
+                                    title="Clique para ver a imagem inteira"
+                                />
+                                <button type="button" className="imagePickerRemoveBtn" onClick={() => removeReady(i)} title="Remover">✕</button>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
             {cropQueue.length > 0 && currentCropIndex < cropQueue.length && (
-                <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-                    <div className="modalCard" style={{ background: '#fff', padding: '18px', borderRadius: '8px', width: '760px', maxWidth: '95%' }}>
-                        <h4>Crop 1:1 — arraste a caixa, ajuste o zoom e clique em "Aplicar"</h4>
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                            <div ref={containerRef} style={{ position: 'relative', width: '400px', height: '400px', border: '1px solid #ccc', background: '#222' }}>
-                                <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+                <div className="cropModalBackdrop">
+                    <div className="cropModalCard">
+                        <h4>Posicione a imagem no quadro 1:1</h4>
+                        <p className="cropModalHint">Arraste o quadro para escolher o que aparece, e use o zoom para aproximar. A imagem inteira continua disponível depois, no clique de ampliar.</p>
+                        <div className="cropModalBody">
+                            <div ref={containerRef} className="cropCanvasContainer">
+                                <canvas ref={canvasRef} className="cropCanvas" />
                                 <div
                                     onMouseDown={onMouseDown}
-                                    style={{ position: 'absolute', left: cropBox.left, top: cropBox.top, width: cropBox.size, height: cropBox.size, border: '2px dashed #fff', boxSizing: 'border-box', cursor: 'move', background: 'rgba(255,255,255,0.06)' }}
+                                    className="cropSelectionBox"
+                                    style={{ left: cropBox.left, top: cropBox.top, width: cropBox.size, height: cropBox.size }}
                                 />
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '200px' }}>
-                                <label>Zoom</label>
-                                <input type="range" min="1" max="3" step="0.01" value={cropZoom} onChange={e => setCropZoom(parseFloat(e.target.value))} />
-                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                    <button type="button" className="smallBtn success" onClick={applyCrop}>Aplicar</button>
-                                    <button type="button" className="smallBtn" onClick={skipCrop}>Pular</button>
-                                    <button type="button" className="smallBtn delete" onClick={() => { setCropQueue([]); setCurrentCropIndex(0); }}>Fechar</button>
+                            <div className="cropControls">
+                                <label htmlFor="cropZoomRange">Zoom</label>
+                                <input id="cropZoomRange" type="range" min="1" max="3" step="0.01" value={cropZoom} onChange={e => setCropZoom(parseFloat(e.target.value))} />
+                                <div className="cropControlsActions">
+                                    <button type="button" className="smallBtn success" onClick={confirmarPosicionamento}>Confirmar</button>
+                                    <button type="button" className="smallBtn delete" onClick={descartarImagem}>Descartar imagem</button>
                                 </div>
-                                <div style={{ marginTop: '8px', color: '#666', fontSize: '0.9rem' }}>
+                                <div className="cropControlsCounter">
                                     Imagem {currentCropIndex + 1} de {cropQueue.length}
                                 </div>
                             </div>
@@ -219,6 +269,8 @@ function ImagePicker({ onChange }) {
                     </div>
                 </div>
             )}
+
+            <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
         </div>
     );
 }
@@ -348,6 +400,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
     const [imagePickerKey, setImagePickerKey] = useState(0);
     const [imagensMessage, setImagensMessage] = useState(null);
     const [enviandoImagens, setEnviandoImagens] = useState(false);
+    const [lightboxSrc, setLightboxSrc] = useState(null);
 
     const [unidadeForm, setUnidadeForm] = useState({ codigoPatrimonio: '', numeroDeSerie: '', status: 'DISPONIVEL', depositoId: '' });
     const [unidadeEditId, setUnidadeEditId] = useState(null);
@@ -608,7 +661,9 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                                 <img
                                                     src={imageUrl(img)}
                                                     alt={`${eq.nome} - ${idx + 1}`}
-                                                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ddd' }}
+                                                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ddd', cursor: 'pointer' }}
+                                                    onClick={() => setLightboxSrc(imageUrl(img))}
+                                                    title="Clique para ver a imagem inteira"
                                                 />
                                                 <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
                                                     <button type="button" className="smallBtn" onClick={() => moveImage(idx, -1)} title="Mover para trás" disabled={idx === 0}>↑</button>
@@ -720,6 +775,8 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                     </>
                 )}
             </div>
+
+            <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
         </div>
     );
 }
@@ -767,16 +824,16 @@ export default function Equipamento() {
             .catch(err => setMessage({ type: 'error', text: 'Erro ao excluir: ' + (err.response?.data || err.message) }));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/equipamentos')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredEquipamentos = useMemo(() => {
         return equipamentos.filter(eq =>
             eq.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
             eq.categoria.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [equipamentos, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/equipamentos')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     return (
         <div className="adminContent">

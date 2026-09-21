@@ -290,3 +290,52 @@
         height: 110px;
     }
 }
+
+
+.avaliacao-card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 var(--space-3) var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+}
+
+/* Lightbox — abre a imagem inteira (sem corte) ao clicar na miniatura do card */
+.lightboxBackdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    cursor: zoom-out;
+}
+
+.lightboxImage {
+    max-width: 92vw;
+    max-height: 92vh;
+    object-fit: contain;
+    border-radius: 4px;
+    cursor: default;
+}
+
+.lightboxCloseBtn {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.lightboxCloseBtn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}

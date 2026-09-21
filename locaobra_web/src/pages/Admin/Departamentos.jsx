@@ -94,10 +94,6 @@ export default function Departamentos() {
             .finally(() => setLoading(false));
     }
 
-    if (!canAccessAdminRoute(user, '/admin/departamentos')) {
-        return <Navigate to="/admin" replace />;
-    }
-
     const filteredDepts = useMemo(() => {
         return departamentos.filter(d => {
             const term = searchTerm.toLowerCase();
@@ -107,6 +103,10 @@ export default function Departamentos() {
             );
         });
     }, [departamentos, searchTerm]);
+
+    if (!canAccessAdminRoute(user, '/admin/departamentos')) {
+        return <Navigate to="/admin" replace />;
+    }
 
     function handleChange(e) {
         const { name, value, type, checked } = e.target;

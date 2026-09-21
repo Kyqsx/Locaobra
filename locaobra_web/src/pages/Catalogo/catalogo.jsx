@@ -1,15 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../service/api'; // Importe sua instância do axios
+import { Estrelas } from '../../components/Estrelas';
+import { formatarMedia } from '../../utils/avaliacoes';
 import './Catalogo.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter } from '@fortawesome/free-solid-svg-icons';
+
+function Lightbox({ src, onClose }) {
+  if (!src) return null;
+  return (
+    <div className="lightboxBackdrop" onClick={onClose}>
+      <img src={src} alt="Imagem ampliada" className="lightboxImage" onClick={e => e.stopPropagation()} />
+      <button type="button" className="lightboxCloseBtn" onClick={onClose} title="Fechar">✕</button>
+    </div>
+  );
+}
 
 function Catalogo() {
   const { slug } = useParams();
   const [equipamentos, setEquipamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const isCatalogoCompleto = !slug;
   const nomeFormatado = slug ? slug.replace(/-/g, ' ') : "Catálogo Completo";
@@ -75,6 +88,9 @@ function Catalogo() {
                       src={imageUrl(item.imagens[0])}
                       alt={item.nome}
                       className="img-produto-cat"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.style.display = 'none';
@@ -87,6 +103,13 @@ function Catalogo() {
                 </div>
 
                 <h3>{item.nome}</h3>
+
+                {item.totalAvaliacoes > 0 && (
+                  <div className="avaliacao-card">
+                    <Estrelas valor={item.mediaAvaliacoes} tamanho={12} />
+                    <span>{formatarMedia(item.mediaAvaliacoes)} ({item.totalAvaliacoes})</span>
+                  </div>
+                )}
 
                 <p className="descricao-produto">
                   {item.descricao || "Sem descrição disponível."}
@@ -109,6 +132,8 @@ function Catalogo() {
           </div>
         )}
       </div>
+
+      <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 }

@@ -41,6 +41,10 @@ public class Vistoria {
     @Column(name = "realizada_em")
     private LocalDateTime realizadaEm;
 
+    // Nome de quem registrou a vistoria (usuário logado no momento) — trilha de auditoria.
+    @Column(name = "responsavel", length = 150)
+    private String responsavel;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
@@ -85,4 +89,7 @@ public class Vistoria {
 
     public List<FotoVistoria> getFotos() { return fotos; }
     public void setFotos(List<FotoVistoria> fotos) { this.fotos = fotos; }
+
+    public String getResponsavel() { return responsavel; }
+    public void setResponsavel(String responsavel) { this.responsavel = responsavel; }
 }

@@ -3,6 +3,7 @@ package com.locaobra.controller;
 import com.locaobra.dto.request.ExpedicaoRequest;
 import com.locaobra.dto.response.ExpedicaoResponse;
 import com.locaobra.enums.StatusExpedicao;
+import com.locaobra.exception.BusinessException;
 import com.locaobra.service.ExpedicaoService;
 import com.locaobra.service.StorageService;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -66,40 +68,77 @@ public class ExpedicaoController {
         return ResponseEntity.ok(expedicaoService.buscarPorId(id));
     }
 
+    // Check-out (EM_TRANSITO) e check-in (CONCLUIDO). O check-out recebe a lista de
+    // itens que o conferente marcou na conferência ("itensConferidos": [ids]).
+    // ENTREGUE só é alcançado por /confirmar-entrega; CANCELADO por /cancelar.
     @PatchMapping("/{id}/status")
     public ResponseEntity<ExpedicaoResponse> atualizarStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
-        StatusExpedicao status = StatusExpedicao.valueOf(body.get("status"));
-        return ResponseEntity.ok(expedicaoService.atualizarStatus(id, status));
+            @RequestBody Map<String, Object> body) {
+        Object bruto = body.get("status");
+        StatusExpedicao status;
+        try {
+            status = StatusExpedicao.valueOf(String.valueOf(bruto));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("Status inválido: " + bruto);
+        }
+
+        List<Long> itensConferidos = new ArrayList<>();
+        if (body.get("itensConferidos") instanceof List<?> lista) {
+            for (Object o : lista) {
+                if (o instanceof Number n) {
+                    itensConferidos.add(n.longValue());
+                }
+            }
+        }
+        return ResponseEntity.ok(expedicaoService.atualizarStatus(id, status, itensConferidos));
     }
 
-    @PatchMapping("/{id}/assinatura")
-    public ResponseEntity<Void> atualizarAssinatura(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
-        expedicaoService.atualizarAssinatura(id, body.get("assinatura"));
-        return ResponseEntity.noContent().build();
-    }
-
-    // Passo 3 do fluxo: o ENTREGADOR confirma a entrega no local do cliente,
-    // entre o check-out (passo 2) e o check-in (passo 4). Assinatura de quem
-    // recebeu + foto do equipamento entregue; a data/hora fica por conta do
-    // servidor (LocalDateTime.now() no service), nunca vem do front.
+    // Passo 3 do fluxo: o ENTREGADOR confirma a entrega (ou coleta) no local do
+    // cliente. Prova exigida: nome + documento de quem assinou, a assinatura
+    // DESENHADA (imagem) e a foto; a data/hora é do servidor, nunca vem do front.
     @PostMapping(path = "/{id}/confirmar-entrega", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ExpedicaoResponse> confirmarEntrega(
             @PathVariable Long id,
             @RequestPart("assinatura") String assinatura,
-            @RequestPart("foto") MultipartFile foto) throws IOException {
+            @RequestPart("documento") String documento,
+            @RequestPart("assinaturaImagem") MultipartFile assinaturaImagem,
+            @RequestPart("foto") MultipartFile foto,
+            @RequestPart(name = "observacao", required = false) String observacao) throws IOException {
+
+        exigirImagem(foto, "A foto da entrega precisa ser uma imagem.");
+        exigirImagem(assinaturaImagem, "A assinatura precisa ser uma imagem.");
 
         String fotoUrl = storageService.salvar(foto, "entregas");
+        String assinaturaUrl = storageService.salvar(assinaturaImagem, "assinaturas");
 
-        return ResponseEntity.ok(expedicaoService.confirmarEntrega(id, assinatura, fotoUrl));
+        return ResponseEntity.ok(expedicaoService.confirmarEntrega(id, assinatura, documento, assinaturaUrl, fotoUrl, observacao));
+    }
+
+    // O entregador chegou e não conseguiu entregar/coletar.
+    @PostMapping("/{id}/nao-realizada")
+    public ResponseEntity<ExpedicaoResponse> naoRealizada(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(expedicaoService.registrarNaoRealizada(id, body.get("motivo")));
+    }
+
+    private void exigirImagem(MultipartFile arquivo, String mensagem) {
+        String tipo = arquivo != null ? arquivo.getContentType() : null;
+        if (arquivo == null || arquivo.isEmpty() || tipo == null || !tipo.toLowerCase().startsWith("image/")) {
+            throw new BusinessException(mensagem);
+        }
     }
 
     @PostMapping("/{id}/cancelar")
-    public ResponseEntity<Void> cancelar(@PathVariable Long id) {
-        expedicaoService.cancelar(id);
+    public ResponseEntity<Void> cancelar(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body) {
+        String motivo = body != null ? body.get("motivo") : null;
+        if (motivo == null || motivo.trim().length() < 3) {
+            throw new BusinessException("Informe o motivo do cancelamento.");
+        }
+        expedicaoService.cancelar(id, motivo);
         return ResponseEntity.noContent().build();
     }
 

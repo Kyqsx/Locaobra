@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import './Expedicao.css';
@@ -12,6 +12,8 @@ import {
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
 import EnderecoFields from '../../components/EnderecoFields';
+import AssinaturaPad from '../../components/AssinaturaPad';
+import { comprimirImagem, formatarTamanho, TAMANHO_MAX_UPLOAD } from '../../utils/imagem';
 
 const STATUS_EXPEDICAO_LABEL = {
     AGENDADO: 'Agendado',
@@ -35,6 +37,11 @@ function imageUrl(path) {
     if (!path) return null;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     return `${api.defaults.baseURL}${path}`;
+}
+
+function mensagemDeErro(err) {
+    const d = err.response?.data;
+    return typeof d === 'string' ? d : (d?.message || err.message);
 }
 
 function formatDate(dateStr) {
@@ -67,12 +74,18 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
     const [message, setMessage] = useState(null);
     const [previewUrls, setPreviewUrls] = useState([]);
 
+    // Só lista as unidades que ainda NÃO têm vistoria desse tipo (a API recusa duplicada).
     const unidades = useMemo(() => {
         const itens = expedicao?.itens || [];
+        const jaVistoriadas = new Set(
+            (expedicao?.vistorias || [])
+                .filter(v => v.tipo === (tipoInicial || 'ENTREGA'))
+                .map(v => v.unidadeId)
+        );
         const unique = [];
         const seen = new Set();
         itens.forEach(item => {
-            if (item.unidadeId && !seen.has(item.unidadeId)) {
+            if (item.unidadeId && !seen.has(item.unidadeId) && !jaVistoriadas.has(item.unidadeId)) {
                 seen.add(item.unidadeId);
                 unique.push({
                     id: item.unidadeId,
@@ -82,7 +95,7 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
             }
         });
         return unique;
-    }, [expedicao]);
+    }, [expedicao, tipoInicial]);
 
     useEffect(() => {
         if (unidades.length === 1) {
@@ -111,43 +124,70 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
         setPreviewUrls(prev => prev.filter((_, i) => i !== idx));
     }
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         if (!form.unidadeId) {
             setMessage({ type: 'error', text: 'Selecione a unidade para vistoriar.' });
             return;
         }
+        const ehEntrega = form.tipo === 'ENTREGA';
+        // A vistoria de pré-saída é a PROVA do estado em que o equipamento saiu.
+        if (ehEntrega && selectedFiles.length === 0) {
+            setMessage({ type: 'error', text: 'Anexe ao menos uma foto do estado do equipamento.' });
+            return;
+        }
+        if (!ehEntrega && form.danosCausados.trim() && selectedFiles.length === 0) {
+            setMessage({ type: 'error', text: 'Anexe ao menos uma foto dos danos registrados.' });
+            return;
+        }
+
         setSaving(true);
-        setMessage({ type: 'info', text: 'Salvando vistoria...' });
+        setMessage({ type: 'info', text: 'Preparando fotos...' });
 
-        const vistoriaData = {
-            unidadeId: parseInt(form.unidadeId, 10),
-            tipo: form.tipo,
-            condicaoGeral: form.condicaoGeral,
-            avariasExistentes: form.avariasExistentes,
-            danosCausados: form.danosCausados,
-            observacoes: form.observacoes,
-        };
+        try {
+            // Foto de celular tem vários MB; a Vercel recusa envios > 4,5 MB.
+            const fotos = await Promise.all(selectedFiles.map(f => comprimirImagem(f)));
+            const total = fotos.reduce((soma, f) => soma + f.size, 0);
+            if (total > TAMANHO_MAX_UPLOAD) {
+                setMessage({
+                    type: 'error',
+                    text: `As fotos somam ${formatarTamanho(total)} e o limite por envio é ${formatarTamanho(TAMANHO_MAX_UPLOAD)}. Remova algumas fotos.`,
+                });
+                return;
+            }
 
-        const formData = new FormData();
-        formData.append('vistoria', JSON.stringify(vistoriaData));
-        selectedFiles.forEach(file => formData.append('fotos', file));
+            setMessage({ type: 'info', text: 'Salvando vistoria...' });
 
-        api.post(`/api/expedicoes/${expedicao.id}/vistorias`, formData)
-            .then(() => {
-                setMessage({ type: 'success', text: 'Vistoria registrada com sucesso!' });
-                setTimeout(() => {
-                    onChanged();
-                    onClose();
-                }, 1200);
-            })
-            .catch(err => {
-                const msg = typeof err.response?.data === 'string'
-                    ? err.response.data
-                    : (err.response?.data?.message || err.response?.data || err.message);
-                setMessage({ type: 'error', text: 'Erro ao salvar vistoria: ' + msg });
-            })
-            .finally(() => setSaving(false));
+            // Cada tipo de vistoria guarda só o seu campo de avarias.
+            const vistoriaData = {
+                unidadeId: parseInt(form.unidadeId, 10),
+                tipo: form.tipo,
+                condicaoGeral: form.condicaoGeral,
+                observacoes: form.observacoes,
+                ...(ehEntrega
+                    ? { avariasExistentes: form.avariasExistentes }
+                    : { danosCausados: form.danosCausados }),
+            };
+
+            const formData = new FormData();
+            formData.append('vistoria', JSON.stringify(vistoriaData));
+            fotos.forEach(file => formData.append('fotos', file));
+
+            await api.post(`/api/expedicoes/${expedicao.id}/vistorias`, formData);
+
+            setMessage({ type: 'success', text: 'Vistoria registrada com sucesso!' });
+            setTimeout(() => {
+                onChanged();
+                onClose();
+            }, 1200);
+        } catch (err) {
+            const msg = typeof err.response?.data === 'string'
+                ? err.response.data
+                : (err.response?.data?.message || err.response?.data || err.message);
+            setMessage({ type: 'error', text: 'Erro ao salvar vistoria: ' + msg });
+        } finally {
+            setSaving(false);
+        }
     }
 
     return (
@@ -174,7 +214,7 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
                         <div className="formField">
                             <label>Unidade / Equipamento</label>
                             <select className="equipInput" name="unidadeId" value={form.unidadeId} onChange={handleChange} required>
-                                <option value="">Selecione...</option>
+                                <option value="">{unidades.length === 0 ? 'Todas as unidades já foram vistoriadas' : 'Selecione...'}</option>
                                 {unidades.map(u => (
                                     <option key={u.id} value={u.id}>{u.codigoPatrimonio} — {u.equipamentoNome}</option>
                                 ))}
@@ -211,29 +251,39 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
                         </div>
                     </div>
 
-                    <div className="formField">
-                        <label>Avarias pré-existentes</label>
-                        <textarea
-                            className="equipTextarea"
-                            name="avariasExistentes"
-                            rows={2}
-                            placeholder="Registrar avarias que já existiam antes (vistoria de entrega)..."
-                            value={form.avariasExistentes}
-                            onChange={handleChange}
-                        />
-                    </div>
+                    {form.condicaoGeral === 'RUIM' && form.tipo === 'ENTREGA' && (
+                        <div className="messageBanner negative">
+                            Condição RUIM reprova a unidade: a saída desta expedição fica bloqueada até a
+                            vistoria ser refeita após o reparo, ou a expedição ser cancelada (a unidade
+                            vai para a manutenção).
+                        </div>
+                    )}
 
-                    <div className="formField">
-                        <label>Danos causados pelo cliente</label>
-                        <textarea
-                            className="equipTextarea"
-                            name="danosCausados"
-                            rows={2}
-                            placeholder="Registrar danos causados durante o período de locação (vistoria de devolução)..."
-                            value={form.danosCausados}
-                            onChange={handleChange}
-                        />
-                    </div>
+                    {form.tipo === 'ENTREGA' ? (
+                        <div className="formField">
+                            <label>Avarias pré-existentes</label>
+                            <textarea
+                                className="equipTextarea"
+                                name="avariasExistentes"
+                                rows={2}
+                                placeholder="Registre avarias que o equipamento já tem antes de sair (riscos, peças soltas...)"
+                                value={form.avariasExistentes}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    ) : (
+                        <div className="formField">
+                            <label>Danos causados pelo cliente</label>
+                            <textarea
+                                className="equipTextarea"
+                                name="danosCausados"
+                                rows={2}
+                                placeholder="Registre danos causados durante o período de locação (exige foto)..."
+                                value={form.danosCausados}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    )}
 
                     <div className="formField">
                         <label>Observações</label>
@@ -265,6 +315,7 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
                     <div className="formField">
                         <label>
                             <FontAwesomeIcon icon={faCamera} /> Fotos do estado do equipamento
+                            {form.tipo === 'ENTREGA' ? ' (obrigatório — mínimo 1)' : ''}
                         </label>
                         <div className="fileInputWrapper photoUpload">
                             <FontAwesomeIcon icon={faCamera} />
@@ -443,7 +494,8 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
             unidadeId: unidade.id,
             codigoPatrimonio: unidade.codigoPatrimonio || '---',
             equipamentoNome: unidade.equipamentoNome,
-            quantidade: parseInt(novoItem.quantidade, 10) || 1,
+            equipamentoId: unidade.equipamentoId,
+            quantidade: 1, // cada item é UMA unidade física (patrimônio)
             observacaoItem: novoItem.observacaoItem,
         }]);
         setNovoItem({ unidadeId: '', quantidade: 1, observacaoItem: '' });
@@ -461,8 +513,30 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                 setMessage({ type: 'error', text: 'Selecione qual entrega vai ser coletada.' });
                 return;
             }
-        } else if (itens.length === 0) {
-            setMessage({ type: 'error', text: 'Adicione pelo menos um item à expedição.' });
+        } else {
+            if (itens.length === 0) {
+                setMessage({ type: 'error', text: 'Adicione pelo menos um item à expedição.' });
+                return;
+            }
+            if (!pedidoOrigem && !form.clienteId) {
+                setMessage({ type: 'error', text: 'Selecione o cliente da entrega.' });
+                return;
+            }
+            if (!form.nomeAutorizado1.trim()) {
+                setMessage({ type: 'error', text: 'Informe ao menos uma pessoa autorizada a receber o equipamento.' });
+                return;
+            }
+            if (!pedidoConfere) {
+                setMessage({ type: 'error', text: 'Os itens não conferem com o pedido: ' + pendenciasPedido.join(' · ') });
+                return;
+            }
+        }
+        if (!form.motoristaId) {
+            setMessage({ type: 'error', text: 'Selecione o motorista (entregador).' });
+            return;
+        }
+        if (!form.placaVeiculo.trim()) {
+            setMessage({ type: 'error', text: 'Informe a placa do veículo.' });
             return;
         }
         setSaving(true);
@@ -508,6 +582,28 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
     }
 
     const unidades = unidadesDisponiveis();
+
+    // Conferência com o pedido: mesmo equipamento e mesma quantidade que o cliente
+    // pediu (neste depósito). A API também confere; aqui só avisamos antes.
+    const esperadoPedido = {};
+    itensDoDeposito.forEach(i => {
+        const atual = esperadoPedido[i.equipamentoId] || { nome: i.equipamentoNome, qtd: 0 };
+        esperadoPedido[i.equipamentoId] = { nome: atual.nome, qtd: atual.qtd + (i.quantidade || 0) };
+    });
+    const atualPedido = {};
+    itens.forEach(i => {
+        const atual = atualPedido[i.equipamentoId] || { nome: i.equipamentoNome, qtd: 0 };
+        atualPedido[i.equipamentoId] = { nome: atual.nome, qtd: atual.qtd + 1 };
+    });
+    const pendenciasPedido = [];
+    Object.entries(esperadoPedido).forEach(([id, e]) => {
+        const qtd = atualPedido[id]?.qtd || 0;
+        if (qtd !== e.qtd) pendenciasPedido.push(`${e.nome}: ${qtd} de ${e.qtd}`);
+    });
+    Object.entries(atualPedido).forEach(([id, a]) => {
+        if (!esperadoPedido[id]) pendenciasPedido.push(`${a.nome} não faz parte do pedido`);
+    });
+    const pedidoConfere = !pedidoOrigem || pendenciasPedido.length === 0;
 
     return (
         <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
@@ -591,8 +687,8 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                             </div>
                         ) : (
                             <div className="formField">
-                                <label>Cliente</label>
-                                <select className="equipInput" name="clienteId" value={form.clienteId} onChange={handleChange}>
+                                <label>Cliente *</label>
+                                <select className="equipInput" name="clienteId" value={form.clienteId} onChange={handleChange} required>
                                     <option value="">Selecione...</option>
                                     {clientes.map(c => (
                                         <option key={c.id} value={c.id}>{c.nome}</option>
@@ -601,8 +697,8 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                             </div>
                         )}
                         <div className="formField">
-                            <label>Motorista</label>
-                            <select className="equipInput" name="motoristaId" value={form.motoristaId} onChange={handleChange}>
+                            <label>Motorista *</label>
+                            <select className="equipInput" name="motoristaId" value={form.motoristaId} onChange={handleChange} required>
                                 <option value="">Selecione...</option>
                                 {motoristas.map(m => (
                                     <option key={m.id} value={m.id}>{m.nome}</option>
@@ -610,8 +706,8 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                             </select>
                         </div>
                         <div className="formField">
-                            <label>Placa do Veículo</label>
-                            <input className="equipInput" name="placaVeiculo" placeholder="ABC-1234" value={form.placaVeiculo} onChange={handleChange} />
+                            <label>Placa do Veículo *</label>
+                            <input className="equipInput" name="placaVeiculo" placeholder="ABC-1234" value={form.placaVeiculo} onChange={handleChange} required />
                         </div>
                     </div>
 
@@ -644,7 +740,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                         )
                     ) : (
                         <div className="formField">
-                            <label>Pessoas autorizadas a receber (até 3, opcional)</label>
+                            <label>Pessoas autorizadas a receber (até 3 — pelo menos 1) *</label>
                             <div className="formGrid">
                                 <input
                                     className="equipInput"
@@ -652,6 +748,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                                     placeholder="Nome 1"
                                     value={form.nomeAutorizado1}
                                     onChange={handleChange}
+                                    required
                                 />
                                 <input
                                     className="equipInput"
@@ -729,14 +826,6 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                                 </select>
                                 <input
                                     className="equipInput"
-                                    type="number"
-                                    min="1"
-                                    placeholder="Qtd"
-                                    value={novoItem.quantidade}
-                                    onChange={e => setNovoItem(prev => ({ ...prev, quantidade: e.target.value }))}
-                                />
-                                <input
-                                    className="equipInput"
                                     placeholder="Obs. do item"
                                     value={novoItem.observacaoItem}
                                     onChange={e => setNovoItem(prev => ({ ...prev, observacaoItem: e.target.value }))}
@@ -776,6 +865,14 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                                     </table>
                                 </div>
                             )}
+
+                            {pedidoOrigem && (
+                                <div className={`messageBanner ${pedidoConfere ? 'positive' : 'negative'}`} style={{ marginTop: 10 }}>
+                                    {pedidoConfere
+                                        ? 'Itens conferem com o pedido.'
+                                        : 'Faltam ajustes para bater com o pedido: ' + pendenciasPedido.join(' · ')}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -783,7 +880,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
                         <button type="button" className="btn btn-secondary" onClick={onClose}>
                             Cancelar
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={saving}>
+                        <button type="submit" className="btn btn-primary" disabled={saving || (!ehColeta && !pedidoConfere)}>
                             {saving ? 'Criando...' : 'Criar Expedição'}
                         </button>
                     </div>
@@ -812,13 +909,16 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
     const [changingStatus, setChangingStatus] = useState(false);
     const [vistoriaModalTipo, setVistoriaModalTipo] = useState(null); // 'ENTREGA' | 'DEVOLUCAO' | null
     const [message, setMessage] = useState(null);
+    // Prova da entrega (passo 3): quem assinou + documento + assinatura desenhada + foto.
     const [assinaturaEntrega, setAssinaturaEntrega] = useState('');
-    // "Registrar Assinatura" trava o nome escolhido e mostra a prévia em
-    // letra cursiva (mesmo efeito que existia no bloco solto de "Assinatura
-    // do Cliente"), antes de anexar a foto e confirmar de fato.
-    const [assinaturaRegistrada, setAssinaturaRegistrada] = useState(false);
+    const [documentoEntrega, setDocumentoEntrega] = useState('');
+    const [observacaoEntrega, setObservacaoEntrega] = useState('');
+    const [assinaturaDesenhada, setAssinaturaDesenhada] = useState(false);
+    const assinaturaPadRef = useRef(null);
     const [fotoEntregaFile, setFotoEntregaFile] = useState(null);
     const [savingEntrega, setSavingEntrega] = useState(false);
+    // Conferência do check-out: ids dos itens que o conferente já marcou.
+    const [itensConferidos, setItensConferidos] = useState([]);
 
     const ehAdminOuGerente = user?.tipo === 'ADMIN' || user?.cargoFuncionario === 'GERENTE_OPERACOES';
     const ehEntregador = ehAdminOuGerente || user?.cargoFuncionario === 'ENTREGADOR';
@@ -827,75 +927,118 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
     // manutenção — é ele quem tem o olho técnico pra avaliar o equipamento.
     const ehTecnico = ehAdminOuGerente || user?.cargoFuncionario === 'TECNICO_MANUTENCAO';
 
-    function handleStatusChange(novoStatus) {
+    // Check-out (EM_TRANSITO, com a lista de itens conferidos) e check-in (CONCLUIDO).
+    // Entrega no local e cancelamento têm rotas próprias (abaixo).
+    function handleStatusChange(novoStatus, extras = {}) {
         setChangingStatus(true);
         setMessage(null);
-        api.patch(`/api/expedicoes/${expedicao.id}/status`, { status: novoStatus })
+        api.patch(`/api/expedicoes/${expedicao.id}/status`, { status: novoStatus, ...extras })
             .then(() => {
                 setMessage({ type: 'success', text: 'Status atualizado!' });
                 onChanged();
             })
-            .catch(err => {
-                const msg = typeof err.response?.data === 'string'
-                    ? err.response.data
-                    : (err.response?.data?.message || err.response?.data || err.message);
-                setMessage({ type: 'error', text: 'Erro: ' + msg });
-            })
+            .catch(err => setMessage({ type: 'error', text: 'Erro: ' + mensagemDeErro(err) }))
             .finally(() => setChangingStatus(false));
     }
 
-    // Confirmação de entrega no local (passo 3): assinatura de quem recebeu +
-    // foto tirada na hora. A data/hora é sempre a do momento do clique — vem
-    // do backend (LocalDateTime.now() no servidor), nunca é editável aqui.
-    // Passo 3 acontece em duas fases:
-    //  1) "Registrar Assinatura" — trava o nome escolhido localmente e mostra
-    //     a prévia em letra cursiva (ainda não salva nada no backend).
-    //  2) "Confirmar Entrega/Coleta" — aí sim envia assinatura + foto pro
-    //     backend, junto com o carimbo de data/hora do servidor.
-    function handleRegistrarAssinaturaEntrega() {
-        if (!assinaturaEntrega.trim()) {
-            setMessage({ type: 'error', text: 'Selecione (ou digite) quem está assinando o recebimento.' });
+    function toggleItemConferido(itemId) {
+        setItensConferidos(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
+    }
+
+    // Cancelar exige motivo (fica registrado na expedição). Depois que o
+    // equipamento saiu do depósito, só o gerente cancela (o entregador tem o
+    // botão "não consegui entregar").
+    function handleCancelar() {
+        const motivo = window.prompt('Motivo do cancelamento:');
+        if (motivo === null) return;
+        if (motivo.trim().length < 3) {
+            setMessage({ type: 'error', text: 'Informe o motivo do cancelamento.' });
             return;
         }
-        setAssinaturaRegistrada(true);
+        setChangingStatus(true);
         setMessage(null);
+        api.post(`/api/expedicoes/${expedicao.id}/cancelar`, { motivo: motivo.trim() })
+            .then(() => {
+                setMessage({ type: 'success', text: 'Expedição cancelada.' });
+                onChanged();
+            })
+            .catch(err => setMessage({ type: 'error', text: 'Erro: ' + mensagemDeErro(err) }))
+            .finally(() => setChangingStatus(false));
     }
 
-    function handleTrocarAssinaturaEntrega() {
-        setAssinaturaRegistrada(false);
+    // O entregador chegou e não deu pra entregar/coletar (cliente ausente,
+    // recusou, endereço não encontrado). Encerra a expedição com o motivo; na
+    // entrega, as unidades voltam pro estoque e o pedido volta pra fila.
+    function handleNaoRealizada() {
+        const motivo = window.prompt(
+            `Por que ${ehColetaDetalhe ? 'a coleta' : 'a entrega'} não foi realizada? (ex.: cliente ausente, recusou receber, endereço não encontrado)`
+        );
+        if (motivo === null) return;
+        if (motivo.trim().length < 5) {
+            setMessage({ type: 'error', text: 'Descreva o motivo (mínimo 5 caracteres).' });
+            return;
+        }
+        setChangingStatus(true);
+        setMessage(null);
+        api.post(`/api/expedicoes/${expedicao.id}/nao-realizada`, { motivo: motivo.trim() })
+            .then(() => {
+                setMessage({ type: 'success', text: 'Ocorrência registrada. A expedição foi encerrada.' });
+                onChanged();
+            })
+            .catch(err => setMessage({ type: 'error', text: 'Erro: ' + mensagemDeErro(err) }))
+            .finally(() => setChangingStatus(false));
     }
 
-    function handleConfirmarEntrega() {
-        if (!assinaturaRegistrada || !assinaturaEntrega.trim()) {
-            setMessage({ type: 'error', text: 'Registre a assinatura de quem recebeu antes de confirmar.' });
+    // Confirmação no local (passo 3). Prova: nome + documento de quem assinou,
+    // assinatura DESENHADA e foto tirada na hora. A data/hora é a do servidor.
+    // A foto é reduzida antes do envio (a Vercel recusa requisições > 4,5 MB).
+    async function handleConfirmarEntrega() {
+        if (!assinaturaEntrega.trim()) {
+            setMessage({ type: 'error', text: 'Informe quem está assinando o recebimento.' });
+            return;
+        }
+        if (documentoEntrega.trim().length < 5) {
+            setMessage({ type: 'error', text: 'Informe o documento (CPF ou RG) de quem assinou.' });
+            return;
+        }
+        if (!assinaturaPadRef.current || assinaturaPadRef.current.vazio()) {
+            setMessage({ type: 'error', text: 'Peça para a pessoa assinar no quadro.' });
             return;
         }
         if (!fotoEntregaFile) {
-            setMessage({ type: 'error', text: 'Anexe a foto da entrega tirada no local.' });
+            setMessage({ type: 'error', text: 'Anexe a foto tirada no local.' });
             return;
         }
         setSavingEntrega(true);
         setMessage(null);
 
-        const formData = new FormData();
-        formData.append('assinatura', assinaturaEntrega.trim());
-        formData.append('foto', fotoEntregaFile);
+        try {
+            const [foto, assinaturaBlob] = await Promise.all([
+                comprimirImagem(fotoEntregaFile),
+                assinaturaPadRef.current.toBlob(),
+            ]);
 
-        api.post(`/api/expedicoes/${expedicao.id}/confirmar-entrega`, formData)
-            .then(() => {
-                setMessage({ type: 'success', text: 'Entrega confirmada!' });
-                setAssinaturaEntrega('');
-                setAssinaturaRegistrada(false);
-                setFotoEntregaFile(null);
-                onChanged();
-            })
-            .catch(err => {
-                const msg = typeof err.response?.data === 'string'
-                    ? err.response.data
-                    : (err.response?.data?.message || err.response?.data || err.message);
-                setMessage({ type: 'error', text: 'Erro: ' + msg });
-            })
-            .finally(() => setSavingEntrega(false));
+            const formData = new FormData();
+            formData.append('assinatura', assinaturaEntrega.trim());
+            formData.append('documento', documentoEntrega.trim());
+            formData.append('assinaturaImagem', assinaturaBlob, 'assinatura.png');
+            formData.append('foto', foto);
+            if (observacaoEntrega.trim()) formData.append('observacao', observacaoEntrega.trim());
+
+            await api.post(`/api/expedicoes/${expedicao.id}/confirmar-entrega`, formData);
+
+            setMessage({ type: 'success', text: ehColetaDetalhe ? 'Coleta confirmada!' : 'Entrega confirmada!' });
+            setAssinaturaEntrega('');
+            setDocumentoEntrega('');
+            setObservacaoEntrega('');
+            setFotoEntregaFile(null);
+            setAssinaturaDesenhada(false);
+            onChanged();
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Erro: ' + mensagemDeErro(err) });
+        } finally {
+            setSavingEntrega(false);
+        }
     }
 
     const vistoriasEntrega = (expedicao.vistorias || []).filter(v => v.tipo === 'ENTREGA');
@@ -903,11 +1046,11 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
 
     // ------------------------------------------------------------------
     // Passo a passo do fluxo, na ordem em que acontece na vida real:
-    //   1) Vistoria de Entrega (pré-saída)   → ENTREGADOR revisa antes de sair
-    //   2) Check-out                         → CONFERENTE registra a saída
-    //   3) Confirmação de Entrega (no local) → ENTREGADOR assina + fotografa
-    //      a entrega feita na casa/obra do cliente. Data/hora sempre a do
-    //      clique (o backend grava com LocalDateTime.now()).
+    //   1) Vistoria de Entrega (pré-saída)   → TÉCNICO DE MANUTENÇÃO, uma por unidade
+    //   2) Check-out                         → CONFERENTE confere os itens e registra a saída
+    //   3) Confirmação de Entrega (no local) → ENTREGADOR coleta nome, documento e
+    //      assinatura desenhada de quem recebeu e fotografa a entrega. Data/hora
+    //      sempre a do clique (o backend grava com LocalDateTime.now()).
     //   4) Check-in                          → CONFERENTE registra a volta
     // A partir do check-in, a unidade cai sozinha em "Aguardando Manutenção"
     // e é o TÉCNICO quem faz a revisão final (diagnóstico) na tela de Ordens
@@ -927,14 +1070,30 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
     const isFinalizada = expedicao.status === 'CONCLUIDO' || expedicao.status === 'CANCELADO'
         || (!ehColetaDetalhe && expedicao.status === 'ENTREGUE');
     const podeRegistrarEntrega = expedicao.status === 'AGENDADO';
-    // COLETA não tem vistoria de saída — não faz sentido inspecionar o
-    // equipamento antes de sair pra buscar, porque ele ainda está com o
-    // cliente. Por isso o checkout da coleta não exige vistoria prévia.
-    const podeFazerCheckout = expedicao.status === 'AGENDADO' && (ehColetaDetalhe || vistoriasEntrega.length > 0);
+
+    // Vistoria por UNIDADE: cada patrimônio da entrega precisa da sua vistoria
+    // e nenhuma pode estar reprovada (condição RUIM). A API confere o mesmo.
+    const itensDaExpedicao = expedicao.itens || [];
+    const vistoriaPorUnidade = {};
+    vistoriasEntrega.forEach(v => { vistoriaPorUnidade[v.unidadeId] = v; });
+    const rotuloItem = (i) => i.codigoPatrimonio || `#${i.unidadeId}`;
+    const unidadesSemVistoria = itensDaExpedicao
+        .filter(i => i.unidadeId && !vistoriaPorUnidade[i.unidadeId])
+        .map(rotuloItem);
+    const unidadesReprovadas = itensDaExpedicao
+        .filter(i => i.unidadeId && vistoriaPorUnidade[i.unidadeId]?.condicaoGeral === 'RUIM')
+        .map(rotuloItem);
+    // COLETA não tem vistoria de saída — o equipamento ainda está com o cliente.
+    const vistoriasOk = ehColetaDetalhe || (unidadesSemVistoria.length === 0 && unidadesReprovadas.length === 0);
+    const conferenciaCompleta = itensDaExpedicao.length > 0
+        && itensDaExpedicao.every(i => itensConferidos.includes(i.id));
+    const podeFazerCheckout = expedicao.status === 'AGENDADO' && vistoriasOk;
     const entregaConfirmada = !!expedicao.entregaConfirmadaEm;
     const podeConfirmarEntrega = expedicao.status === 'EM_TRANSITO' && !entregaConfirmada;
-    const podeRegistrarDevolucao = ehColetaDetalhe && (expedicao.status === 'EM_TRANSITO' || expedicao.status === 'CONCLUIDO');
-    const podeFazerCheckin = ehColetaDetalhe && (expedicao.status === 'EM_TRANSITO' || expedicao.status === 'ENTREGUE') && entregaConfirmada;
+    // Devolução: depois que a coleta saiu do depósito (em trânsito, confirmada no local ou concluída).
+    const podeRegistrarDevolucao = ehColetaDetalhe
+        && ['EM_TRANSITO', 'ENTREGUE', 'CONCLUIDO'].includes(expedicao.status);
+    const podeFazerCheckin = ehColetaDetalhe && expedicao.status === 'ENTREGUE' && entregaConfirmada;
 
     // Numeração dos passos muda conforme o tipo: ENTREGA tem vistoria de
     // saída (o equipamento está no depósito, dá pra inspecionar antes de
@@ -950,7 +1109,7 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
             ? (expedicao.status === 'AGENDADO' ? 1 :
                expedicao.status === 'EM_TRANSITO' ? (entregaConfirmada ? 3 : 2) :
                expedicao.status === 'ENTREGUE' ? 3 : 4)
-            : (expedicao.status === 'AGENDADO' ? (vistoriasEntrega.length === 0 ? 1 : 2) :
+            : (expedicao.status === 'AGENDADO' ? (vistoriasOk ? 2 : 1) :
                expedicao.status === 'EM_TRANSITO' ? 3 : 4);
 
     return (
@@ -1023,6 +1182,11 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                             <strong>Check-in:</strong> {formatDate(expedicao.checkinEm)}
                         </div>
                     )}
+                    {expedicao.motivoCancelamento && (
+                        <div className="detalheInfoItem">
+                            <strong>Motivo do cancelamento:</strong> {expedicao.motivoCancelamento}
+                        </div>
+                    )}
                 </div>
 
                 {/* ITENS (contexto, sem ação) */}
@@ -1062,9 +1226,10 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                         <span className="responsavelTag">Técnico de Manutenção</span>
                         <button
                             className="smallBtn success"
-                            disabled={!podeRegistrarEntrega || !ehTecnico}
+                            disabled={!podeRegistrarEntrega || !ehTecnico || unidadesSemVistoria.length === 0}
                             title={
                                 !podeRegistrarEntrega ? 'Só é possível registrar antes do check-out, com a expedição Agendada.' :
+                                unidadesSemVistoria.length === 0 ? 'Todas as unidades já foram vistoriadas.' :
                                 !ehTecnico ? 'Somente o técnico de manutenção registra esta vistoria.' : ''
                             }
                             onClick={() => setVistoriaModalTipo('ENTREGA')}
@@ -1072,6 +1237,17 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                             <FontAwesomeIcon icon={faPen} /> Nova
                         </button>
                     </h4>
+                    {podeRegistrarEntrega && unidadesSemVistoria.length > 0 && (
+                        <p style={{ color: '#b45309', fontSize: '0.85rem', margin: '0 0 8px' }}>
+                            ⚠ Falta vistoriar: {unidadesSemVistoria.join(', ')} (cada unidade precisa da sua vistoria, com foto).
+                        </p>
+                    )}
+                    {unidadesReprovadas.length > 0 && (
+                        <div className="messageBanner negative">
+                            Reprovada(s) na vistoria (condição RUIM): {unidadesReprovadas.join(', ')}. A saída está bloqueada:
+                            cancele a expedição para encaminhar a unidade à manutenção e crie outra com um equipamento em bom estado.
+                        </div>
+                    )}
                     {vistoriasEntrega.length === 0 ? (
                         <p style={{ color: '#999', fontSize: '0.85rem' }}>
                             {podeRegistrarEntrega
@@ -1097,23 +1273,47 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                     </h4>
                     {expedicao.status === 'AGENDADO' && (
                         <>
+                            <p style={{ color: '#666', fontSize: '0.85rem', margin: '0 0 6px' }}>
+                                Confira cada item (patrimônio e equipamento) antes de liberar a saída:
+                            </p>
+                            <div className="conferenciaLista">
+                                {itensDaExpedicao.map(item => (
+                                    <label key={item.id} className="conferenciaItem">
+                                        <input
+                                            type="checkbox"
+                                            checked={itensConferidos.includes(item.id)}
+                                            disabled={!ehConferente || changingStatus}
+                                            onChange={() => toggleItemConferido(item.id)}
+                                        />
+                                        <span>{item.codigoPatrimonio || '---'} — {item.equipamentoNome || '---'}</span>
+                                    </label>
+                                ))}
+                            </div>
                             <button
                                 className="smallBtn success"
-                                disabled={changingStatus || !podeFazerCheckout || !ehConferente}
+                                disabled={changingStatus || !podeFazerCheckout || !conferenciaCompleta || !ehConferente}
                                 title={
-                                    !podeFazerCheckout ? 'Registre a vistoria de entrega (passo 1) antes de sair.' :
+                                    !vistoriasOk ? 'Resolva as vistorias pendentes/reprovadas (passo 1) antes de sair.' :
+                                    !conferenciaCompleta ? 'Marque todos os itens conferidos.' :
                                     !ehConferente ? 'Somente o conferente registra a saída.' : ''
                                 }
-                                onClick={() => handleStatusChange('EM_TRANSITO')}
+                                onClick={() => handleStatusChange('EM_TRANSITO', { itensConferidos })}
                             >
                                 <FontAwesomeIcon icon={faTruckLoading} /> Iniciar (Check-out)
                             </button>
-                            {!podeFazerCheckout && !ehColetaDetalhe && (
+                            {!vistoriasOk && (
                                 <p style={{ color: '#b45309', fontSize: '0.85rem', margin: '8px 0 0' }}>
-                                    ⚠ Bloqueado: registre a vistoria de entrega (passo 1) primeiro.
+                                    ⚠ Bloqueado: {unidadesReprovadas.length > 0
+                                        ? 'há unidade reprovada na vistoria (passo 1).'
+                                        : 'faltam vistorias de entrega (passo 1).'}
                                 </p>
                             )}
-                            {podeFazerCheckout && !ehConferente && (
+                            {vistoriasOk && !conferenciaCompleta && ehConferente && (
+                                <p style={{ color: '#b45309', fontSize: '0.85rem', margin: '8px 0 0' }}>
+                                    ⚠ Marque todos os itens conferidos para liberar a saída.
+                                </p>
+                            )}
+                            {vistoriasOk && !ehConferente && (
                                 <p style={{ color: '#b45309', fontSize: '0.85rem', margin: '8px 0 0' }}>
                                     ⚠ Aguarde até que um Conferente confirme sua saída.
                                 </p>
@@ -1128,9 +1328,8 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                 </div>
 
                 {/* PASSO 3 — CONFIRMAÇÃO DE ENTREGA NO LOCAL (ENTREGADOR).
-                    Assinatura em duas fases: escolhe/digita o nome → "Registrar
-                    Assinatura" trava e mostra em letra cursiva → aí anexa a foto
-                    e confirma de fato (data/hora fica por conta do servidor). */}
+                    Nome + documento de quem assina, assinatura desenhada e foto
+                    (data/hora fica por conta do servidor). */}
                 <div className={`checkinSection stepSection ${podeConfirmarEntrega ? 'active' : ''}`}>
                     <h4>
                         <StepBadge n={stepConfirmacao} passoAtual={passoAtual} isFinalizada={isFinalizada} /> {ehColetaDetalhe ? 'Confirmação de Coleta (no local do cliente)' : 'Confirmação de Entrega (no local do cliente)'}
@@ -1145,70 +1344,92 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                                 {' '}A data/hora é registrada automaticamente no momento do clique.
                             </p>
 
-                            {!assinaturaRegistrada ? (
-                                <>
-                                    {!ehColetaDetalhe && (expedicao.nomesAutorizados || []).length > 0 ? (
-                                        <select
-                                            className="equipInput"
-                                            value={assinaturaEntrega}
-                                            onChange={e => setAssinaturaEntrega(e.target.value)}
-                                            disabled={!ehEntregador}
-                                            style={{ marginBottom: '10px' }}
-                                        >
-                                            <option value="">Quem está assinando?</option>
-                                            {expedicao.nomesAutorizados.map((nome, idx) => (
-                                                <option key={idx} value={nome}>{nome}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input
-                                            className="equipInput"
-                                            placeholder={ehColetaDetalhe ? 'Nome de quem devolveu' : 'Nome de quem recebeu'}
-                                            value={assinaturaEntrega}
-                                            onChange={e => setAssinaturaEntrega(e.target.value)}
-                                            disabled={!ehEntregador}
-                                            style={{ marginBottom: '10px' }}
-                                        />
-                                    )}
-                                    <button
-                                        className="addBtn"
-                                        type="button"
-                                        disabled={!ehEntregador}
-                                        onClick={handleRegistrarAssinaturaEntrega}
-                                        style={{ marginBottom: '10px' }}
-                                    >
-                                        <FontAwesomeIcon icon={faSignature} /> Registrar Assinatura
-                                    </button>
-                                </>
+                            {!ehColetaDetalhe && (expedicao.nomesAutorizados || []).length > 0 ? (
+                                <select
+                                    className="equipInput"
+                                    value={assinaturaEntrega}
+                                    onChange={e => setAssinaturaEntrega(e.target.value)}
+                                    disabled={!ehEntregador}
+                                    style={{ marginBottom: '10px' }}
+                                >
+                                    <option value="">Quem está assinando? (pessoa autorizada)</option>
+                                    {expedicao.nomesAutorizados.map((nome, idx) => (
+                                        <option key={idx} value={nome}>{nome}</option>
+                                    ))}
+                                </select>
                             ) : (
-                                <div className="assinaturaRegistrada" style={{ marginBottom: '10px' }}>
-                                    <p style={{ margin: 0, fontSize: '0.8rem' }}><strong>Assinatura registrada:</strong></p>
-                                    <p className="assinaturaText">{assinaturaEntrega}</p>
-                                    <button type="button" className="smallBtn" onClick={handleTrocarAssinaturaEntrega} style={{ marginTop: '8px' }}>
-                                        Trocar
-                                    </button>
-                                </div>
+                                <input
+                                    className="equipInput"
+                                    placeholder={ehColetaDetalhe ? 'Nome de quem devolveu' : 'Nome de quem recebeu'}
+                                    value={assinaturaEntrega}
+                                    onChange={e => setAssinaturaEntrega(e.target.value)}
+                                    disabled={!ehEntregador}
+                                    style={{ marginBottom: '10px' }}
+                                />
                             )}
 
+                            <input
+                                className="equipInput"
+                                placeholder="Documento de quem assina (CPF ou RG)"
+                                value={documentoEntrega}
+                                onChange={e => setDocumentoEntrega(e.target.value)}
+                                disabled={!ehEntregador}
+                                style={{ marginBottom: '10px' }}
+                            />
+
+                            <p style={{ margin: '0 0 4px', fontSize: '0.8rem' }}>
+                                <FontAwesomeIcon icon={faSignature} /> <strong>Assinatura</strong> de quem {ehColetaDetalhe ? 'devolveu' : 'recebeu'}:
+                            </p>
+                            <AssinaturaPad
+                                ref={assinaturaPadRef}
+                                onChange={setAssinaturaDesenhada}
+                                disabled={!ehEntregador}
+                            />
+
+                            <p style={{ margin: '10px 0 4px', fontSize: '0.8rem' }}>
+                                <FontAwesomeIcon icon={faCamera} /> <strong>Foto</strong> tirada no local:
+                            </p>
                             <input
                                 type="file"
                                 accept="image/*"
                                 capture="environment"
                                 onChange={e => setFotoEntregaFile(e.target.files?.[0] || null)}
-                                disabled={!ehEntregador || !assinaturaRegistrada}
+                                disabled={!ehEntregador}
                                 style={{ marginBottom: '10px', display: 'block' }}
                             />
-                            <button
-                                className="smallBtn success"
-                                disabled={savingEntrega || !podeConfirmarEntrega || !ehEntregador || !assinaturaRegistrada}
-                                title={
-                                    !ehEntregador ? 'Somente o entregador confirma a entrega no local.' :
-                                    !assinaturaRegistrada ? 'Registre a assinatura antes de confirmar.' : ''
-                                }
-                                onClick={handleConfirmarEntrega}
-                            >
-                                <FontAwesomeIcon icon={faCamera} /> {savingEntrega ? 'Enviando...' : (ehColetaDetalhe ? 'Confirmar Coleta' : 'Confirmar Entrega')}
-                            </button>
+
+                            <textarea
+                                className="equipTextarea"
+                                rows={2}
+                                placeholder="Observações do entregador (opcional)"
+                                value={observacaoEntrega}
+                                maxLength={1000}
+                                onChange={e => setObservacaoEntrega(e.target.value)}
+                                disabled={!ehEntregador}
+                                style={{ marginBottom: '10px' }}
+                            />
+
+                            <div className="entregaAcoes">
+                                <button
+                                    className="smallBtn success"
+                                    disabled={savingEntrega || changingStatus || !podeConfirmarEntrega || !ehEntregador || !assinaturaDesenhada}
+                                    title={
+                                        !ehEntregador ? 'Somente o entregador confirma a entrega no local.' :
+                                        !assinaturaDesenhada ? 'Peça para a pessoa assinar no quadro.' : ''
+                                    }
+                                    onClick={handleConfirmarEntrega}
+                                >
+                                    <FontAwesomeIcon icon={faCamera} /> {savingEntrega ? 'Enviando...' : (ehColetaDetalhe ? 'Confirmar Coleta' : 'Confirmar Entrega')}
+                                </button>
+                                <button
+                                    className="smallBtn delete"
+                                    type="button"
+                                    disabled={savingEntrega || changingStatus || !ehEntregador}
+                                    onClick={handleNaoRealizada}
+                                >
+                                    <FontAwesomeIcon icon={faTimesCircle} /> {ehColetaDetalhe ? 'Não consegui coletar' : 'Não consegui entregar'}
+                                </button>
+                            </div>
                             {!ehEntregador && (
                                 <p style={{ color: '#b45309', fontSize: '0.85rem', margin: '8px 0 0' }}>
                                     ⚠ Aguarde até que o Entregador confirme {ehColetaDetalhe ? 'a coleta' : 'a entrega'} no local.
@@ -1226,9 +1447,27 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                             </p>
                             {expedicao.assinaturaEntrega && (
                                 <div className="assinaturaRegistrada" style={{ marginBottom: '8px' }}>
-                                    <p style={{ margin: 0, fontSize: '0.8rem' }}><strong>Assinatura:</strong></p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem' }}><strong>Assinou:</strong></p>
                                     <p className="assinaturaText">{expedicao.assinaturaEntrega}</p>
+                                    {expedicao.documentoRecebedor && (
+                                        <p style={{ margin: '4px 0 0', fontSize: '0.8rem' }}>
+                                            <strong>Documento:</strong> {expedicao.documentoRecebedor}
+                                        </p>
+                                    )}
                                 </div>
+                            )}
+                            {expedicao.assinaturaEntregaImagem && (
+                                <img
+                                    src={imageUrl(expedicao.assinaturaEntregaImagem)}
+                                    alt="Assinatura"
+                                    className="assinaturaImagem"
+                                    style={{ marginBottom: '8px' }}
+                                />
+                            )}
+                            {expedicao.observacaoEntrega && (
+                                <p style={{ margin: '0 0 8px', fontSize: '0.85rem' }}>
+                                    <strong>Obs. do entregador:</strong> {expedicao.observacaoEntrega}
+                                </p>
                             )}
                             {expedicao.fotoEntrega && (
                                 <img
@@ -1245,12 +1484,12 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                     A ENTREGA termina no passo 3 (ENTREGUE); quem volta pro
                     depósito é a COLETA, então só ela tem check-in. */}
                 {ehColetaDetalhe && (
-                <div className={`checkinSection stepSection ${expedicao.status === 'EM_TRANSITO' || expedicao.status === 'ENTREGUE' ? 'active' : ''}`}>
+                <div className={`checkinSection stepSection ${expedicao.status === 'ENTREGUE' ? 'active' : ''}`}>
                     <h4>
                         <StepBadge n={stepCheckin} passoAtual={passoAtual} isFinalizada={isFinalizada} /> Check-in (o conferente recebe de volta)
                         <span className="responsavelTag">Conferente</span>
                     </h4>
-                    {(expedicao.status === 'EM_TRANSITO' || expedicao.status === 'ENTREGUE') && (
+                    {expedicao.status === 'ENTREGUE' && (
                         <>
                             <button
                                 className="smallBtn success"
@@ -1279,7 +1518,7 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                             </p>
                         </>
                     )}
-                    {(expedicao.status !== 'EM_TRANSITO' && expedicao.status !== 'ENTREGUE') && (
+                    {expedicao.status !== 'ENTREGUE' && (
                         <p style={{ color: '#999', fontSize: '0.85rem' }}>
                             {expedicao.checkinEm ? `Check-in feito em ${formatDate(expedicao.checkinEm)}.` : 'Ainda não chegou nesse passo.'}
                         </p>
@@ -1301,7 +1540,7 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                             className="smallBtn success"
                             disabled={!podeRegistrarDevolucao || !ehTecnico}
                             title={
-                                !podeRegistrarDevolucao ? 'Só é possível registrar depois do check-out (passo 1).' :
+                                !podeRegistrarDevolucao ? 'Só é possível registrar depois que a coleta saiu do depósito (check-out).' :
                                 !ehTecnico ? 'Somente o técnico de manutenção registra esta vistoria.' : ''
                             }
                             onClick={() => setVistoriaModalTipo('DEVOLUCAO')}
@@ -1323,18 +1562,23 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                 </div>
                 )}
 
-                {/* CANCELAR (somente para perfis autorizados enquanto não finalizada) */}
-                {!isFinalizada && (user?.tipo === 'ADMIN' || user?.cargoFuncionario === 'GERENTE_OPERACOES' || user?.cargoFuncionario === 'CONFERENTE') && (
+                {/* CANCELAR — com motivo. Conferente cancela só enquanto está Agendada;
+                    depois do check-out (equipamento na estrada) só ADMIN/Gerente.
+                    O entregador usa "não consegui entregar" no passo 3. */}
+                {!isFinalizada && (ehAdminOuGerente || (user?.cargoFuncionario === 'CONFERENTE' && expedicao.status === 'AGENDADO')) && (
                     <div className="checkinSection">
                         <button
                             className="smallBtn delete"
                             disabled={changingStatus}
-                            onClick={() => {
-                                if (window.confirm('Cancelar esta expedição?')) handleStatusChange('CANCELADO');
-                            }}
+                            onClick={handleCancelar}
                         >
                             <FontAwesomeIcon icon={faTimesCircle} /> Cancelar Expedição
                         </button>
+                        {!ehColetaDetalhe && (
+                            <p style={{ color: '#999', fontSize: '0.8rem', margin: '8px 0 0' }}>
+                                As unidades reservadas voltam para o estoque (as reprovadas na vistoria vão para a manutenção).
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -1454,6 +1698,21 @@ export default function Expedicao() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.state?.pedidoOrigemId]);
 
+    const filtered = useMemo(() => {
+        let list = expedicoes;
+        if (filtroTipo) list = list.filter(e => e.tipo === filtroTipo);
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            list = list.filter(e =>
+                (e.codigo || '').toLowerCase().includes(term) ||
+                (e.clienteNome || '').toLowerCase().includes(term) ||
+                (e.motoristaNome || '').toLowerCase().includes(term) ||
+                (e.placaVeiculo || '').toLowerCase().includes(term)
+            );
+        }
+        return list;
+    }, [expedicoes, filtroTipo, searchTerm]);
+
     if (!canAccessAdminRoute(user, '/admin/expedicao')) {
         return <Navigate to="/admin" replace />;
     }
@@ -1471,21 +1730,6 @@ export default function Expedicao() {
             })
             .catch(err => setMessage({ type: 'error', text: 'Erro: ' + (err.response?.data || err.message) }));
     }
-
-    const filtered = useMemo(() => {
-        let list = expedicoes;
-        if (filtroTipo) list = list.filter(e => e.tipo === filtroTipo);
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            list = list.filter(e =>
-                (e.codigo || '').toLowerCase().includes(term) ||
-                (e.clienteNome || '').toLowerCase().includes(term) ||
-                (e.motoristaNome || '').toLowerCase().includes(term) ||
-                (e.placaVeiculo || '').toLowerCase().includes(term)
-            );
-        }
-        return list;
-    }, [expedicoes, filtroTipo, searchTerm]);
 
     return (
         <div className="adminContent">

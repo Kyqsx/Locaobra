@@ -39,6 +39,10 @@ public class ExpedicaoResponse {
     private LocalDateTime entregaConfirmadaEm;
     private String assinaturaEntrega;
     private String fotoEntrega;
+    private String documentoRecebedor;
+    private String assinaturaEntregaImagem;
+    private String observacaoEntrega;
+    private String motivoCancelamento;
     private LocalDateTime criadoEm;
     private List<ItemExpedicaoResponse> itens;
     private List<VistoriaResponse> vistorias;
@@ -73,6 +77,10 @@ public class ExpedicaoResponse {
         r.entregaConfirmadaEm = e.getEntregaConfirmadaEm();
         r.assinaturaEntrega = e.getAssinaturaEntrega();
         r.fotoEntrega = e.getFotoEntrega();
+        r.documentoRecebedor = e.getDocumentoRecebedor();
+        r.assinaturaEntregaImagem = e.getAssinaturaEntregaImagem();
+        r.observacaoEntrega = e.getObservacaoEntrega();
+        r.motivoCancelamento = e.getMotivoCancelamento();
         r.criadoEm = e.getCriadoEm();
         // NÃO lemos e.getItens()/e.getVistorias() aqui de propósito: essas coleções são
         // mapeadas com orphanRemoval=true, e qualquer clear()/mutação nelas feita em outro
@@ -120,6 +128,10 @@ public class ExpedicaoResponse {
     public LocalDateTime getEntregaConfirmadaEm() { return entregaConfirmadaEm; }
     public String getAssinaturaEntrega() { return assinaturaEntrega; }
     public String getFotoEntrega() { return fotoEntrega; }
+    public String getDocumentoRecebedor() { return documentoRecebedor; }
+    public String getAssinaturaEntregaImagem() { return assinaturaEntregaImagem; }
+    public String getObservacaoEntrega() { return observacaoEntrega; }
+    public String getMotivoCancelamento() { return motivoCancelamento; }
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public List<ItemExpedicaoResponse> getItens() { return itens; }
     public List<VistoriaResponse> getVistorias() { return vistorias; }

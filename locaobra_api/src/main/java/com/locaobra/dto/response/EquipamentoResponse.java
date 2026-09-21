@@ -27,6 +27,9 @@ public class EquipamentoResponse {
     private Integer quantidadeTotal;
     private Integer quantidadeDisponivel;
     private List<UnidadeEquipamentoResponse> unidades;
+    // Avaliações: média (1 casa decimal) e quantidade. Preenchidas pelo EquipamentoService.
+    private Double mediaAvaliacoes;
+    private Long totalAvaliacoes;
 
     public static EquipamentoResponse from(Equipamento e) {
         EquipamentoResponse r = new EquipamentoResponse();
@@ -68,6 +71,18 @@ public class EquipamentoResponse {
         return r;
     }
 
+    /** Remove os dados internos das unidades (patrimônio, série, horímetro, depósito). Mantém as quantidades. */
+    public EquipamentoResponse semUnidades() {
+        this.unidades = Collections.emptyList();
+        return this;
+    }
+
+    public EquipamentoResponse comAvaliacoes(Double media, Long total) {
+        this.mediaAvaliacoes = (total == null || total == 0) ? null : media;
+        this.totalAvaliacoes = total == null ? 0L : total;
+        return this;
+    }
+
     // Getters
     public Long getId() { return id; }
     public String getNome() { return nome; }
@@ -82,4 +97,6 @@ public class EquipamentoResponse {
     public Integer getQuantidadeTotal() { return quantidadeTotal; }
     public Integer getQuantidadeDisponivel() { return quantidadeDisponivel; }
     public List<UnidadeEquipamentoResponse> getUnidades() { return unidades; }
+    public Double getMediaAvaliacoes() { return mediaAvaliacoes; }
+    public Long getTotalAvaliacoes() { return totalAvaliacoes; }
 }
