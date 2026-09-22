@@ -185,6 +185,18 @@ public class EquipamentoService {
     }
 
     @Transactional
+    public void atualizarFocoImagem(Long equipamentoId, String url, Integer focoX, Integer focoY) {
+        Equipamento equipamento = findOrThrow(equipamentoId);
+        ImagemEquipamento img = imagemRepository.findByEquipamentoIdAndUrl(equipamentoId, url);
+        if (img == null) {
+            throw new ResourceNotFoundException("Imagem não encontrada para este equipamento");
+        }
+        img.setFocoX(Math.max(0, Math.min(100, focoX)));
+        img.setFocoY(Math.max(0, Math.min(100, focoY)));
+        imagemRepository.save(img);
+    }
+
+    @Transactional
     public void deletar(Long id) {
         Equipamento equipamento = findOrThrow(id);
         equipamentoRepository.delete(equipamento);

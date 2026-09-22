@@ -2,6 +2,7 @@ package com.locaobra.controller;
 
 import com.locaobra.config.AcessoUtil;
 import com.locaobra.dto.request.EquipamentoRequest;
+import com.locaobra.dto.request.ImagemFocoRequest;
 import com.locaobra.dto.response.EquipamentoResponse;
 import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.service.EquipamentoService;
@@ -121,6 +122,13 @@ public class EquipamentoController {
         }
 
         return ResponseEntity.ok(equipamentoService.atualizar(id, request));
+    }
+
+    @PutMapping(path = "/{id}/imagens/foco", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> atualizarFocoImagem(@PathVariable Long id,
+                                                    @Valid @RequestBody ImagemFocoRequest request) {
+        equipamentoService.atualizarFocoImagem(id, request.getUrl(), request.getFocoX(), request.getFocoY());
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}/imagens")

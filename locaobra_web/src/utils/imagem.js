@@ -35,3 +35,21 @@ export async function comprimirImagem(arquivo, { maxLado = 1600, qualidade = 0.8
 }
 
 export const formatarTamanho = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
+
+/* ============================================================
+   PONTO FOCAL 1:1 — o arquivo da imagem sempre vai inteiro para
+   o backend (nunca é recortado). O que se salva é o ponto da foto
+   que fica centrado no enquadramento quadrado, expresso em
+   percentuais 0–100 (X horizontal, Y vertical) e aplicado como
+   `object-position` com `object-fit: cover`.
+   ============================================================ */
+export const FOCO_PADRAO = { focoX: 50, focoY: 50 };
+
+export const clampFoco = (v) => Math.max(0, Math.min(100, Math.round(v)));
+
+/** Converte as coordenadas salvas em CSS object-position ("72% 35%"). */
+export function objectPositionDe(foco) {
+    const x = clampFoco(Number(foco?.focoX ?? 50));
+    const y = clampFoco(Number(foco?.focoY ?? 50));
+    return `${x}% ${y}%`;
+}

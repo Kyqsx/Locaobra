@@ -60,7 +60,8 @@ export function CartProvider({ children }) {
                 {
                     equipamentoId: equipamento.id,
                     nome: equipamento.nome,
-                    imagem: equipamento.imagens?.[0] || null,
+                    imagem: equipamento.imagens?.[0]?.url || null,
+                    imagemFoco: equipamento.imagens?.[0] || null,
                     valorDiaria: Number(equipamento.valorDiaria) || 0,
                     quantidadeDisponivel: disponivel,
                     quantidade: Math.min(disponivel, Math.max(1, quantidade)),

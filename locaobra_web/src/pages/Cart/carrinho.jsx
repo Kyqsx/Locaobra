@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
 import { useCart } from '../../context/CartContext';
+import { objectPositionDe } from '../../utils/imagem';
 import EnderecoFields from '../../components/EnderecoFields';
 import './Cart.css';
 
@@ -141,7 +142,11 @@ function Carrinho() {
             <div key={item.equipamentoId} className="carrinho-item">
               <div className="carrinho-item-imagem">
                 {item.imagem ? (
-                  <img src={imageUrl(item.imagem)} alt={item.nome} />
+                  <img
+                    src={imageUrl(item.imagem)}
+                    alt={item.nome}
+                    style={{ objectPosition: objectPositionDe(item.imagemFoco) }}
+                  />
                 ) : (
                   <span className="carrinho-item-placeholder">📐</span>
                 )}

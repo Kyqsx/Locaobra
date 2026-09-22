@@ -23,7 +23,7 @@ public class EquipamentoResponse {
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
     private Map<String, String> especificacoes;
-    private List<String> imagens;
+    private List<ImagemEquipamentoResponse> imagens;
     private Integer quantidadeTotal;
     private Integer quantidadeDisponivel;
     private List<UnidadeEquipamentoResponse> unidades;
@@ -52,7 +52,7 @@ public class EquipamentoResponse {
 
         if (e.getImagens() != null && !e.getImagens().isEmpty()) {
             r.imagens = e.getImagens().stream()
-                    .map(img -> img.getUrl())
+                    .map(img -> ImagemEquipamentoResponse.from(img.getUrl(), img.getFocoX(), img.getFocoY()))
                     .collect(Collectors.toList());
         }
 
@@ -93,7 +93,7 @@ public class EquipamentoResponse {
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
     public Map<String, String> getEspecificacoes() { return especificacoes; }
-    public List<String> getImagens() { return imagens; }
+    public List<ImagemEquipamentoResponse> getImagens() { return imagens; }
     public Integer getQuantidadeTotal() { return quantidadeTotal; }
     public Integer getQuantidadeDisponivel() { return quantidadeDisponivel; }
     public List<UnidadeEquipamentoResponse> getUnidades() { return unidades; }

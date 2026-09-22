@@ -6,6 +6,7 @@ import './AdminDashboard.css';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
+import { comprimirImagem, objectPositionDe, clampFoco } from '../../utils/imagem';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -174,8 +175,8 @@ const AdminDashboard = () => {
                     equipamentos.slice(0, 8).map(eq => (
                       <div key={eq.id} className="equipCard">
                         <div className="equipImage">
-                          {eq.imagens && eq.imagens.length > 0 ? (
-                            <img src={imageUrl(eq.imagens[0])} alt={eq.nome} />
+                          {eq.imagens && eq.imagens.length > 0 && eq.imagens[0]?.url ? (
+                            <img src={imageUrl(eq.imagens[0].url)} alt={eq.nome} style={{ objectPosition: objectPositionDe(eq.imagens[0]) }} />
                           ) : (
                             <FontAwesomeIcon icon={faToolbox} />
                           )}

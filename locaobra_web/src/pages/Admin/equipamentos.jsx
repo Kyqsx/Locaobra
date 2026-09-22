@@ -9,6 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
+import { comprimirImagem, objectPositionDe, clampFoco } from '../../utils/imagem';
 
 const STATUS_UNIDADE_LABEL = {
     DISPONIVEL: 'Disponível',
@@ -38,10 +39,11 @@ function especificacoesParaBackend(lista) {
 }
 
 /* ============================================================
-   IMAGE PICKER — seletor + crop 1:1, totalmente autocontido.
-   Cada instância tem seu próprio estado; usar `key` diferente
-   no componente pai força um remount limpo (sem vazar arquivo
-   de uma sessão de upload pra outra).
+   IMAGE PICKER — seletor de arquivos, totalmente autocontido.
+   A imagem vai INTEIRA para o backend (nunca é recortada aqui);
+   o enquadramento 1:1 é escolhido depois, por ponto focal, na
+   aba Imagens. Usar `key` diferente no componente pai força um
+   remount limpo (sem vazar arquivo de uma sessão pra outra).
    ============================================================ */
 function Lightbox({ src, onClose }) {
     if (!src) return null;
@@ -56,21 +58,8 @@ function Lightbox({ src, onClose }) {
 function ImagePicker({ onChange }) {
     const [readyFiles, setReadyFiles] = useState([]);
     const [lightboxSrc, setLightboxSrc] = useState(null);
+    const [processando, setProcessando] = useState(false);
     const previewUrlsRef = useRef(new Map());
-
-    // Fila de posicionamento: cada arquivo selecionado passa por uma etapa de
-    // enquadramento 1:1 (arrastar para posicionar + zoom) antes de entrar na
-    // lista final. Isso NÃO deforma nem perde qualidade abaixo do quadro —
-    // é só o usuário escolhendo qual parte da foto aparece no quadrado.
-    const [cropQueue, setCropQueue] = useState([]);
-    const [currentCropIndex, setCurrentCropIndex] = useState(0);
-    const [cropZoom, setCropZoom] = useState(1);
-    const [cropBox, setCropBox] = useState({ left: 0, top: 0, size: 200 });
-
-    const canvasRef = useRef(null);
-    const containerRef = useRef(null);
-    const currentImageRef = useRef(null);
-    const dragStartRef = useRef(null);
 
     useEffect(() => {
         onChange(readyFiles);
@@ -92,112 +81,23 @@ function ImagePicker({ onChange }) {
         return urls.get(file);
     }
 
-    // Desenha a imagem atual da fila no canvas de posicionamento (sempre
-    // "cover" do quadro 400x400) e recalcula o tamanho do quadro de seleção
-    // conforme o zoom.
-    useEffect(() => {
-        const file = cropQueue[currentCropIndex];
-        const canvas = canvasRef.current;
-        if (!canvas || !file) return;
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        const reader = new FileReader();
-        reader.onload = () => { img.src = reader.result; };
-        reader.readAsDataURL(file);
-        img.onload = () => {
-            const w = canvas.width = 400;
-            const h = canvas.height = 400;
-            ctx.clearRect(0, 0, w, h);
-
-            const scale = Math.max(w / img.width, h / img.height);
-            const drawW = img.width * scale;
-            const drawH = img.height * scale;
-            const drawX = Math.round((w - drawW) / 2);
-            const drawY = Math.round((h - drawH) / 2);
-            ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
-
-            currentImageRef.current = { img, drawX, drawY, drawW, drawH };
-
-            const baseSize = Math.min(w, h);
-            const size = Math.max(40, Math.round(baseSize / cropZoom));
-            const left = Math.round((w - size) / 2);
-            const top = Math.round((h - size) / 2);
-            setCropBox({ left, top, size });
-        };
-    }, [cropQueue, currentCropIndex, cropZoom]);
-
-    function handleFileInput(e) {
+    // Adiciona os arquivos selecionados já comprimidos — a imagem vai
+    // INTEIRA (sem recorte) e o enquadramento 1:1 é definido depois,
+    // por ponto focal, na aba Imagens.
+    async function handleFileInput(e) {
         const files = Array.from(e.target.files || []);
-        if (files.length === 0) return;
-        setCropQueue(files);
-        setCurrentCropIndex(0);
-        setCropZoom(1);
         e.target.value = ''; // permite selecionar o mesmo arquivo de novo depois
-    }
+        if (files.length === 0) return;
 
-    function onMouseDown(e) {
-        if (!containerRef.current) return;
-        e.preventDefault();
-        const rect = containerRef.current.getBoundingClientRect();
-        dragStartRef.current = { x: e.clientX, y: e.clientY, rect, box: { ...cropBox } };
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-    }
-
-    function onMouseMove(e) {
-        const start = dragStartRef.current;
-        if (!start) return;
-        const dx = e.clientX - start.x;
-        const dy = e.clientY - start.y;
-        const newLeft = Math.min(Math.max(0, start.box.left + dx), start.rect.width - start.box.size);
-        const newTop = Math.min(Math.max(0, start.box.top + dy), start.rect.height - start.box.size);
-        setCropBox(prev => ({ ...prev, left: newLeft, top: newTop }));
-    }
-
-    function onMouseUp() {
-        dragStartRef.current = null;
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-    }
-
-    async function confirmarPosicionamento() {
-        const file = cropQueue[currentCropIndex];
-        const ref = currentImageRef.current;
-        if (!file || !ref) return;
-        const { img, drawX, drawY, drawW, drawH } = ref;
-        const outSize = 800;
-        const canvas = document.createElement('canvas');
-        canvas.width = outSize;
-        canvas.height = outSize;
-        const ctx = canvas.getContext('2d');
-
-        const { left, top, size } = cropBox;
-        const relX = (left - drawX) / drawW;
-        const relY = (top - drawY) / drawH;
-        const relSize = size / drawW;
-
-        const sx = Math.max(0, Math.round(relX * img.width));
-        const sy = Math.max(0, Math.round(relY * img.height));
-        const sSize = Math.max(1, Math.round(relSize * img.width));
-
-        ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, outSize, outSize);
-
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-        const posicionadoFile = new File([blob], file.name, { type: 'image/jpeg' });
-        setReadyFiles(prev => [...prev, posicionadoFile]);
-        avancarFila();
-    }
-
-    function descartarImagem() {
-        avancarFila();
-    }
-
-    function avancarFila() {
-        if (currentCropIndex + 1 >= cropQueue.length) {
-            setCropQueue([]);
-            setCurrentCropIndex(0);
-        } else {
-            setCurrentCropIndex(idx => idx + 1);
+        setProcessando(true);
+        try {
+            const comprimidos = [];
+            for (const file of files) {
+                comprimidos.push(await comprimirImagem(file));
+            }
+            setReadyFiles(prev => [...prev, ...comprimidos]);
+        } finally {
+            setProcessando(false);
         }
     }
 
@@ -240,37 +140,87 @@ function ImagePicker({ onChange }) {
                 </div>
             )}
 
-            {cropQueue.length > 0 && currentCropIndex < cropQueue.length && (
-                <div className="cropModalBackdrop">
-                    <div className="cropModalCard">
-                        <h4>Posicione a imagem no quadro 1:1</h4>
-                        <p className="cropModalHint">Arraste o quadro para escolher o que aparece, e use o zoom para aproximar. A imagem inteira continua disponível depois, no clique de ampliar.</p>
-                        <div className="cropModalBody">
-                            <div ref={containerRef} className="cropCanvasContainer">
-                                <canvas ref={canvasRef} className="cropCanvas" />
-                                <div
-                                    onMouseDown={onMouseDown}
-                                    className="cropSelectionBox"
-                                    style={{ left: cropBox.left, top: cropBox.top, width: cropBox.size, height: cropBox.size }}
-                                />
-                            </div>
-                            <div className="cropControls">
-                                <label htmlFor="cropZoomRange">Zoom</label>
-                                <input id="cropZoomRange" type="range" min="1" max="3" step="0.01" value={cropZoom} onChange={e => setCropZoom(parseFloat(e.target.value))} />
-                                <div className="cropControlsActions">
-                                    <button type="button" className="smallBtn success" onClick={confirmarPosicionamento}>Confirmar</button>
-                                    <button type="button" className="smallBtn delete" onClick={descartarImagem}>Descartar imagem</button>
-                                </div>
-                                <div className="cropControlsCounter">
-                                    Imagem {currentCropIndex + 1} de {cropQueue.length}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {processando && (
+                <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Processando imagens...</p>
             )}
 
             <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+        </div>
+    );
+}
+
+/* ============================================================
+   FOCO PICKER — miniatura 1:1 com ponto focal arrastável.
+   A imagem é exibida inteira (cover) e o usuário arrasta o alvo
+   para escolher qual ponto fica centrado no recorte quadrado.
+   O ponto é salvo no backend (foco_x / foco_y, 0–100) ao soltar
+   o mouse — o arquivo da imagem NUNCA é recortado.
+   ============================================================ */
+function FocoPicker({ url, foco, onSave, alt, onOpen }) {
+    const [pos, setPos] = useState({ focoX: foco?.focoX ?? 50, focoY: foco?.focoY ?? 50 });
+    const boxRef = useRef(null);
+    const arrastandoRef = useRef(false);
+    const sujoRef = useRef(false);
+    const posRef = useRef({ focoX: foco?.focoX ?? 50, focoY: foco?.focoY ?? 50 });
+
+    function aplicar(e) {
+        const box = boxRef.current;
+        if (!box) return;
+        const rect = box.getBoundingClientRect();
+        const x = clampFoco(((e.clientX - rect.left) / rect.width) * 100);
+        const y = clampFoco(((e.clientY - rect.top) / rect.height) * 100);
+        posRef.current = { focoX: x, focoY: y };
+        setPos(posRef.current);
+        sujoRef.current = true;
+    }
+
+    function iniciar(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        arrastandoRef.current = true;
+        aplicar(e);
+        window.addEventListener('mousemove', mover);
+        window.addEventListener('mouseup', soltar);
+    }
+
+    function mover(e) {
+        if (!arrastandoRef.current) return;
+        aplicar(e);
+    }
+
+    function soltar() {
+        arrastandoRef.current = false;
+        window.removeEventListener('mousemove', mover);
+        window.removeEventListener('mouseup', soltar);
+        if (sujoRef.current) {
+            sujoRef.current = false;
+            onSave(posRef.current);
+        }
+    }
+
+    return (
+        <div
+            ref={boxRef}
+            className="focoPickerBox"
+            onMouseDown={iniciar}
+            title="Arraste para escolher o ponto da imagem que aparece no quadrado 1:1"
+        >
+            <img
+                src={url}
+                alt={alt}
+                className="focoPickerImg"
+                style={{ objectPosition: objectPositionDe(pos) }}
+                draggable={false}
+            />
+            <span className="focoPickerAlvo" style={{ left: `${pos.focoX}%`, top: `${pos.focoY}%` }} />
+            {onOpen && (
+                <button
+                    type="button"
+                    className="focoPickerAmpliar"
+                    onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                    title="Ver a imagem inteira"
+                >⤢</button>
+            )}
         </div>
     );
 }
@@ -516,6 +466,20 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
             .catch(err => setImagensMessage({ type: 'error', text: 'Erro ao remover: ' + (err.response?.data || err.message) }));
     }
 
+    // Salva o ponto focal (enquadramento 1:1) de uma imagem já cadastrada.
+    function handleSalvarFoco(img, foco) {
+        api.put(`/api/equipamentos/${equipamentoId}/imagens/foco`, {
+            url: img.url,
+            focoX: foco.focoX,
+            focoY: foco.focoY,
+        })
+            .then(() => setImagensMessage({ type: 'success', text: 'Enquadramento atualizado!' }))
+            .catch(err => {
+                setImagensMessage({ type: 'error', text: 'Erro ao salvar o enquadramento: ' + (err.response?.data?.message || err.message) });
+                carregar();
+            });
+    }
+
     function moveImage(idx, direction) {
         if (!eq?.imagens) return;
         const arr = [...eq.imagens];
@@ -523,7 +487,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
         if (newIndex < 0 || newIndex >= arr.length) return;
         [arr[idx], arr[newIndex]] = [arr[newIndex], arr[idx]];
         setEq(prev => ({ ...prev, imagens: arr })); // otimista
-        api.post(`/api/equipamentos/${equipamentoId}/imagens/reorder`, arr)
+        api.post(`/api/equipamentos/${equipamentoId}/imagens/reorder`, arr.map(i => i.url))
             .catch(err => {
                 setImagensMessage({ type: 'error', text: 'Erro ao reordenar: ' + (err.response?.data || err.message) });
                 carregar(); // desfaz a alteração otimista em caso de erro
@@ -657,18 +621,18 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                 {eq?.imagens && eq.imagens.length > 0 ? (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px', marginBottom: '20px' }}>
                                         {eq.imagens.map((img, idx) => (
-                                            <div key={img} style={{ textAlign: 'center', position: 'relative' }}>
-                                                <img
-                                                    src={imageUrl(img)}
+                                            <div key={img.url} style={{ textAlign: 'center', position: 'relative' }}>
+                                                <FocoPicker
+                                                    url={imageUrl(img.url)}
+                                                    foco={img}
                                                     alt={`${eq.nome} - ${idx + 1}`}
-                                                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ddd', cursor: 'pointer' }}
-                                                    onClick={() => setLightboxSrc(imageUrl(img))}
-                                                    title="Clique para ver a imagem inteira"
+                                                    onOpen={() => setLightboxSrc(imageUrl(img.url))}
+                                                    onSave={(foco) => handleSalvarFoco(img, foco)}
                                                 />
                                                 <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
                                                     <button type="button" className="smallBtn" onClick={() => moveImage(idx, -1)} title="Mover para trás" disabled={idx === 0}>↑</button>
                                                     <button type="button" className="smallBtn" onClick={() => moveImage(idx, 1)} title="Mover para frente" disabled={idx === eq.imagens.length - 1}>↓</button>
-                                                    <button type="button" className="smallBtn delete" onClick={() => handleDeleteImage(img)} title="Remover">✕</button>
+                                                    <button type="button" className="smallBtn delete" onClick={() => handleDeleteImage(img.url)} title="Remover">✕</button>
                                                 </div>
                                                 <p style={{ marginTop: '6px', fontSize: '11px', color: '#666' }}>#{idx + 1}</p>
                                             </div>

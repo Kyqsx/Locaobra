@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShoppingCart, faBox, faShield, faGear, faCreditCard, faInfo } from '@fortawesome/free-solid-svg-icons';
 import { Estrelas } from '../../components/Estrelas';
 import { formatarMedia } from '../../utils/avaliacoes';
+import { objectPositionDe } from '../../utils/imagem';
 import Avaliacoes from './Avaliacoes';
 import './ProductPage.css';
 
@@ -36,6 +37,7 @@ const ProductPageLocaObra = () => {
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const images = equipamento?.imagens?.length > 0 ? equipamento.imagens : [null, null, null, null];
+  const imagemAtiva = images[activeImage];
 
   const imageUrl = (path) => {
     if (!path) return null;
@@ -136,12 +138,13 @@ const ProductPageLocaObra = () => {
           {/* Seção de Imagens com Título e Descrição */}
           <div className="product-image-section">
             <div className="main-image-container">
-              {images[activeImage] ? (
+              {imagemAtiva?.url ? (
                 <img
                   className="product-main-image"
-                  src={imageUrl(images[activeImage])}
+                  src={imageUrl(imagemAtiva.url)}
+                  style={{ objectPosition: objectPositionDe(imagemAtiva) }}
                   alt={`Imagem ${activeImage + 1}`}
-                  onClick={() => setLightboxSrc(imageUrl(images[activeImage]))}
+                  onClick={() => setLightboxSrc(imageUrl(imagemAtiva.url))}
                   title="Clique para ver a imagem inteira"
                 />
               ) : (
@@ -155,8 +158,13 @@ const ProductPageLocaObra = () => {
                   className={`thumbnail ${activeImage === index ? 'active' : ''}`}
                   onClick={() => setActiveImage(index)}
                 >
-                  {image ? (
-                    <img className="thumbnail-image" src={imageUrl(image)} alt={`Preview ${index + 1}`} />
+                  {image?.url ? (
+                    <img
+                      className="thumbnail-image"
+                      src={imageUrl(image.url)}
+                      style={{ objectPosition: objectPositionDe(image) }}
+                      alt={`Preview ${index + 1}`}
+                    />
                   ) : (
                     <span style={{ fontSize: '28px' }}>📐</span>
                   )}

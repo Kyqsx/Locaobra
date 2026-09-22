@@ -199,6 +199,11 @@ CREATE TABLE IF NOT EXISTS imagens_equipamento (
     equipamento_id BIGINT NOT NULL,
     url           VARCHAR(255) NOT NULL,
     ordem         INTEGER NOT NULL DEFAULT 0,
+    -- Ponto focal do enquadramento 1:1 (percentual 0–100). A imagem original
+    -- permanece inteira; essas coordenadas só dizem qual ponto fica centrado
+    -- no recorte de exibição (object-position no frontend).
+    foco_x        INTEGER NOT NULL DEFAULT 50,
+    foco_y        INTEGER NOT NULL DEFAULT 50,
     CONSTRAINT fk_imagem_equipamento FOREIGN KEY (equipamento_id)
         REFERENCES equipamentos (id) ON DELETE CASCADE
 );
@@ -539,6 +544,12 @@ ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS documento_recebedor        VARCH
 ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS assinatura_entrega_imagem  VARCHAR(500);
 ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS observacao_entrega         VARCHAR(1000);
 ALTER TABLE expedicoes ADD COLUMN IF NOT EXISTS motivo_cancelamento        VARCHAR(500);
+
+-- Ponto focal do enquadramento 1:1 das imagens de equipamento (0–100, centro).
+-- A imagem original nunca é recortada; o frontend usa essas coordenadas como
+-- object-position na exibição quadrada.
+ALTER TABLE imagens_equipamento ADD COLUMN IF NOT EXISTS foco_x INTEGER NOT NULL DEFAULT 50;
+ALTER TABLE imagens_equipamento ADD COLUMN IF NOT EXISTS foco_y INTEGER NOT NULL DEFAULT 50;
 
 ALTER TABLE vistorias  ADD COLUMN IF NOT EXISTS responsavel                VARCHAR(150);
 

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../service/api'; // Importe sua instância do axios
 import { Estrelas } from '../../components/Estrelas';
 import { formatarMedia } from '../../utils/avaliacoes';
+import { objectPositionDe } from '../../utils/imagem';
 import './Catalogo.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter } from '@fortawesome/free-solid-svg-icons';
@@ -83,14 +84,12 @@ function Catalogo() {
             <div key={item.id} className="card-produto">
               <Link to={`/productview/${item.id}`} className="btn-card">
                 <div className="image-container">
-                  {item.imagens && item.imagens.length > 0 ? (
+                  {item.imagens && item.imagens.length > 0 && item.imagens[0]?.url ? (
                     <img
-                      src={imageUrl(item.imagens[0])}
+                      src={imageUrl(item.imagens[0].url)}
                       alt={item.nome}
                       className="img-produto-cat"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
+                      style={{ objectPosition: objectPositionDe(item.imagens[0]) }}
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.style.display = 'none';
