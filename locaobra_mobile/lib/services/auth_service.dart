@@ -55,7 +55,12 @@ class AuthService {
         }
 
         final token = data['token'].toString();
-        await TokenStorage.salvar(token);
+        try {
+          await TokenStorage.salvar(token);
+        } catch (e) {
+          // ignore: avoid_print
+          print('AuthService: falha ao salvar token ($e) — login prossegue mesmo assim.');
+        }
 
         return LoginResult.sucesso(
           token: token,

@@ -30,8 +30,21 @@ class ApiClient {
   /// Se [tokenExplicito] não for passado, busca o token salvo pelo login
   /// automaticamente (TokenStorage) — não precisa mais repassar em toda
   /// chamada, só quando quiser forçar um token diferente do salvo.
+  ///
+  /// Se a leitura do storage falhar por qualquer motivo (ex.: peculiaridades
+  /// do flutter_secure_storage no Flutter Web), segue sem token em vez de
+  /// derrubar a chamada — assim uma falha de storage não vira, pro usuário,
+  /// um falso "não foi possível conectar ao servidor".
   static Future<Map<String, String>> _headers(String? tokenExplicito) async {
-    final token = tokenExplicito ?? await TokenStorage.obter();
+    String? token = tokenExplicito;
+    if (token == null) {
+      try {
+        token = await TokenStorage.obter();
+      } catch (e) {
+        // ignore: avoid_print
+        print('ApiClient: falha ao ler token salvo ($e) — seguindo sem token.');
+      }
+    }
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
