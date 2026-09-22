@@ -220,7 +220,7 @@ public class SecurityConfig {
                 "http://172.17.19.249:5173",
                 "https://locaobra.vercel.app",
                 "https://locaobra-*.vercel.app",
-                "https://localhost:3000"
+                "http://localhost:3000"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));

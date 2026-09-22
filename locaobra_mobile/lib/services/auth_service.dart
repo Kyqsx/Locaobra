@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'api_client.dart';
+import 'token_storage.dart';
 
 /// Resultado de uma tentativa de login, espelhando a resposta real da API:
 /// { token, tipo, id, nome }.
@@ -52,8 +53,12 @@ class AuthService {
         if (data is! Map<String, dynamic> || data['token'] == null) {
           return LoginResult.erro('Resposta inválida do servidor.');
         }
+
+        final token = data['token'].toString();
+        await TokenStorage.salvar(token);
+
         return LoginResult.sucesso(
-          token: data['token']?.toString(),
+          token: token,
           tipo: data['tipo']?.toString(),
           id: data['id'] is int ? data['id'] as int : int.tryParse('${data['id']}'),
           nome: data['nome']?.toString(),
@@ -96,6 +101,9 @@ class AuthService {
       return CadastroResult.erro('Não foi possível conectar ao servidor.');
     }
   }
+
+  /// Remove o token salvo — chamar ao deslogar o usuário.
+  Future<void> logout() => TokenStorage.limpar();
 
   /// A API costuma responder erros como {status, message, timestamp}.
   String? _extrairMensagem(String body) {
