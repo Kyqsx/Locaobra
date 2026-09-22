@@ -1,60 +1,112 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'api_client.dart';
 
-/// Resultado de uma tentativa de login.
+/// Resultado de uma tentativa de login, espelhando a resposta real da API:
+/// { token, tipo, id, nome }.
 class LoginResult {
   final bool sucesso;
   final String? token;
+  final String? tipo;
+  final int? id;
+  final String? nome;
   final String? mensagemErro;
 
-  LoginResult.sucesso(this.token) : sucesso = true, mensagemErro = null;
-  LoginResult.erro(this.mensagemErro) : sucesso = false, token = null;
+  LoginResult.sucesso({this.token, this.tipo, this.id, this.nome})
+    : sucesso = true,
+      mensagemErro = null;
+
+  LoginResult.erro(this.mensagemErro)
+    : sucesso = false,
+      token = null,
+      tipo = null,
+      id = null,
+      nome = null;
+}
+
+/// Resultado de um cadastro. A API responde 201 quando a conta é criada mas
+/// ainda exige verificação de e-mail antes do primeiro login (igual ao web).
+class CadastroResult {
+  final bool sucesso;
+  final bool precisaVerificarEmail;
+  final String? mensagemErro;
+
+  CadastroResult.sucesso({this.precisaVerificarEmail = true})
+    : sucesso = true,
+      mensagemErro = null;
+
+  CadastroResult.erro(this.mensagemErro)
+    : sucesso = false,
+      precisaVerificarEmail = false;
 }
 
 class AuthService {
-  // Mesma base usada pelo SlugService. Ajuste o path '/auth/login' se o
-  // endpoint real do backend for outro (ex: '/usuarios/login', '/login').
-  final String baseUrl = 'https://locaobra-7c7d.vercel.app/api';
-
   Future<LoginResult> login(String email, String senha) async {
-    final url = Uri.parse('$baseUrl/auth/login');
-
-    debugPrint('[AuthService] --> POST $url');
-    debugPrint('[AuthService] --> body: {"email": "$email", "senha": "***"}');
-
     try {
-      final response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'email': email, 'senha': senha}),
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await ApiClient.post('/api/auth/login', {
+        'email': email,
+        'senha': senha,
+      });
 
-      debugPrint('[AuthService] <-- status: ${response.statusCode}');
-      debugPrint('[AuthService] <-- body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Ajuste a chave abaixo conforme o campo real que a API devolver
-        // (pode ser "token", "accessToken", "jwt", etc).
-        final token = data is Map<String, dynamic>
-            ? (data['token'] ?? data['accessToken'] ?? data['jwt'])
-            : null;
-        return LoginResult.sucesso(token?.toString());
+        if (data is! Map<String, dynamic> || data['token'] == null) {
+          return LoginResult.erro('Resposta inválida do servidor.');
+        }
+        return LoginResult.sucesso(
+          token: data['token']?.toString(),
+          tipo: data['tipo']?.toString(),
+          id: data['id'] is int ? data['id'] as int : int.tryParse('${data['id']}'),
+          nome: data['nome']?.toString(),
+        );
       }
 
       if (response.statusCode == 401 || response.statusCode == 403) {
         return LoginResult.erro('E-mail ou senha inválidos.');
       }
 
-      return LoginResult.erro(
-        'Falha no login (status ${response.statusCode}).',
-      );
-    } catch (e) {
-      debugPrint('[AuthService] !!! erro: $e');
+      return LoginResult.erro(_extrairMensagem(response.body) ??
+          'Falha no login (status ${response.statusCode}).');
+    } catch (_) {
       return LoginResult.erro('Não foi possível conectar ao servidor.');
     }
+  }
+
+  Future<CadastroResult> cadastrar({
+    required String nome,
+    required String email,
+    required String senha,
+  }) async {
+    try {
+      final response = await ApiClient.post('/api/auth/signup', {
+        'nome': nome,
+        'email': email,
+        'senha': senha,
+        'tipo': 'CLIENTE',
+      });
+
+      if (response.statusCode == 201) {
+        return CadastroResult.sucesso();
+      }
+
+      return CadastroResult.erro(
+        _extrairMensagem(response.body) ??
+            'Erro ao cadastrar. Verifique os dados e tente novamente.',
+      );
+    } catch (_) {
+      return CadastroResult.erro('Não foi possível conectar ao servidor.');
+    }
+  }
+
+  /// A API costuma responder erros como {status, message, timestamp}.
+  String? _extrairMensagem(String body) {
+    try {
+      final data = jsonDecode(body);
+      if (data is Map<String, dynamic> && data['message'] != null) {
+        return data['message'].toString();
+      }
+    } catch (_) {
+      // corpo não é JSON, ignora
+    }
+    return null;
   }
 }

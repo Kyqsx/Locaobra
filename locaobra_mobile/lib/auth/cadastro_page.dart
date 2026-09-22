@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
-import 'package:locaobra_mobile/screens/home_screen.dart';
+import 'package:locaobra_mobile/services/auth_service.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -19,6 +19,9 @@ class _CadastroPageState extends State<CadastroPage> {
   bool _senhaVisivel = false;
   bool _confirmarSenhaVisivel = false;
   bool _carregando = false;
+  String? _erro;
+
+  final _authService = AuthService();
 
   @override
   void dispose() {
@@ -32,24 +35,35 @@ class _CadastroPageState extends State<CadastroPage> {
   void _cadastrar() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _carregando = true);
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
 
-    // TODO: substitua pela sua chamada real de cadastro
-    // Ex: await AuthService.cadastrar(
-    //   nome: _nomeController.text,
-    //   email: _emailController.text,
-    //   senha: _senhaController.text,
-    // );
-    await Future.delayed(const Duration(seconds: 1));
+    final resultado = await _authService.cadastrar(
+      nome: _nomeController.text.trim(),
+      email: _emailController.text.trim(),
+      senha: _senhaController.text,
+    );
 
     if (!mounted) return;
     setState(() => _carregando = false);
 
-    // Depois de cadastrar, leva direto para a Home
-    // (pushReplacement para não deixar o cadastro na pilha de "voltar")
+    if (!resultado.sucesso) {
+      setState(() => _erro = resultado.mensagemErro);
+      return;
+    }
+
+    // A API exige verificação de e-mail antes do primeiro login (igual ao
+    // web), então volta pra tela de login em vez de ir direto pra Home.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Conta criada! Verifique seu e-mail antes de entrar.'),
+      ),
+    );
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomePage()),
+      MaterialPageRoute(builder: (_) => const LoginPage()),
     );
   }
 
@@ -226,6 +240,14 @@ class _CadastroPageState extends State<CadastroPage> {
                 ),
 
                 const SizedBox(height: 28),
+
+                if (_erro != null) ...[
+                  Text(
+                    _erro!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // Botão Criar conta
                 SizedBox(

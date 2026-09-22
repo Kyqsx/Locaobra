@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/slug_resonse.dart';
-import '../services/slug_service.dart';
+import '../models/equipamento.dart';
+import '../services/catalogo_service.dart';
 
 class CatalogoPagina extends StatefulWidget {
   final String categoriaSlug;
@@ -12,8 +12,8 @@ class CatalogoPagina extends StatefulWidget {
 }
 
 class _CatalogoPaginaState extends State<CatalogoPagina> {
-  final SlugService _slugService = SlugService();
-  late Future<SlugResonse> _futureDados;
+  final CatalogoService _catalogoService = CatalogoService();
+  late Future<List<Equipamento>> _futureDados;
 
   @override
   void initState() {
@@ -32,7 +32,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
 
   void _carregarDados() {
     setState(() {
-      _futureDados = _slugService.buscarPorSlug(widget.categoriaSlug);
+      _futureDados = _catalogoService.buscarPorCategoria(widget.categoriaSlug);
     });
   }
 
@@ -40,7 +40,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Catálogo: ${widget.categoriaSlug}')),
-      body: FutureBuilder<SlugResonse>(
+      body: FutureBuilder<List<Equipamento>>(
         future: _futureDados,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -53,21 +53,31 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
             );
           }
 
-          final dados = snapshot.data;
+          final equipamentos = snapshot.data ?? [];
 
-          if (dados == null || dados.produtos.isEmpty) {
+          if (equipamentos.isEmpty) {
             return const Center(
               child: Text('Nenhum item encontrado nesta categoria.'),
             );
           }
 
           return ListView.builder(
-            itemCount: dados.produtos.length,
+            itemCount: equipamentos.length,
             itemBuilder: (context, index) {
-              final produto = dados.produtos[index];
+              final equipamento = equipamentos[index];
               return ListTile(
-                title: Text(produto['nome'] ?? 'Sem nome'),
-                subtitle: Text('Preço: R\$ ${produto['preco'] ?? '0.00'}'),
+                leading: equipamento.imagemPrincipal.isNotEmpty
+                    ? Image.network(
+                        equipamento.imagemPrincipal,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                      )
+                    : const Icon(Icons.build_outlined),
+                title: Text(equipamento.nome),
+                subtitle: Text(
+                  'R\$ ${equipamento.valorDiaria.toStringAsFixed(2)} / dia',
+                ),
                 onTap: () {
                   // Navegação para o detalhe do item se necessário
                 },
