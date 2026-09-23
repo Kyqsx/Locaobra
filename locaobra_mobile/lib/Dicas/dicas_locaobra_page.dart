@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:locaobra_mobile/dicas/artigo_detalhes_page.dart';
+import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
 import 'package:locaobra_mobile/screens/welcome_screen.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 

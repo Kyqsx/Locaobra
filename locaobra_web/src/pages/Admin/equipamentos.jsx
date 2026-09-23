@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch, faPlus, faTrash, faTools, faFileImport,
     faList, faImage, faBoxesStacked, faTag, faEdit,
+    faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
@@ -291,7 +292,7 @@ function EquipamentoCreateModal({ onClose, onCreated }) {
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>Novo modelo de equipamento</h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="equipForm">
@@ -554,7 +555,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{eq ? eq.nome : 'Carregando...'}</h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
                 </div>
 
                 {loading ? (

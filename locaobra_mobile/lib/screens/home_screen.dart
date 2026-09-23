@@ -4,6 +4,7 @@ import 'package:locaobra_mobile/Categorias/concretagem.dart';
 import 'package:locaobra_mobile/Categorias/equipamentos_pesados.dart';
 import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
+import 'package:locaobra_mobile/services/auth_service.dart';
 import 'package:locaobra_mobile/Categorias/ferramentas_eletricas.dart';
 import 'package:locaobra_mobile/Categorias/andaimes_e_escadas.dart';
 import 'package:locaobra_mobile/Categorias/acesso_e_elevacao.dart';
@@ -35,88 +36,111 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Image.asset(
                       'assets/imagens/Logo_LOCAOBRA.png',
-                      width: 160,
-                      height: 90,
+                      width: 140,
+                      height: 80,
                       fit: BoxFit.contain,
                     ),
 
-                    // Botão de Entrar / Login
                     // Botão de Entrar/Cadastrar OU menu do usuário logado, dependendo do
-                    // estado atual de login.
-                    ValueListenableBuilder<String?>(
-                      valueListenable: AuthState.usuarioLogado,
-                      builder: (context, nomeUsuario, _) {
-                        if (nomeUsuario == null) {
-                          // Ninguém logado: mostra o botão de sempre
-                          return Flexible(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Entrar ou Cadastrar',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          );
-                        }
-
-                        // Usuário logado: mostra ícone + nome com menu suspenso
-                        return PopupMenuButton<String>(
-                          offset: const Offset(0, 40),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                    // estado atual de login. O carrinho fica sempre visível ao lado.
+                    // Expanded dá um limite de largura pra esse lado — sem isso, com
+                    // MainAxisSize.min ele não tem como encolher e estoura a tela em
+                    // telas estreitas (o aviso preto/amarelo de overflow do Flutter).
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              // Todo: navegar para a tela de carrinho quando existir.
+                            },
+                            icon: const Icon(Icons.shopping_cart_outlined),
+                            color: Colors.black87,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
-                          onSelected: (opcao) {
-                            if (opcao == 'sair') {
-                              AuthState.logout();
-                            }
-                            // TODO: navegar para 'pedidos', 'enderecos', 'perfil' quando
-                            // essas telas existirem.
-                          },
-                          itemBuilder: (context) => [
-                            _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
-                            _buildMenuItem('enderecos', Icons.location_on_outlined, 'Meus Endereços'),
-                            _buildMenuItem('perfil', Icons.person_outline, 'Ver Perfil'),
-                            const PopupMenuDivider(),
-                            _buildMenuItem('sair', Icons.logout, 'Sair', cor: Colors.orange),
-                          ],
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.person, color: Colors.orange, size: 18),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  nomeUsuario,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                          const SizedBox(width: 16),
+                          ValueListenableBuilder<String?>(
+                            valueListenable: AuthState.usuarioLogado,
+                            builder: (context, nomeUsuario, _) {
+                              if (nomeUsuario == null) {
+                                // Ninguém logado: mostra o botão de sempre
+                                return Flexible(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color.fromARGB(255, 255, 128, 0),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 10,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text(
+                                      'Entrar ou Cadastrar',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
                                   ),
+                                );
+                              }
+
+                              // Usuário logado: mostra ícone + nome com menu suspenso
+                              return PopupMenuButton<String>(
+                                offset: const Offset(0, 40),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                              ),
-                            ],
+                                onSelected: (opcao) async {
+                                  if (opcao == 'sair') {
+                                    // Limpa o token salvo (senão, ao reabrir o app,
+                                    // a sessão antiga seria restaurada de novo) e
+                                    // só então atualiza o estado em memória.
+                                    await AuthService().logout();
+                                    AuthState.logout();
+                                  }
+                                  // Todo: navegar para 'pedidos', 'enderecos', 'perfil' quando
+                                  // essas telas existirem.
+                                },
+                                itemBuilder: (context) => [
+                                  _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
+                                  _buildMenuItem('enderecos', Icons.location_on_outlined, 'Meus Endereços'),
+                                  _buildMenuItem('perfil', Icons.person_outline, 'Ver Perfil'),
+                                  const PopupMenuDivider(),
+                                  _buildMenuItem('sair', Icons.logout, 'Sair', cor: Colors.orange),
+                                ],
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.person, color: Colors.orange, size: 18),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        nomeUsuario,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
                   ],
                 ),

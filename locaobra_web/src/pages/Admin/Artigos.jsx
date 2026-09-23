@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
 import './Artigos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faEdit, faTrash, faList, faNewspaper, faImage } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faEdit, faTrash, faList, faNewspaper, faImage, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
 
@@ -41,7 +41,7 @@ function ArtigoModal({ open, onClose, editingId, form, onChange, onSubmit, capaA
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar artigo' : 'Novo artigo'}</h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">

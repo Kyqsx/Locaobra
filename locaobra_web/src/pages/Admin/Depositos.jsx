@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
 import './Depositos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faEdit, faTrash, faList, faWarehouse } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faEdit, faTrash, faList, faWarehouse, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
 import EnderecoFields from '../../components/EnderecoFields';
@@ -25,7 +25,7 @@ function DepositosModal({ open, onClose, editingId, form, onChange, onEnderecoCh
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar depósito' : 'Cadastrar depósito'}</h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">

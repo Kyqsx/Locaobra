@@ -7,6 +7,7 @@ import {
     faWrench, faPlus, faTrash, faList, faClipboardList,
     faSearch, faCheckCircle, faTimesCircle, faGaugeHigh,
     faBoxesStacked, faTriangleExclamation, faPlay, faBoxOpen,
+    faXmark
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
@@ -66,7 +67,7 @@ function AbrirOSModal({ unidadesDisponiveis, tecnicos, tecnicoPadraoId, onClose,
             <div className="modalCard osModalCard">
                 <div className="modalHeader">
                     <h3><FontAwesomeIcon icon={faWrench} /> Abrir Ordem de Serviço</h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
                 </div>
 
                 {error && <div className="messageBanner negative">{error}</div>}
@@ -257,7 +258,7 @@ function OSDetalheModal({ osId, tecnicos, pecas, onClose, onChanged }) {
                             {STATUS_OS_LABEL[os.status] || os.status}
                         </span>
                     </h3>
-                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
+                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
                 </div>
 
                 {message && (

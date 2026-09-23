@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:locaobra_mobile/Categorias/concretagem.dart';
-import 'package:locaobra_mobile/Categorias/equipamentos_pesados.dart';
+import 'package:locaobra_mobile/Categorias/catalogo_page.dart';
+import 'package:locaobra_mobile/models/categoria.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
-import 'package:locaobra_mobile/Categorias/ferramentas_eletricas.dart';
-import 'package:locaobra_mobile/Categorias/andaimes_e_escadas.dart';
-import 'package:locaobra_mobile/Categorias/acesso_e_elevacao.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
 import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
@@ -81,45 +78,27 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
 
-              // 1.1 Linha de abas de navegação por categoria
+              // 1.1 Linha de abas de navegação por categoria (dirigida por
+              // slug, igual a todas as categorias de kCategorias)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Row(
                   children: [
-                    _buildNavTab(
-                      title: 'Acesso e Elevação',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AcessoPage()),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 24),
-                    _buildNavTab(
-                      title: 'Concretagem',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ConcretagemPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 24),
-                    _buildNavTab(
-                      title: 'Ferramentas Elétricas',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FerramentasEletricasPage(),
-                          ),
-                        );
-                      },
-                    ),
+                    for (final cat in kCategorias) ...[
+                      _buildNavTab(
+                        title: cat.nome,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CatalogoPagina(categoriaSlug: cat.slug),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 24),
+                    ],
                   ],
                 ),
               ),
@@ -167,7 +146,14 @@ class WelcomeScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     // Botão Ver catálogo Completo
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CatalogoPagina(categoriaSlug: null),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
@@ -210,53 +196,21 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // Lista de Cards de Categorias
-                    _buildCategoryCard(
-                      imagePath: 'assets/imagens/ferramentas.svg',
-                      title: 'Ferramentas Elétricas',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FerramentasEletricasPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildCategoryCard(
-                      imagePath: 'assets/imagens/andaimes.svg',
-                      title: 'Andaimes e Escadas',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AndaimesEEscadasPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildCategoryCard(
-                      imagePath: 'assets/imagens/elevacao.svg',
-                      title: 'Acesso e Elevação',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AcessoPage()),
-                        );
-                      },
-                    ),
-                    _buildCategoryCard(
-                      imagePath: 'assets/imagens/pesado.svg',
-                      title: 'Equipamentos Pesados',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EquipamentosPesadosPage(),
-                          ),
-                        );
-                      },
-                    ),
+                    // Lista de Cards de Categorias (só as que têm imagem
+                    // própria — Concretagem por ora só aparece nas abas)
+                    for (final cat in kCategorias.where((c) => c.imagePath != null))
+                      _buildCategoryCard(
+                        imagePath: cat.imagePath!,
+                        title: cat.nome,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CatalogoPagina(categoriaSlug: cat.slug),
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
