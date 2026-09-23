@@ -202,7 +202,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                     // Todo: seguir para o checkout/pagamento
                   },
                   icon: const Icon(Icons.shopping_cart),
-                  label: const Text('Comprar agora'),
+                  label: const Text('Alugar agora'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,

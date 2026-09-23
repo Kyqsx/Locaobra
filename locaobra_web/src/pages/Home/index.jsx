@@ -4,12 +4,7 @@ import { faHammer, faTruckLoading, faScrewdriverWrench, faLayerGroup, faChevronR
 import { Link } from 'react-router-dom';
 import api from '../../service/api';
 import './home.css';
-
-function imageUrl(path) {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-}
+import { imageUrl } from '../../utils/imagem';
 
 const Home = () => {
     // Estado para controlar qual FAQ está aberto (armazena o ID ou null)

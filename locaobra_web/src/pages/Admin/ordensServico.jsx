@@ -7,10 +7,10 @@ import {
     faWrench, faPlus, faTrash, faList, faClipboardList,
     faSearch, faCheckCircle, faTimesCircle, faGaugeHigh,
     faBoxesStacked, faTriangleExclamation, faPlay, faBoxOpen,
-    faXmark
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
+import { formatDate } from '../../utils/formatters';
 
 const STATUS_OS_LABEL = {
     ABERTA: 'Aberta',
@@ -18,12 +18,6 @@ const STATUS_OS_LABEL = {
     CONCLUIDA: 'Concluída',
     CANCELADA: 'Cancelada',
 };
-
-function formatDate(dateStr) {
-    if (!dateStr) return '---';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
 
 /* ============================================================
    MODAL — ABRIR NOVA OS
@@ -63,11 +57,11 @@ function AbrirOSModal({ unidadesDisponiveis, tecnicos, tecnicoPadraoId, onClose,
     }
 
     return (
-        <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard osModalCard">
                 <div className="modalHeader">
                     <h3><FontAwesomeIcon icon={faWrench} /> Abrir Ordem de Serviço</h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 {error && <div className="messageBanner negative">{error}</div>}
@@ -134,11 +128,6 @@ function OSDetalheModal({ osId, tecnicos, pecas, onClose, onChanged }) {
     const [diagForm, setDiagForm] = useState({ diagnostico: '', observacoes: '', horimetroRegistrado: '', tecnicoId: '' });
     const [novoItem, setNovoItem] = useState({ pecaId: '', quantidade: 1 });
 
-    useEffect(() => {
-        carregar();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [osId]);
-
     function carregar() {
         setLoading(true);
         api.get(`/api/ordens-servico/${osId}`)
@@ -154,6 +143,11 @@ function OSDetalheModal({ osId, tecnicos, pecas, onClose, onChanged }) {
             .catch(() => setMessage({ type: 'error', text: 'Erro ao carregar Ordem de Serviço' }))
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        carregar();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [osId]);
 
     function handleDiagChange(e) {
         setDiagForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -249,7 +243,7 @@ function OSDetalheModal({ osId, tecnicos, pecas, onClose, onChanged }) {
     const finalizada = os.status === 'CONCLUIDA' || os.status === 'CANCELADA';
 
     return (
-        <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard osModalCard osDetalheModalCard">
                 <div className="modalHeader">
                     <h3>
@@ -258,7 +252,7 @@ function OSDetalheModal({ osId, tecnicos, pecas, onClose, onChanged }) {
                             {STATUS_OS_LABEL[os.status] || os.status}
                         </span>
                     </h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 {message && (
@@ -579,10 +573,6 @@ export default function OrdensServico() {
     const [detalheOsId, setDetalheOsId] = useState(null);
     const [aba, setAba] = useState('fila'); // fila | historico | pecas | alertas
 
-    useEffect(() => {
-        fetchTudo();
-    }, []);
-
     function fetchTudo() {
         setLoading(true);
         Promise.all([
@@ -602,6 +592,10 @@ export default function OrdensServico() {
             .catch(() => { /* feedback já é mostrado nas seções, mantemos a página de pé */ })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchTudo();
+    }, []);
 
     // Todas as unidades (achatadas), com nome do equipamento
     const todasUnidades = useMemo(() => {

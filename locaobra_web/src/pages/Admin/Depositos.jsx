@@ -1,35 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
-import './Depositos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faEdit, faTrash, faList, faWarehouse, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faEdit, faTrash, faList, faWarehouse } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
 import EnderecoFields from '../../components/EnderecoFields';
-
-function FormField({ label, children }) {
-    return (
-        <div className="formField">
-            {label && <label className="fieldLabel">{label}</label>}
-            {children}
-        </div>
-    );
-}
+import FormField from '../../components/FormField';
 
 function DepositosModal({ open, onClose, editingId, form, onChange, onEnderecoChange, onSubmit, onReset, submitting }) {
     if (!open) return null;
 
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar depósito' : 'Cadastrar depósito'}</h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">
-                    <div className="formGridDepositos">
+                    <div className="adminForm">
                         <div className="formRow full">
                             <FormField label="Nome do depósito">
                                 <input className="equipInput" name="nome" placeholder="Ex: Galpão Central - Osasco" value={form.nome} onChange={onChange} required />
@@ -88,10 +79,6 @@ export default function Depositos() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     function fetchData() {
         setLoading(true);
         api.get('/api/depositos')
@@ -104,6 +91,10 @@ export default function Depositos() {
             })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const filteredDepositos = useMemo(() => {
         return depositos.filter(d => {
@@ -208,12 +199,8 @@ export default function Depositos() {
             )}
 
             <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de depósitos</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>
-                    Cadastre os galpões/pátios da empresa. Unidades de equipamento e funcionários de
-                    logística são vinculados a um depósito específico — nunca ao modelo do equipamento.
-                </p>
-                <div className="formFooter">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de depósitos</h3>
                     <button type="button" className="addBtn" onClick={() => {
                         setEditingId(null);
                         setForm(initialForm);
@@ -222,6 +209,10 @@ export default function Depositos() {
                         Novo Depósito
                     </button>
                 </div>
+                <p style={{ color: '#666', marginBottom: '12px' }}>
+                    Cadastre os galpões/pátios da empresa. Unidades de equipamento e funcionários de
+                    logística são vinculados a um depósito específico — nunca ao modelo do equipamento.
+                </p>
             </div>
 
             <div className="recentUsersSection">

@@ -56,7 +56,7 @@ export function AuthProvider({ children }) {
                         userData.nome = perfil.nome || userData.nome;
                         userData.id_cliente = perfil.id; // ID da tabela de clientes, se for diferente do user_id
                         userData.enderecos = perfil.enderecos || [];
-                    } catch (err) {
+                    } catch {
                         console.warn("⚠️ Perfil detalhado não encontrado. Usando dados básicos da conta.");
                     }
                 }
@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
                 logout();
                 return null;
             }
-        } catch (error) {
+        } catch {
             console.error("Sessão inválida ou expirada");
             logout();
             return null;
@@ -111,7 +111,7 @@ export function AuthProvider({ children }) {
         try {
             const response = await api.get('/api/clientes/meus-enderecos');
             setUser(prev => (prev ? { ...prev, enderecos: response.data } : prev));
-        } catch (err) {
+        } catch {
             console.warn('⚠️ Não foi possível recarregar os endereços.');
         }
     };

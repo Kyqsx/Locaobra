@@ -1,34 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
-import './Departamentos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faEdit, faList, faBuilding, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faEdit, faList } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
-
-function FormField({ label, children }) {
-    return (
-        <div className="formField">
-            {label && <label className="fieldLabel">{label}</label>}
-            {children}
-        </div>
-    );
-}
+import FormField from '../../components/FormField';
 
 function DepartamentosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting }) {
     if (!open) return null;
 
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar departamento' : 'Cadastrar departamento'}</h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">
-                    <div className="formGridDepartamentos">
+                    <div className="adminForm">
                         <div className="formRow full">
                             <FormField label="Nome do departamento">
                                 <input className="equipInput" name="nome" placeholder="Ex: LOGISTICA_E_ALMOXARIFADO" value={form.nome} onChange={onChange} required />
@@ -77,10 +68,6 @@ export default function Departamentos() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     function fetchData() {
         setLoading(true);
         api.get('/api/departamentos')
@@ -93,6 +80,10 @@ export default function Departamentos() {
             })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const filteredDepts = useMemo(() => {
         return departamentos.filter(d => {
@@ -167,11 +158,8 @@ return (
             )}
 
             <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de departamentos</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>
-                    Configure os departamentos da empresa para organizar os setores e vincular aos cargos.
-                </p>
-                <div className="formFooter">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de departamentos</h3>
                     <button type="button" className="addBtn" onClick={() => {
                         setEditingId(null);
                         setForm(initialForm);
@@ -179,6 +167,11 @@ return (
                     }}>
                         Novo Departamento
                     </button>
+                </div>
+                <p style={{ color: '#666', marginBottom: '12px' }}>
+                    Configure os departamentos da empresa para organizar os setores e vincular aos cargos.
+                </p>
+                <div className="formFooter">
                 </div>
             </div>
 

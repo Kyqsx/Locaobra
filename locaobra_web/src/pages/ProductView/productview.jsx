@@ -7,19 +7,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShoppingCart, faBox, faShield, faGear, faCreditCard, faInfo } from '@fortawesome/free-solid-svg-icons';
 import { Estrelas } from '../../components/Estrelas';
 import { formatarMedia } from '../../utils/avaliacoes';
-import { objectPositionDe } from '../../utils/imagem';
+import { objectPositionDe, imageUrl } from '../../utils/imagem';
 import Avaliacoes from './Avaliacoes';
 import './ProductPage.css';
-
-function Lightbox({ src, onClose }) {
-  if (!src) return null;
-  return (
-    <div className="lightboxBackdrop" onClick={onClose}>
-      <img src={src} alt="Imagem ampliada" className="lightboxImage" onClick={e => e.stopPropagation()} />
-      <button type="button" className="lightboxCloseBtn" onClick={onClose} title="Fechar">✕</button>
-    </div>
-  );
-}
+import Lightbox from '../../components/Lightbox';
 
 const ProductPageLocaObra = () => {
   const { id } = useParams();
@@ -38,12 +29,6 @@ const ProductPageLocaObra = () => {
 
   const images = equipamento?.imagens?.length > 0 ? equipamento.imagens : [null, null, null, null];
   const imagemAtiva = images[activeImage];
-
-  const imageUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-  };
 
   const defaultSpecs = [
     { label: 'Categoria', value: equipamento?.categoria || '—' },

@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
 import './Clientes.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faTrash, faTools, faFileImport, faList, faLocationDot, faPen } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faTrash, faList, faLocationDot, faPen } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
 import EnderecoFields from '../../components/EnderecoFields';
@@ -29,10 +29,6 @@ export default function Clientes() {
     const canDeleteCliente = user?.tipo === 'ADMIN' ||
         ['RH', 'GERENTE_OPERACOES'].includes(user?.cargoFuncionario);
 
-    useEffect(() => {
-        fetchList();
-    }, []);
-
     function fetchList() {
         setLoading(true);
         console.log("📥 Buscando clientes...");
@@ -47,6 +43,10 @@ export default function Clientes() {
             })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchList();
+    }, []);
 
     // Função de Deleção
     function handleDelete(id) {

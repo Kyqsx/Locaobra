@@ -6,6 +6,7 @@ import { canAccessAdminRoute, getDefaultAdminPath } from './utils/permissions';
 import Home from './pages/Home/index';
 import Login from "./pages/Auth/login";
 import Signup from './pages/Auth/signup';
+import VerificarEmail from './pages/Auth/verificarEmail';
 import Catalogo from './pages/Catalogo/catalogo';
 import ProductView from "./pages/ProductView/productview";
 import Blog from './pages/Blog/blog';
@@ -101,6 +102,7 @@ function RotasApp() {
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+                    <Route path="/verificar-email" element={<VerificarEmail />} />
 
                     <Route element={<ProtectedHandler><Outlet /></ProtectedHandler>}>
                         

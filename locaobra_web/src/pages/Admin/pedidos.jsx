@@ -6,18 +6,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faList, faBoxOpen, faTruck, faCircleXmark, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import './Pedidos.css';
 import './AdminDashboard.css';
+import { formatarData } from '../../utils/formatters';
 
 const STATUS_INFO = {
   SOLICITADO: { label: 'Aguardando revisão', className: 'status-solicitado' },
   APROVADO: { label: 'Aprovado', className: 'status-aprovado' },
   RECUSADO: { label: 'Recusado', className: 'status-recusado' },
   CANCELADO: { label: 'Cancelado', className: 'status-cancelado' },
-};
-
-const formatarData = (iso) => {
-  if (!iso) return '—';
-  const [ano, mes, dia] = iso.split('-');
-  return `${dia}/${mes}/${ano}`;
 };
 
 function MotivoModal({ titulo, onConfirm, onClose, enviando }) {
@@ -254,7 +249,7 @@ function AdminPedidos() {
   }, [aba]);
 
   const handleConfirmarRecusa = async (motivo) => {
-    const { pedidoId, tipo } = modalRecusa;
+    const { pedidoId } = modalRecusa;
     setProcessandoId(pedidoId);
     try {
       const rota = 'recusar';

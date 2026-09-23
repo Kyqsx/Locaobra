@@ -2,18 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../service/api';
 import './Pedidos.css';
+import { formatarData } from '../../utils/formatters';
 
 const STATUS_INFO = {
   SOLICITADO: { label: 'Aguardando revisão', className: 'status-solicitado' },
   APROVADO: { label: 'Aprovado', className: 'status-aprovado' },
   RECUSADO: { label: 'Recusado', className: 'status-recusado' },
   CANCELADO: { label: 'Cancelado', className: 'status-cancelado' },
-};
-
-const formatarData = (iso) => {
-  if (!iso) return '—';
-  const [ano, mes, dia] = iso.split('-');
-  return `${dia}/${mes}/${ano}`;
 };
 
 function MeusPedidos() {

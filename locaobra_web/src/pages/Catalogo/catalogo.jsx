@@ -3,20 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../service/api'; // Importe sua instância do axios
 import { Estrelas } from '../../components/Estrelas';
 import { formatarMedia } from '../../utils/avaliacoes';
-import { objectPositionDe } from '../../utils/imagem';
+import { objectPositionDe, imageUrl } from '../../utils/imagem';
 import './Catalogo.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter } from '@fortawesome/free-solid-svg-icons';
-
-function Lightbox({ src, onClose }) {
-  if (!src) return null;
-  return (
-    <div className="lightboxBackdrop" onClick={onClose}>
-      <img src={src} alt="Imagem ampliada" className="lightboxImage" onClick={e => e.stopPropagation()} />
-      <button type="button" className="lightboxCloseBtn" onClick={onClose} title="Fechar">✕</button>
-    </div>
-  );
-}
+import Lightbox from '../../components/Lightbox';
 
 function Catalogo() {
   const { slug } = useParams();
@@ -27,16 +18,6 @@ function Catalogo() {
 
   const isCatalogoCompleto = !slug;
   const nomeFormatado = slug ? slug.replace(/-/g, ' ') : "Catálogo Completo";
-
-  useEffect(() => {
-    fetchEquipamentos();
-  }, [slug]); // Recarrega sempre que mudar a categoria na URL
-
-  const imageUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-  };
 
   function fetchEquipamentos() {
     setLoading(true);
@@ -59,6 +40,11 @@ function Catalogo() {
       })
       .finally(() => setLoading(false));
   }
+
+  useEffect(() => {
+    fetchEquipamentos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]); // Recarrega sempre que mudar a categoria na URL
 
   return (
     <div className="container-catalogo">

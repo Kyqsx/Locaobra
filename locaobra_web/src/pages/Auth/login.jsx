@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../utils/useAuth';
 import { getDefaultAdminPath } from '../../utils/permissions';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash, faLock, faEnvelope, faHardHat, faRocket } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faLock, faEnvelope, faHardHat } from '@fortawesome/free-solid-svg-icons';
 import api from '../../service/api';
 import './auth.css';
 import loginImg from '../../assets/AuthImage.png';

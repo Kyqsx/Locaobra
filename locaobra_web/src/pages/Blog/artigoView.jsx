@@ -4,12 +4,7 @@ import api from '../../service/api';
 import './ArtigoPage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faUser, faNewspaper, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-
-function imageUrl(path) {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-}
+import { imageUrl } from '../../utils/imagem';
 
 const ArtigoView = () => {
     const { slug } = useParams();

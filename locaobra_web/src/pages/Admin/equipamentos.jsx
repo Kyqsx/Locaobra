@@ -4,13 +4,15 @@ import api from '../../service/api';
 import './Equipamento.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faSearch, faPlus, faTrash, faTools, faFileImport,
+    faSearch, faPlus, faTrash, faTools,
     faList, faImage, faBoxesStacked, faTag, faEdit,
-    faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
-import { comprimirImagem, objectPositionDe, clampFoco } from '../../utils/imagem';
+import { comprimirImagem, objectPositionDe, clampFoco, imageUrl } from '../../utils/imagem';
+import Lightbox from '../../components/Lightbox';
+import FileDropzone from '../../components/FileDropzone';
+import ImagePreviewGrid from '../../components/ImagePreviewGrid';
 
 const STATUS_UNIDADE_LABEL = {
     DISPONIVEL: 'Disponível',
@@ -19,12 +21,6 @@ const STATUS_UNIDADE_LABEL = {
     AGUARDANDO_MANUTENCAO: 'Aguardando manutenção',
     EM_MANUTENCAO: 'Em manutenção',
 };
-
-function imageUrl(path) {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-}
 
 function especificacoesParaArray(especificacoes) {
     return especificacoes ? Object.entries(especificacoes).map(([chave, valor]) => ({ chave, valor })) : [];
@@ -46,50 +42,20 @@ function especificacoesParaBackend(lista) {
    aba Imagens. Usar `key` diferente no componente pai força um
    remount limpo (sem vazar arquivo de uma sessão pra outra).
    ============================================================ */
-function Lightbox({ src, onClose }) {
-    if (!src) return null;
-    return (
-        <div className="lightboxBackdrop" onClick={onClose}>
-            <img src={src} alt="Imagem ampliada" className="lightboxImage" onClick={e => e.stopPropagation()} />
-            <button type="button" className="lightboxCloseBtn" onClick={onClose} title="Fechar">✕</button>
-        </div>
-    );
-}
-
 function ImagePicker({ onChange }) {
     const [readyFiles, setReadyFiles] = useState([]);
     const [lightboxSrc, setLightboxSrc] = useState(null);
     const [processando, setProcessando] = useState(false);
-    const previewUrlsRef = useRef(new Map());
 
     useEffect(() => {
         onChange(readyFiles);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyFiles]);
 
-    // Libera todas as URLs de preview quando o componente é desmontado
-    // (troca de aba, fechamento do modal, "remontar limpo" após o envio).
-    useEffect(() => {
-        const urls = previewUrlsRef.current;
-        return () => urls.forEach(url => URL.revokeObjectURL(url));
-    }, []);
-
-    function previewUrlFor(file) {
-        const urls = previewUrlsRef.current;
-        if (!urls.has(file)) {
-            urls.set(file, URL.createObjectURL(file));
-        }
-        return urls.get(file);
-    }
-
-    // Adiciona os arquivos selecionados já comprimidos — a imagem vai
+    // Adiciona os arquivos escolhidos já comprimidos — a imagem vai
     // INTEIRA (sem recorte) e o enquadramento 1:1 é definido depois,
     // por ponto focal, na aba Imagens.
-    async function handleFileInput(e) {
-        const files = Array.from(e.target.files || []);
-        e.target.value = ''; // permite selecionar o mesmo arquivo de novo depois
-        if (files.length === 0) return;
-
+    async function handleFiles(files) {
         setProcessando(true);
         try {
             const comprimidos = [];
@@ -103,48 +69,19 @@ function ImagePicker({ onChange }) {
     }
 
     function removeReady(idx) {
-        setReadyFiles(prev => {
-            const file = prev[idx];
-            const url = previewUrlsRef.current.get(file);
-            if (url) {
-                URL.revokeObjectURL(url);
-                previewUrlsRef.current.delete(file);
-            }
-            return prev.filter((_, i) => i !== idx);
-        });
+        setReadyFiles(prev => prev.filter((_, i) => i !== idx));
     }
 
     return (
         <div className="imagePickerWrapper">
-            <div className="fileInputWrapper">
-                <FontAwesomeIcon icon={faFileImport} />
-                <input type="file" multiple onChange={handleFileInput} accept="image/*" />
-            </div>
-
-            {readyFiles.length > 0 && (
-                <div className="imagePickerPreviewGrid">
-                    {readyFiles.map((file, i) => {
-                        const url = previewUrlFor(file);
-                        return (
-                            <div key={i} className="imagePickerPreviewItem">
-                                <img
-                                    src={url}
-                                    alt={file.name}
-                                    className="imagePickerPreviewThumb"
-                                    onClick={() => setLightboxSrc(url)}
-                                    title="Clique para ver a imagem inteira"
-                                />
-                                <button type="button" className="imagePickerRemoveBtn" onClick={() => removeReady(i)} title="Remover">✕</button>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-
-            {processando && (
-                <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Processando imagens...</p>
-            )}
-
+            <FileDropzone
+                accept="image/*"
+                multiple
+                busy={processando}
+                label="Arraste as imagens aqui"
+                onFiles={handleFiles}
+            />
+            <ImagePreviewGrid files={readyFiles} onRemove={removeReady} onOpen={setLightboxSrc} />
             <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
         </div>
     );
@@ -288,11 +225,11 @@ function EquipamentoCreateModal({ onClose, onCreated }) {
     }
 
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>Novo modelo de equipamento</h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="equipForm">
@@ -358,14 +295,6 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
     const [unidadeMessage, setUnidadeMessage] = useState(null);
     const [depositos, setDepositos] = useState([]);
 
-    useEffect(() => {
-        carregar();
-        api.get('/api/depositos?apenasAtivos=true')
-            .then(res => setDepositos(res.data || []))
-            .catch(() => {});
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [equipamentoId]);
-
     function carregar() {
         setLoading(true);
         api.get(`/api/equipamentos/${equipamentoId}`)
@@ -383,6 +312,14 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
             .catch(err => setDadosMessage({ type: 'error', text: 'Erro ao carregar: ' + (err.response?.data || err.message) }))
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        carregar();
+        api.get('/api/depositos?apenasAtivos=true')
+            .then(res => setDepositos(res.data || []))
+            .catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [equipamentoId]);
 
     function handleFormChange(e) {
         const { name, value } = e.target;
@@ -551,11 +488,11 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
     }
 
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{eq ? eq.nome : 'Carregando...'}</h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 {loading ? (
@@ -766,10 +703,6 @@ export default function Equipamento() {
     // mais restrito que o catálogo, também espelhando o backend.
     const canManageFrota = user?.tipo === 'ADMIN' || user?.cargoFuncionario === 'GERENTE_OPERACOES';
 
-    useEffect(() => {
-        fetchList();
-    }, []);
-
     function fetchList() {
         setLoading(true);
         api.get('/api/equipamentos')
@@ -777,6 +710,10 @@ export default function Equipamento() {
             .catch(err => setMessage({ type: 'error', text: 'Erro ao buscar: ' + (err.response?.data || err.message) }))
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchList();
+    }, []);
 
     function handleDelete(id) {
         if (!window.confirm('Tem certeza que deseja excluir este equipamento?')) return;
@@ -815,13 +752,13 @@ export default function Equipamento() {
 
             {canManageCatalogo && (
                 <div className="settingsCard">
-                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastrar Novo Modelo</h3>
-                    <p>Crie o modelo em uma janela dedicada, com upload de imagens e edição completa.</p>
-                    <div className="formFooter">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3><FontAwesomeIcon icon={faPlus} /> Cadastrar Novo Modelo</h3>
                         <button type="button" className="addBtn" onClick={() => setCreateModalOpen(true)}>
                             Novo Modelo
                         </button>
                     </div>
+                    <p>Crie o modelo em uma janela dedicada, com upload de imagens e edição completa.</p>
                 </div>
             )}
 

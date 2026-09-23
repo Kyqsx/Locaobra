@@ -1,26 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
-import './Funcionarios.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faTrash, faEdit, faList, faUserTie } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faTrash, faEdit, faList } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
-
-function FormField({ label, children }) {
-    return (
-        <div className="formField">
-            {label && <label className="fieldLabel">{label}</label>}
-            {children}
-        </div>
-    );
-}
+import FormField from '../../components/FormField';
 
 function FuncionariosModal({ open, onClose, editingId, form, onChange, onEnderecoChange, onSubmit, onReset, submitting, cargos, departamentos, depositos }) {
     if (!open) return null;
 
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar funcionario' : 'Cadastrar funcionario'}</h3>
@@ -28,7 +19,7 @@ function FuncionariosModal({ open, onClose, editingId, form, onChange, onEnderec
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">
-                    <div className="formGridFuncionarios">
+                    <div className="adminForm">
                         <div className="formRow full">
                             <FormField label="Nome completo">
                                 <input className="equipInput" name="nome" placeholder="Nome completo" value={form.nome} onChange={onChange} required />
@@ -169,7 +160,6 @@ const initialForm = {
 export default function Funcionarios() {
     const { user } = useAuth();
     const [funcionarios, setFuncionarios] = useState([]);
-    const [usuarios, setUsuarios] = useState([]);
     const [cargos, setCargos] = useState([]);
     const [departamentos, setDepartamentos] = useState([]);
     const [depositos, setDepositos] = useState([]);
@@ -181,22 +171,16 @@ export default function Funcionarios() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     function fetchData() {
         setLoading(true);
         Promise.all([
             api.get('/api/funcionarios'),
-            api.get('/api/usuarios'),
             api.get('/api/cargos'),
             api.get('/api/departamentos'),
             api.get('/api/depositos')
         ])
-            .then(([funcResp, userResp, cargosResp, deptResp, depResp]) => {
+            .then(([funcResp, cargosResp, deptResp, depResp]) => {
                 setFuncionarios(funcResp.data || []);
-                setUsuarios(userResp.data || []);
                 setCargos(cargosResp.data || []);
                 setDepartamentos(deptResp.data || []);
                 setDepositos(depResp.data || []);
@@ -207,6 +191,10 @@ export default function Funcionarios() {
             })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const filteredFuncionarios = useMemo(() => {
         return funcionarios.filter(funcionario => {
@@ -358,11 +346,8 @@ return (
             )}
 
             <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de funcionarios</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>
-                    Cadastre, edite ou gerencie os funcionarios da empresa.
-                </p>
-                <div className="formFooter">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de funcionarios</h3>
                     <button type="button" className="addBtn" onClick={() => {
                         setEditingId(null);
                         setForm(initialForm);
@@ -371,6 +356,9 @@ return (
                         Novo Funcionario
                     </button>
                 </div>
+                <p style={{ color: '#666', marginBottom: '12px' }}>
+                    Cadastre, edite ou gerencie os funcionarios da empresa.
+                </p>
             </div>
 
             <div className="recentUsersSection">
@@ -404,7 +392,6 @@ return (
                         </thead>
                         <tbody>
                             {!loading && filteredFuncionarios.map(funcionario => {
-                                const usuarioAssociado = usuarios.find(u => u.idFuncionario === funcionario.id);
                                 return (
                                     <tr key={funcionario.id} className="tableRow">
                                         <td className="nameCell">
@@ -419,7 +406,6 @@ return (
                                         <td>{funcionario.cargoNome || '---'}</td>
                                         <td>{funcionario.depositoNome || '---'}</td>
                                         <td>{funcionario.endereco?.formatado || '---'}</td>
-                                        {/* <td>{usuarioAssociado ? usuarioAssociado.nome : 'Sem vinculo'}</td> */}
                                         <td>{funcionario.status ? 'Ativo' : 'Inativo'}</td>
                                         <td className="actionsCell">
                                             <button className="actionBtn edit" title="Editar" onClick={() => handleEdit(funcionario)}>

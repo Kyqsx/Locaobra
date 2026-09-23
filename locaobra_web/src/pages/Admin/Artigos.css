@@ -1,43 +1,12 @@
-.formGridArtigos {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.formGridArtigos .textareaInput {
-  resize: vertical;
-  font-family: inherit;
-  min-height: 48px;
-}
-
-.formGridArtigos .formField {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
-}
-
-.formGridArtigos .formRow {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-}
-
-.formGridArtigos .formRow.full {
-  width: 100%;
-}
-
-.formGridArtigos .fieldLabel {
-  font-size: 0.765rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .capaPickerWrapper {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.capaPickerWrapper .fileDropzoneWrapper {
+  flex: 1;
+  min-width: 0;
 }
 
 .capaPreview {

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
 import { useCart } from '../../context/CartContext';
-import { objectPositionDe } from '../../utils/imagem';
+import { objectPositionDe, imageUrl } from '../../utils/imagem';
 import EnderecoFields from '../../components/EnderecoFields';
 import './Cart.css';
 
@@ -13,12 +13,6 @@ const somarDias = (dataISO, dias) => {
   const d = new Date(`${dataISO}T00:00:00`);
   d.setDate(d.getDate() + dias);
   return d.toISOString().split('T')[0];
-};
-
-const imageUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return `${api.defaults.baseURL}${path}`;
 };
 
 const enderecoNovoVazio = { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };

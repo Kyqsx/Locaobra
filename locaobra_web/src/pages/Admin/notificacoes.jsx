@@ -5,12 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell, faCheckDouble, faExclamationTriangle, faList } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
-
-function formatDate(dateStr) {
-    if (!dateStr) return '---';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
+import { formatDate } from '../../utils/formatters';
 
 export default function Notificacoes() {
     const { user } = useAuth();
@@ -30,7 +25,6 @@ export default function Notificacoes() {
 
     useEffect(() => {
         fetchList();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (!canAccessAdminRoute(user, '/admin/notificacoes')) {

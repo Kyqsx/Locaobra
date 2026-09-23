@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../utils/useAuth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faUser, faEnvelope, faLock, faHardHat, faRocket } from '@fortawesome/free-solid-svg-icons';
 import api from '../../service/api';
@@ -8,7 +7,6 @@ import './auth.css';
 import loginImg from '../../assets/AuthImage.png';
 
 const Signup = () => {
-    const { login } = useAuth();
     const navigate = useNavigate();
 
     const [nome, setNome] = useState('');

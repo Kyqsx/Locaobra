@@ -5,15 +5,18 @@ import './Expedicao.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faPlus, faTrash, faList, faTruck, faClipboardCheck,
-    faClipboardList, faSearch, faTruckLoading, faCheckCircle,
-    faTimesCircle, faCamera, faPen, faTimes, faSave, faSignature,
+    faSearch, faTruckLoading, faCheckCircle,
+    faTimesCircle, faCamera, faPen, faSignature,
     faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
 import EnderecoFields from '../../components/EnderecoFields';
 import AssinaturaPad from '../../components/AssinaturaPad';
-import { comprimirImagem, formatarTamanho, TAMANHO_MAX_UPLOAD } from '../../utils/imagem';
+import { comprimirImagem, formatarTamanho, TAMANHO_MAX_UPLOAD, imageUrl } from '../../utils/imagem';
+import { formatDate } from '../../utils/formatters';
+import FileDropzone from '../../components/FileDropzone';
+import ImagePreviewGrid from '../../components/ImagePreviewGrid';
 
 const STATUS_EXPEDICAO_LABEL = {
     AGENDADO: 'Agendado',
@@ -33,21 +36,9 @@ const TIPO_VISTORIA_LABEL = {
     DEVOLUCAO: 'Vistoria de Devolução',
 };
 
-function imageUrl(path) {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-}
-
 function mensagemDeErro(err) {
     const d = err.response?.data;
     return typeof d === 'string' ? d : (d?.message || err.message);
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '---';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDateOnly(dateStr) {
@@ -72,7 +63,6 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
     });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
-    const [previewUrls, setPreviewUrls] = useState([]);
 
     // Só lista as unidades que ainda NÃO têm vistoria desse tipo (a API recusa duplicada).
     const unidades = useMemo(() => {
@@ -109,19 +99,12 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
         setForm(prev => ({ ...prev, [name]: value }));
     }
 
-    function handleFiles(e) {
-        const files = Array.from(e.target.files || []);
-        if (files.length === 0) return;
+    function handleFiles(files) {
         setSelectedFiles(prev => [...prev, ...files]);
-        const previews = files.map(f => URL.createObjectURL(f));
-        setPreviewUrls(prev => [...prev, ...previews]);
-        e.target.value = '';
     }
 
     function removeFile(idx) {
-        URL.revokeObjectURL(previewUrls[idx]);
         setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
-        setPreviewUrls(prev => prev.filter((_, i) => i !== idx));
     }
 
     async function handleSubmit(e) {
@@ -191,7 +174,7 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
     }
 
     return (
-        <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard vistoriaModalCard">
                 <div className="modalHeader">
                     <h3>
@@ -317,24 +300,13 @@ function VistoriaModal({ expedicao, tipoInicial, onClose, onChanged }) {
                             <FontAwesomeIcon icon={faCamera} /> Fotos do estado do equipamento
                             {form.tipo === 'ENTREGA' ? ' (obrigatório — mínimo 1)' : ''}
                         </label>
-                        <div className="fileInputWrapper photoUpload">
-                            <FontAwesomeIcon icon={faCamera} />
-                            <input type="file" multiple accept="image/*" onChange={handleFiles} />
-                            <span>Adicionar fotos</span>
-                        </div>
-
-                        {previewUrls.length > 0 && (
-                            <div className="photoPreviewGrid">
-                                {previewUrls.map((url, idx) => (
-                                    <div key={idx} className="photoPreviewItem">
-                                        <img src={url} alt={`Foto ${idx + 1}`} />
-                                        <button type="button" onClick={() => removeFile(idx)} title="Remover">
-                                            <FontAwesomeIcon icon={faTimes} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <FileDropzone
+                            accept="image/*"
+                            multiple
+                            label="Arraste as fotos aqui"
+                            onFiles={handleFiles}
+                        />
+                        <ImagePreviewGrid files={selectedFiles} onRemove={removeFile} />
                     </div>
 
                     <div className="formFooter" style={{ justifyContent: 'flex-end' }}>
@@ -449,11 +421,6 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
 
     function handleEnderecoChange(novoEndereco) {
         setForm(prev => ({ ...prev, enderecoEntrega: novoEndereco }));
-    }
-
-    function handleItemChange(e) {
-        const { name, value } = e.target;
-        setNovoItem(prev => ({ ...prev, [name]: value }));
     }
 
     function handleSelectUnidade(e) {
@@ -606,7 +573,7 @@ function NovaExpedicaoModal({ onClose, onChanged, pedidoOrigem, depositoOrigemId
     const pedidoConfere = !pedidoOrigem || pendenciasPedido.length === 0;
 
     return (
-        <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard novaExpedicaoModalCard">
                 <div className="modalHeader">
                     <h3><FontAwesomeIcon icon={faTruck} /> {pedidoOrigem ? `Nova Expedição — Pedido ${pedidoOrigem.codigo}` : 'Nova Expedição'}</h3>
@@ -1113,7 +1080,7 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                expedicao.status === 'EM_TRANSITO' ? 3 : 4);
 
     return (
-        <div className="modalBackdrop" style={{ inset: 0, position: 'fixed', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard detalheModalCard">
                 <div className="modalHeader">
                     <h3>
@@ -1389,14 +1356,17 @@ function ExpedicaoDetalheModal({ expedicao, onClose, onChanged }) {
                             <p style={{ margin: '10px 0 4px', fontSize: '0.8rem' }}>
                                 <FontAwesomeIcon icon={faCamera} /> <strong>Foto</strong> tirada no local:
                             </p>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                onChange={e => setFotoEntregaFile(e.target.files?.[0] || null)}
-                                disabled={!ehEntregador}
-                                style={{ marginBottom: '10px', display: 'block' }}
-                            />
+                            <div style={{ marginBottom: '10px' }}>
+                                <FileDropzone
+                                    compact
+                                    accept="image/*"
+                                    capture="environment"
+                                    disabled={!ehEntregador}
+                                    label={fotoEntregaFile ? fotoEntregaFile.name : 'Arraste a foto aqui'}
+                                    hint={fotoEntregaFile ? 'clique ou arraste para trocar' : 'ou clique para tirar/selecionar'}
+                                    onFiles={files => setFotoEntregaFile(files[0] || null)}
+                                />
+                            </div>
 
                             <textarea
                                 className="equipTextarea"

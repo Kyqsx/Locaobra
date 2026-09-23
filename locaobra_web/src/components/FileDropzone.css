@@ -1,0 +1,86 @@
+.fileDropzoneWrapper {
+  width: 100%;
+}
+
+.fileDropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 14px;
+  text-align: center;
+  border: 2px dashed var(--border-color, #dfe6e9);
+  border-radius: 8px;
+  background: var(--bg-primary, #f8f9fa);
+  color: var(--text-secondary, #636e72);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.fileDropzone:hover,
+.fileDropzone:focus-visible {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.fileDropzone.dragging {
+  border-style: solid;
+  border-color: var(--primary-color);
+  background: rgba(217, 130, 15, 0.08);
+  color: var(--primary-color);
+}
+
+/* enquanto arrasta, os filhos não podem roubar os eventos de drag */
+.fileDropzone.dragging * {
+  pointer-events: none;
+}
+
+.fileDropzone.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-color: var(--border-color, #dfe6e9);
+  color: var(--text-secondary, #636e72);
+}
+
+.fileDropzoneIcon {
+  font-size: 1.5rem;
+}
+
+.fileDropzoneText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fileDropzoneTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.fileDropzoneHint {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.fileDropzone.compact {
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.fileDropzone.compact .fileDropzoneIcon {
+  font-size: 1.1rem;
+}
+
+.fileDropzoneError {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: var(--danger-color, #d63031);
+}

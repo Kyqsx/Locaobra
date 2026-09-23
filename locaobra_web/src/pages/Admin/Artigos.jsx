@@ -3,24 +3,13 @@ import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
 import './Artigos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlus, faEdit, faTrash, faList, faNewspaper, faImage, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlus, faEdit, faTrash, faList, faNewspaper, faImage } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
-
-function imageUrl(path) {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return `${api.defaults.baseURL}${path}`;
-}
-
-function FormField({ label, children }) {
-    return (
-        <div className="formField">
-            {label && <label className="fieldLabel">{label}</label>}
-            {children}
-        </div>
-    );
-}
+import FormField from '../../components/FormField';
+import { imageUrl } from '../../utils/imagem';
+import FileDropzone from '../../components/FileDropzone';
+import { useObjectUrl } from '../../utils/useObjectUrl';
 
 const initialForm = {
     titulo: '',
@@ -32,20 +21,21 @@ const initialForm = {
 };
 
 function ArtigoModal({ open, onClose, editingId, form, onChange, onSubmit, capaAtual, novaCapa, onCapaChange, submitting }) {
+    const novaCapaUrl = useObjectUrl(novaCapa);
     if (!open) return null;
 
-    const previewUrl = novaCapa ? URL.createObjectURL(novaCapa) : imageUrl(capaAtual);
+    const previewUrl = novaCapaUrl || imageUrl(capaAtual);
 
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar artigo' : 'Novo artigo'}</h3>
-                    <button type="button" className="btn btn-error" onClick={onClose}><FontAwesomeIcon icon={faXmark} /></button>
+                    <button type="button" className="closeBtn" onClick={onClose}>✕ Fechar</button>
                 </div>
 
                 <form onSubmit={onSubmit} className="equipForm">
-                    <div className="formGridArtigos">
+                    <div className="adminForm">
                         <div className="formRow full">
                             <FormField label="Título">
                                 <input className="equipInput" name="titulo" placeholder="Ex: 5 dicas para economizar no aluguel de equipamentos" value={form.titulo} onChange={onChange} required />
@@ -84,7 +74,13 @@ function ArtigoModal({ open, onClose, editingId, form, onChange, onSubmit, capaA
                                     ) : (
                                         <div className="capaPlaceholder"><FontAwesomeIcon icon={faImage} /></div>
                                     )}
-                                    <input type="file" accept="image/*" onChange={(e) => onCapaChange(e.target.files?.[0] || null)} />
+                                    <FileDropzone
+                                        compact
+                                        accept="image/*"
+                                        label={novaCapa ? novaCapa.name : 'Arraste a imagem aqui'}
+                                        hint={novaCapa ? 'clique ou arraste para trocar' : 'ou clique para selecionar'}
+                                        onFiles={files => onCapaChange(files[0] || null)}
+                                    />
                                 </div>
                             </FormField>
                         </div>
@@ -120,10 +116,6 @@ export default function Artigos() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     function fetchData() {
         setLoading(true);
         api.get('/api/artigos')
@@ -134,6 +126,10 @@ export default function Artigos() {
             })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const filteredArtigos = useMemo(() => {
         const term = searchTerm.toLowerCase();
@@ -234,11 +230,8 @@ export default function Artigos() {
             )}
 
             <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de artigos</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>
-                    Crie e gerencie os artigos do blog exibidos na home e na página "Dicas LocaObra".
-                </p>
-                <div className="formFooter">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de artigos</h3>
                     <button type="button" className="addBtn" onClick={() => {
                         setEditingId(null);
                         setForm(initialForm);
@@ -248,6 +241,11 @@ export default function Artigos() {
                     }}>
                         Novo Artigo
                     </button>
+                </div>
+                <p style={{ color: '#666', marginBottom: '12px' }}>
+                    Crie e gerencie os artigos do blog exibidos na home e na página "Dicas LocaObra".
+                </p>
+                <div className="formFooter">
                 </div>
             </div>
 

@@ -1,3 +1,12 @@
+import api from '../service/api';
+
+// Monta a URL absoluta de uma imagem devolvida pela API (aceita URL completa ou caminho relativo).
+export function imageUrl(path) {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${api.defaults.baseURL}${path}`;
+}
+
 // Fotos tiradas no celular costumam ter 3–8 MB. A Vercel recusa requisições com
 // mais de 4,5 MB (erro 413), então reduzimos a foto no navegador antes de enviar:
 // lado maior de 1600 px em JPEG qualidade 0,8 — costuma cair para 300–600 KB e

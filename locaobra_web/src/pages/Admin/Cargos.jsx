@@ -1,32 +1,23 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../../service/api';
-import './Cargos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faPlus, faEdit, faList } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../utils/useAuth';
 import { canAccessAdminRoute } from '../../utils/permissions';
-
-function FormField({ label, children }) {
-    return (
-        <div className="formField">
-            {label && <label className="fieldLabel">{label}</label>}
-            {children}
-        </div>
-    );
-}
+import FormField from '../../components/FormField';
 
 function CargosModal({ open, onClose, editingId, form, onChange, onSubmit, onReset, submitting, departamentos }) {
     if (!open) return null;
     return (
-        <div className="modalBackdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 2000, overflowY: 'auto', padding: '30px 15px' }}>
+        <div className="modalBackdrop modalBackdropAdmin">
             <div className="modalCard equipModalCard">
                 <div className="modalHeader">
                     <h3>{editingId ? 'Editar cargo' : 'Cadastrar cargo'}</h3>
                     <button type="button" className="closeBtn" onClick={onClose}>Fechar</button>
                 </div>
                 <form onSubmit={onSubmit} className="equipForm">
-                    <div className="formGridCargos">
+                    <div className="adminForm">
                         <div className="formRow full">
                             <FormField label="Nome do cargo">
                                 <input className="equipInput" name="nome" placeholder="Ex: ENTREGADOR" value={form.nome} onChange={onChange} required />
@@ -76,7 +67,9 @@ function CargosModal({ open, onClose, editingId, form, onChange, onSubmit, onRes
 
 const initialForm = {
     nome: '', descricao: '', salarioPadrao: '', departamentoId: '', requisitos: '', ativo: true
-};export default function Cargos() {
+};
+
+export default function Cargos() {
     const { user } = useAuth();
     const [cargos, setCargos] = useState([]);
     const [departamentos, setDepartamentos] = useState([]);
@@ -87,8 +80,6 @@ const initialForm = {
     const [modalOpen, setModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState(null);
-
-    useEffect(() => { fetchData(); }, []);
 
     function fetchData() {
         setLoading(true);
@@ -106,6 +97,8 @@ const initialForm = {
             })
             .finally(() => setLoading(false));
     }
+
+    useEffect(() => { fetchData(); }, []);
 
     const filteredCargos = useMemo(() => {
         return cargos.filter(cargo => {
@@ -170,11 +163,11 @@ const initialForm = {
                 </div>
             )}
             <div className="settingsCard">
-                <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de cargos</h3>
-                <p style={{ color: '#666', marginBottom: '12px' }}>Configure os cargos da empresa, definindo salario padrao, departamento vinculado e requisitos necessarios.</p>
-                <div className="formFooter">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3><FontAwesomeIcon icon={faPlus} /> Cadastro de cargos</h3>
                     <button type="button" className="addBtn" onClick={() => { setEditingId(null); setForm(initialForm); setModalOpen(true); }}>Novo Cargo</button>
                 </div>
+                <p style={{ color: '#666', marginBottom: '12px' }}>Configure os cargos da empresa, definindo salario padrao, departamento vinculado e requisitos necessarios.</p>
             </div>
             <div className="recentUsersSection">
                 <div className="sectionHeader">

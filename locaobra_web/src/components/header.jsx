@@ -2,11 +2,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './components.css';
-import { useState } from 'react';
 import { useAuth } from '../utils/useAuth';
 import { useCart } from '../context/CartContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRightFromBracket, faUser, faShield, faNewspaper, faList, faClipboardList, faCartShopping, faLocationDot } from '@fortawesome/free-solid-svg-icons';
+import { faRightFromBracket, faUser, faShield, faClipboardList, faCartShopping, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/locaobraLogo.png';
 
 function Header() {
