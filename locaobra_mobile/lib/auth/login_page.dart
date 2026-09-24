@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/cadastro_page.dart';
+import 'package:locaobra_mobile/entregador/screens/entregador_home_page.dart';
 import 'package:locaobra_mobile/screens/home_screen.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 
@@ -49,9 +51,28 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    AuthState.login(resultado.nome ?? _emailController.text.trim());
+
+    // GET /api/auth/me — descobre se quem logou é FUNCIONARIO com cargo
+    // ENTREGADOR. É esse cargo que decide a tela seguinte: dashboard do
+    // entregador (mobile) ou o app normal de cliente. Se a busca falhar por
+    // qualquer motivo, trata como cliente (comportamento já existente).
+    final perfil = await _authService.buscarPerfil();
+    AuthState.definirPerfil(
+      tipo: perfil?.tipo,
+      cargo: perfil?.cargoFuncionario,
+      idFuncionario: perfil?.idFuncionario,
+    );
+
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(
+        builder: (_) => AuthState.ehEntregador
+            ? const EntregadorHomePage()
+            : const HomeScreen(),
+      ),
     );
   }
 
