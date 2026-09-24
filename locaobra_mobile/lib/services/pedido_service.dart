@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:locaobra_mobile/cart/cart_item.dart';
 import 'package:locaobra_mobile/models/endereco.dart';
 import 'package:locaobra_mobile/models/frete_estimativa.dart';
+import 'package:locaobra_mobile/models/pedido.dart';
 import 'package:locaobra_mobile/models/ponto_retirada.dart';
 import 'api_client.dart';
 
@@ -144,6 +145,29 @@ class PedidoService {
 
     throw Exception(_extrairMensagem(response.body) ??
         'Não foi possível enviar o pedido (status ${response.statusCode}).');
+  }
+
+  /// GET /api/pedidos/meus — pedidos do cliente logado, equivalente a
+  /// `Pedidos/meusPedidos.jsx`.
+  Future<List<Pedido>> listarMeus() async {
+    final response = await ApiClient.get('/api/pedidos/meus');
+    if (response.statusCode != 200) {
+      throw Exception('Não foi possível carregar seus pedidos (status ${response.statusCode}).');
+    }
+
+    final data = jsonDecode(utf8.decode(response.bodyBytes));
+    if (data is! List) return const [];
+    return data.whereType<Map<String, dynamic>>().map(Pedido.fromJson).toList();
+  }
+
+  /// POST /api/pedidos/{id}/cancelar — só permitido enquanto o pedido
+  /// estiver SOLICITADO (mesma regra do botão "Cancelar pedido" no web).
+  Future<void> cancelar(int id) async {
+    final response = await ApiClient.post('/api/pedidos/$id/cancelar', const {});
+    if (response.statusCode != 200) {
+      throw Exception(_extrairMensagem(response.body) ??
+          'Não foi possível cancelar o pedido.');
+    }
   }
 
   String? _extrairMensagem(String body) {

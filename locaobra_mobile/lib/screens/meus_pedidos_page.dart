@@ -1,0 +1,322 @@
+import 'package:flutter/material.dart';
+import 'package:locaobra_mobile/models/pedido.dart';
+import 'package:locaobra_mobile/services/pedido_service.dart';
+import 'package:locaobra_mobile/utils/formatters.dart';
+
+/// "Meus Pedidos" — equivalente a `Pedidos/meusPedidos.jsx`: lista os
+/// orçamentos do cliente logado, com status e opção de cancelar enquanto
+/// ainda estiver SOLICITADO.
+class MeusPedidosPage extends StatefulWidget {
+  const MeusPedidosPage({super.key});
+
+  @override
+  State<MeusPedidosPage> createState() => _MeusPedidosPageState();
+}
+
+class _MeusPedidosPageState extends State<MeusPedidosPage> {
+  final PedidoService _service = PedidoService();
+
+  bool _carregando = true;
+  String? _erro;
+  List<Pedido> _pedidos = const [];
+  int? _cancelandoId;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregar();
+  }
+
+  Future<void> _carregar() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
+    try {
+      final pedidos = await _service.listarMeus();
+      if (!mounted) return;
+      setState(() {
+        _pedidos = pedidos;
+        _carregando = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _erro = 'Não foi possível carregar seus pedidos.';
+        _carregando = false;
+      });
+    }
+  }
+
+  Future<void> _cancelar(Pedido pedido) async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar pedido'),
+        content: const Text('Tem certeza que deseja cancelar esse pedido?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Cancelar pedido'),
+          ),
+        ],
+      ),
+    );
+    if (confirmou != true) return;
+
+    setState(() => _cancelandoId = pedido.id);
+    try {
+      await _service.cancelar(pedido.id);
+      if (!mounted) return;
+      await _carregar();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+      setState(() => _cancelandoId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        title: const Text('Meus Pedidos'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+      ),
+      body: SafeArea(child: _buildBody()),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_carregando) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_erro != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
+        ),
+      );
+    }
+    if (_pedidos.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey),
+              const SizedBox(height: 12),
+              const Text('Você ainda não fez nenhum pedido.', textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 255, 128, 0),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Explorar catálogo'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _carregar,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _pedidos.length,
+        itemBuilder: (context, i) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildPedidoCard(_pedidos[i]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPedidoCard(Pedido pedido) {
+    final corStatus = _corStatus(pedido.status);
+    final valorTotal = pedido.valorTotalEstimado + (pedido.valorFrete ?? 0);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(pedido.codigo, style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: corStatus.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          pedido.status.label,
+                          style: TextStyle(color: corStatus, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  formatarMoeda(valorTotal),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoRow(
+                  'Período',
+                  '${pedido.dataInicio != null ? formatarData(pedido.dataInicio!) : '—'} a '
+                      '${pedido.dataFim != null ? formatarData(pedido.dataFim!) : '—'}'
+                      ' (${pedido.diasLocacao} dia${pedido.diasLocacao > 1 ? 's' : ''})',
+                ),
+                _infoRow(
+                  'Entrega',
+                  pedido.ehRetirada
+                      ? '🏬 Retirada no depósito (sem frete)'
+                      : '🚚 Entrega'
+                          '${pedido.enderecoEntrega?.formatado != null ? ' — ${pedido.enderecoEntrega!.formatado}' : ''}',
+                ),
+                if (!pedido.ehRetirada && pedido.valorFrete != null)
+                  _infoRow(
+                    'Frete',
+                    '${formatarMoeda(pedido.valorFrete!)}'
+                        '${pedido.status == StatusPedido.solicitado ? ' (estimado — valor final sai com o consultor)' : ''}',
+                  ),
+                _infoRow('Total', formatarMoeda(valorTotal)),
+                const Padding(
+                  padding: EdgeInsets.only(top: 8, bottom: 4),
+                  child: Divider(height: 1),
+                ),
+                ...pedido.itens.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${item.equipamentoNome} × ${item.quantidade}',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                          ),
+                        ),
+                        Text(
+                          '${formatarMoeda(item.valorDiariaSnapshot)}/dia',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (pedido.observacoesCliente != null && pedido.observacoesCliente!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _infoRow('Suas observações', pedido.observacoesCliente!),
+                ],
+                if (pedido.motivoRecusa != null && pedido.motivoRecusa!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Motivo: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: pedido.motivoRecusa!),
+                        ],
+                      ),
+                      style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (pedido.podeCancelar)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton(
+                  onPressed: _cancelandoId == pedido.id ? null : () => _cancelar(pedido),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                  child: Text(_cancelandoId == pedido.id ? 'Cancelando...' : 'Cancelar pedido'),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String rotulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+          children: [
+            TextSpan(text: '$rotulo: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: valor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _corStatus(StatusPedido status) {
+    switch (status) {
+      case StatusPedido.aprovado:
+        return Colors.green.shade700;
+      case StatusPedido.recusado:
+        return Colors.red.shade700;
+      case StatusPedido.cancelado:
+        return Colors.grey.shade600;
+      case StatusPedido.solicitado:
+        return Colors.blue.shade700;
+    }
+  }
+}

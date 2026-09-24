@@ -1,0 +1,1078 @@
+diff -ruN a/locaobra_mobile/lib/models/pedido.dart b/locaobra_mobile/lib/models/pedido.dart
+--- a/locaobra_mobile/lib/models/pedido.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/locaobra_mobile/lib/models/pedido.dart	2026-09-24 22:55:00.868916383 +0000
+@@ -0,0 +1,133 @@
++import 'package:locaobra_mobile/models/endereco.dart';
++
++/// Espelha o enum StatusPedido da API — mesmos rótulos usados em
++/// `Pedidos/meusPedidos.jsx` (STATUS_INFO).
++enum StatusPedido { solicitado, aprovado, recusado, cancelado }
++
++extension StatusPedidoParser on StatusPedido {
++  static StatusPedido fromApi(String? valor) {
++    switch (valor) {
++      case 'APROVADO':
++        return StatusPedido.aprovado;
++      case 'RECUSADO':
++        return StatusPedido.recusado;
++      case 'CANCELADO':
++        return StatusPedido.cancelado;
++      case 'SOLICITADO':
++      default:
++        return StatusPedido.solicitado;
++    }
++  }
++
++  String get label {
++    switch (this) {
++      case StatusPedido.aprovado:
++        return 'Aprovado';
++      case StatusPedido.recusado:
++        return 'Recusado';
++      case StatusPedido.cancelado:
++        return 'Cancelado';
++      case StatusPedido.solicitado:
++        return 'Aguardando revisão';
++    }
++  }
++}
++
++/// Um item do pedido — equivalente a ItemPedidoResponse.
++class ItemPedido {
++  final int id;
++  final String equipamentoNome;
++  final int quantidade;
++  final double valorDiariaSnapshot;
++
++  const ItemPedido({
++    required this.id,
++    required this.equipamentoNome,
++    required this.quantidade,
++    required this.valorDiariaSnapshot,
++  });
++
++  factory ItemPedido.fromJson(Map<String, dynamic> json) {
++    return ItemPedido(
++      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
++      equipamentoNome: json['equipamentoNome']?.toString() ?? '',
++      quantidade: json['quantidade'] is int
++          ? json['quantidade'] as int
++          : int.tryParse('${json['quantidade']}') ?? 0,
++      valorDiariaSnapshot: double.tryParse('${json['valorDiariaSnapshot']}') ?? 0,
++    );
++  }
++}
++
++/// Um pedido/orçamento do cliente — equivalente a PedidoResponse, só com o
++/// que a tela "Meus Pedidos" precisa (mesmos campos que
++/// `Pedidos/meusPedidos.jsx` usa).
++class Pedido {
++  final int id;
++  final String codigo;
++  final StatusPedido status;
++  final DateTime? dataInicio;
++  final DateTime? dataFim;
++  final int diasLocacao;
++  final String tipoEntrega; // 'ENTREGA' ou 'RETIRADA'
++  final Endereco? enderecoEntrega;
++  final double valorTotalEstimado;
++  final double? valorFrete;
++  final String? observacoesCliente;
++  final String? motivoRecusa;
++  final List<ItemPedido> itens;
++
++  const Pedido({
++    required this.id,
++    required this.codigo,
++    required this.status,
++    this.dataInicio,
++    this.dataFim,
++    required this.diasLocacao,
++    required this.tipoEntrega,
++    this.enderecoEntrega,
++    required this.valorTotalEstimado,
++    this.valorFrete,
++    this.observacoesCliente,
++    this.motivoRecusa,
++    this.itens = const [],
++  });
++
++  bool get podeCancelar => status == StatusPedido.solicitado;
++  bool get ehRetirada => tipoEntrega == 'RETIRADA';
++
++  static DateTime? _dataIso(dynamic valor) {
++    if (valor == null) return null;
++    try {
++      return DateTime.parse(valor.toString());
++    } catch (_) {
++      return null;
++    }
++  }
++
++  factory Pedido.fromJson(Map<String, dynamic> json) {
++    return Pedido(
++      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
++      codigo: json['codigo']?.toString() ?? '',
++      status: StatusPedidoParser.fromApi(json['status']?.toString()),
++      dataInicio: _dataIso(json['dataInicio']),
++      dataFim: _dataIso(json['dataFim']),
++      diasLocacao: json['diasLocacao'] is int
++          ? json['diasLocacao'] as int
++          : int.tryParse('${json['diasLocacao']}') ?? 1,
++      tipoEntrega: json['tipoEntrega']?.toString() ?? 'ENTREGA',
++      enderecoEntrega: json['enderecoEntrega'] is Map<String, dynamic>
++          ? Endereco.fromJson(json['enderecoEntrega'] as Map<String, dynamic>)
++          : null,
++      valorTotalEstimado: double.tryParse('${json['valorTotalEstimado']}') ?? 0,
++      valorFrete: json['valorFrete'] == null ? null : double.tryParse('${json['valorFrete']}'),
++      observacoesCliente: json['observacoesCliente']?.toString(),
++      motivoRecusa: json['motivoRecusa']?.toString(),
++      itens: (json['itens'] as List?)
++              ?.whereType<Map<String, dynamic>>()
++              .map(ItemPedido.fromJson)
++              .toList() ??
++          const [],
++    );
++  }
++}
+diff -ruN a/locaobra_mobile/lib/screens/home_screen.dart b/locaobra_mobile/lib/screens/home_screen.dart
+--- a/locaobra_mobile/lib/screens/home_screen.dart	2026-09-24 22:55:00.865202503 +0000
++++ b/locaobra_mobile/lib/screens/home_screen.dart	2026-09-24 22:55:00.866178532 +0000
+@@ -7,6 +7,8 @@
+ import 'package:locaobra_mobile/cart/cart_navigation.dart';
+ import 'package:locaobra_mobile/cart/cart_state.dart';
+ import 'package:locaobra_mobile/services/auth_service.dart';
++import 'package:locaobra_mobile/screens/meus_pedidos_page.dart';
++import 'package:locaobra_mobile/screens/meus_enderecos_page.dart';
+ import 'package:locaobra_mobile/models/artigo.dart';
+ import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
+ import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
+@@ -114,9 +116,23 @@
+                                     // só então atualiza o estado em memória.
+                                     await AuthService().logout();
+                                     AuthState.logout();
++                                    return;
+                                   }
+-                                  // Todo: navegar para 'pedidos', 'enderecos', 'perfil' quando
+-                                  // essas telas existirem.
++                                  if (opcao == 'pedidos') {
++                                    Navigator.push(
++                                      context,
++                                      MaterialPageRoute(builder: (_) => const MeusPedidosPage()),
++                                    );
++                                    return;
++                                  }
++                                  if (opcao == 'enderecos') {
++                                    Navigator.push(
++                                      context,
++                                      MaterialPageRoute(builder: (_) => const MeusEnderecosPage()),
++                                    );
++                                    return;
++                                  }
++                                  // Todo: navegar para 'perfil' quando essa tela existir.
+                                 },
+                                 itemBuilder: (context) => [
+                                   _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
+diff -ruN a/locaobra_mobile/lib/screens/meus_enderecos_page.dart b/locaobra_mobile/lib/screens/meus_enderecos_page.dart
+--- a/locaobra_mobile/lib/screens/meus_enderecos_page.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/locaobra_mobile/lib/screens/meus_enderecos_page.dart	2026-09-24 22:55:00.874462350 +0000
+@@ -0,0 +1,440 @@
++import 'package:flutter/material.dart';
++import 'package:locaobra_mobile/models/endereco.dart';
++import 'package:locaobra_mobile/services/endereco_service.dart';
++
++/// "Meus Endereços" — equivalente a `Perfil/meusEnderecos.jsx`: lista, cria,
++/// edita, remove e define o endereço principal do cliente logado.
++class MeusEnderecosPage extends StatefulWidget {
++  const MeusEnderecosPage({super.key});
++
++  @override
++  State<MeusEnderecosPage> createState() => _MeusEnderecosPageState();
++}
++
++class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
++  final EnderecoService _service = EnderecoService();
++
++  bool _carregando = true;
++  String? _erro;
++  List<Endereco> _enderecos = const [];
++
++  bool _formAberto = false;
++  int? _editandoId;
++  bool _salvando = false;
++
++  final _apelidoCtrl = TextEditingController();
++  final _cepCtrl = TextEditingController();
++  final _ruaCtrl = TextEditingController();
++  final _numeroCtrl = TextEditingController();
++  final _complementoCtrl = TextEditingController();
++  final _bairroCtrl = TextEditingController();
++  final _cidadeCtrl = TextEditingController();
++  final _estadoCtrl = TextEditingController();
++  bool _principal = false;
++
++  @override
++  void initState() {
++    super.initState();
++    _carregar();
++  }
++
++  @override
++  void dispose() {
++    for (final ctrl in [
++      _apelidoCtrl,
++      _cepCtrl,
++      _ruaCtrl,
++      _numeroCtrl,
++      _complementoCtrl,
++      _bairroCtrl,
++      _cidadeCtrl,
++      _estadoCtrl,
++    ]) {
++      ctrl.dispose();
++    }
++    super.dispose();
++  }
++
++  // ---------------------------------------------------------------------------
++  // Carregamento
++  // ---------------------------------------------------------------------------
++
++  Future<void> _carregar() async {
++    setState(() {
++      _carregando = true;
++      _erro = null;
++    });
++    try {
++      final enderecos = await _service.listarMeus();
++      if (!mounted) return;
++      setState(() {
++        _enderecos = enderecos;
++        _carregando = false;
++      });
++    } catch (_) {
++      if (!mounted) return;
++      setState(() {
++        _erro = 'Não foi possível carregar seus endereços.';
++        _carregando = false;
++      });
++    }
++  }
++
++  // ---------------------------------------------------------------------------
++  // Formulário
++  // ---------------------------------------------------------------------------
++
++  void _limparForm() {
++    _apelidoCtrl.clear();
++    _cepCtrl.clear();
++    _ruaCtrl.clear();
++    _numeroCtrl.clear();
++    _complementoCtrl.clear();
++    _bairroCtrl.clear();
++    _cidadeCtrl.clear();
++    _estadoCtrl.clear();
++    _principal = false;
++  }
++
++  void _abrirNovo() {
++    setState(() {
++      _editandoId = null;
++      _limparForm();
++      _principal = _enderecos.isEmpty;
++      _formAberto = true;
++    });
++  }
++
++  void _abrirEdicao(Endereco endereco) {
++    setState(() {
++      _editandoId = endereco.id;
++      _apelidoCtrl.text = endereco.apelido;
++      _cepCtrl.text = endereco.cep;
++      _ruaCtrl.text = endereco.rua;
++      _numeroCtrl.text = endereco.numero;
++      _complementoCtrl.text = endereco.complemento;
++      _bairroCtrl.text = endereco.bairro;
++      _cidadeCtrl.text = endereco.cidade;
++      _estadoCtrl.text = endereco.estado;
++      _principal = endereco.principal;
++      _formAberto = true;
++    });
++  }
++
++  void _fecharForm() {
++    setState(() {
++      _formAberto = false;
++      _editandoId = null;
++      _limparForm();
++    });
++  }
++
++  Endereco get _enderecoDoForm => Endereco(
++        apelido: _apelidoCtrl.text,
++        cep: _cepCtrl.text,
++        rua: _ruaCtrl.text,
++        numero: _numeroCtrl.text,
++        complemento: _complementoCtrl.text,
++        bairro: _bairroCtrl.text,
++        cidade: _cidadeCtrl.text,
++        estado: _estadoCtrl.text,
++        principal: _principal,
++      );
++
++  Future<void> _salvar() async {
++    if (_ruaCtrl.text.trim().isEmpty || _cidadeCtrl.text.trim().isEmpty || _estadoCtrl.text.trim().isEmpty) {
++      _mostrarMensagem('Preencha ao menos rua, cidade e UF do endereço.', erro: true);
++      return;
++    }
++
++    setState(() => _salvando = true);
++    try {
++      if (_editandoId != null) {
++        await _service.atualizar(_editandoId!, _enderecoDoForm);
++      } else {
++        await _service.adicionar(_enderecoDoForm);
++      }
++      if (!mounted) return;
++      _fecharForm();
++      await _carregar();
++      _mostrarMensagem('Endereço salvo com sucesso!');
++    } catch (e) {
++      if (!mounted) return;
++      _mostrarMensagem(e.toString().replaceFirst('Exception: ', ''), erro: true);
++    } finally {
++      if (mounted) setState(() => _salvando = false);
++    }
++  }
++
++  Future<void> _remover(Endereco endereco) async {
++    final confirmou = await showDialog<bool>(
++      context: context,
++      builder: (ctx) => AlertDialog(
++        title: const Text('Remover endereço'),
++        content: Text('Remover o endereço "${endereco.apelido.isEmpty ? endereco.resumo : endereco.apelido}"?'),
++        actions: [
++          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar')),
++          TextButton(
++            onPressed: () => Navigator.pop(ctx, true),
++            style: TextButton.styleFrom(foregroundColor: Colors.red),
++            child: const Text('Remover'),
++          ),
++        ],
++      ),
++    );
++    if (confirmou != true || endereco.id == null) return;
++
++    try {
++      await _service.remover(endereco.id!);
++      await _carregar();
++    } catch (e) {
++      if (!mounted) return;
++      _mostrarMensagem(e.toString().replaceFirst('Exception: ', ''), erro: true);
++    }
++  }
++
++  Future<void> _definirPrincipal(Endereco endereco) async {
++    if (endereco.id == null) return;
++    try {
++      await _service.definirPrincipal(endereco.id!);
++      await _carregar();
++    } catch (e) {
++      if (!mounted) return;
++      _mostrarMensagem(e.toString().replaceFirst('Exception: ', ''), erro: true);
++    }
++  }
++
++  void _mostrarMensagem(String texto, {bool erro = false}) {
++    ScaffoldMessenger.of(context).showSnackBar(
++      SnackBar(
++        content: Text(texto),
++        backgroundColor: erro ? Colors.red.shade700 : Colors.green.shade700,
++      ),
++    );
++  }
++
++  // ---------------------------------------------------------------------------
++  // Build
++  // ---------------------------------------------------------------------------
++
++  @override
++  Widget build(BuildContext context) {
++    return Scaffold(
++      backgroundColor: const Color(0xFFF5F5F5),
++      appBar: AppBar(
++        title: const Text('Meus Endereços'),
++        backgroundColor: Colors.white,
++        foregroundColor: Colors.black87,
++        elevation: 0,
++      ),
++      body: SafeArea(child: _buildBody()),
++    );
++  }
++
++  Widget _buildBody() {
++    if (_carregando) {
++      return const Center(child: CircularProgressIndicator());
++    }
++    if (_erro != null) {
++      return Center(
++        child: Padding(
++          padding: const EdgeInsets.all(24),
++          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
++        ),
++      );
++    }
++
++    return ListView(
++      padding: const EdgeInsets.all(16),
++      children: [
++        const Text(
++          'Endereços salvos pra agilizar o checkout — pode ter mais de um, ex: casa e obra.',
++          style: TextStyle(color: Colors.black54, fontSize: 13),
++        ),
++        const SizedBox(height: 16),
++        if (_enderecos.isEmpty && !_formAberto)
++          Padding(
++            padding: const EdgeInsets.symmetric(vertical: 24),
++            child: Center(
++              child: Text('Você ainda não tem nenhum endereço salvo.', style: TextStyle(color: Colors.grey.shade600)),
++            ),
++          ),
++        for (final endereco in _enderecos)
++          Padding(
++            padding: const EdgeInsets.only(bottom: 12),
++            child: _buildEnderecoCard(endereco),
++          ),
++        const SizedBox(height: 8),
++        if (!_formAberto)
++          SizedBox(
++            width: double.infinity,
++            child: ElevatedButton(
++              onPressed: _abrirNovo,
++              style: ElevatedButton.styleFrom(
++                backgroundColor: const Color.fromARGB(255, 255, 128, 0),
++                foregroundColor: Colors.white,
++                padding: const EdgeInsets.symmetric(vertical: 14),
++              ),
++              child: const Text('+ Adicionar endereço'),
++            ),
++          ),
++        if (_formAberto) _buildForm(),
++      ],
++    );
++  }
++
++  Widget _buildEnderecoCard(Endereco endereco) {
++    return Container(
++      width: double.infinity,
++      padding: const EdgeInsets.all(14),
++      decoration: BoxDecoration(
++        color: Colors.white,
++        borderRadius: BorderRadius.circular(12),
++        border: Border.all(color: Colors.grey.shade300),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Row(
++            children: [
++              Text(
++                endereco.apelido.isEmpty ? 'Endereço' : endereco.apelido,
++                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
++              ),
++              if (endereco.principal) ...[
++                const SizedBox(width: 8),
++                Container(
++                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
++                  decoration: BoxDecoration(
++                    color: Colors.orange.shade50,
++                    borderRadius: BorderRadius.circular(20),
++                    border: Border.all(color: Colors.orange.shade200),
++                  ),
++                  child: Text('Principal', style: TextStyle(color: Colors.orange.shade800, fontSize: 11)),
++                ),
++              ],
++            ],
++          ),
++          const SizedBox(height: 6),
++          Text(endereco.resumo, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
++          const SizedBox(height: 10),
++          Wrap(
++            spacing: 12,
++            runSpacing: 4,
++            children: [
++              if (!endereco.principal)
++                _linkBotao('Definir como principal', () => _definirPrincipal(endereco)),
++              _linkBotao('Editar', () => _abrirEdicao(endereco)),
++              _linkBotao('Remover', () => _remover(endereco), cor: Colors.red),
++            ],
++          ),
++        ],
++      ),
++    );
++  }
++
++  Widget _linkBotao(String texto, VoidCallback onTap, {Color? cor}) {
++    return InkWell(
++      onTap: onTap,
++      child: Text(
++        texto,
++        style: TextStyle(color: cor ?? Colors.orange.shade800, fontWeight: FontWeight.w600, fontSize: 13),
++      ),
++    );
++  }
++
++  Widget _buildForm() {
++    return Container(
++      width: double.infinity,
++      padding: const EdgeInsets.all(16),
++      decoration: BoxDecoration(
++        color: Colors.white,
++        borderRadius: BorderRadius.circular(12),
++        border: Border.all(color: Colors.grey.shade300),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Text(
++            _editandoId != null ? 'Editar endereço' : 'Novo endereço',
++            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
++          ),
++          const SizedBox(height: 12),
++          _campo('Apelido (ex: Casa, Obra Centro)', _apelidoCtrl),
++          _campo('CEP', _cepCtrl, hint: '00000-000'),
++          _campo('Rua *', _ruaCtrl),
++          Row(
++            children: [
++              Expanded(child: _campo('Número', _numeroCtrl)),
++              const SizedBox(width: 8),
++              Expanded(child: _campo('Complemento', _complementoCtrl)),
++            ],
++          ),
++          _campo('Bairro', _bairroCtrl),
++          Row(
++            children: [
++              Expanded(flex: 3, child: _campo('Cidade *', _cidadeCtrl)),
++              const SizedBox(width: 8),
++              Expanded(flex: 1, child: _campo('UF *', _estadoCtrl, maxLength: 2, maiusculo: true)),
++            ],
++          ),
++          CheckboxListTile(
++            value: _principal,
++            onChanged: (v) => setState(() => _principal = v ?? false),
++            title: const Text('Definir como endereço principal', style: TextStyle(fontSize: 13)),
++            controlAffinity: ListTileControlAffinity.leading,
++            contentPadding: EdgeInsets.zero,
++            dense: true,
++          ),
++          const SizedBox(height: 8),
++          Row(
++            children: [
++              Expanded(
++                child: OutlinedButton(
++                  onPressed: _salvando ? null : _fecharForm,
++                  child: const Text('Cancelar'),
++                ),
++              ),
++              const SizedBox(width: 12),
++              Expanded(
++                child: ElevatedButton(
++                  onPressed: _salvando ? null : _salvar,
++                  style: ElevatedButton.styleFrom(
++                    backgroundColor: const Color.fromARGB(255, 255, 128, 0),
++                    foregroundColor: Colors.white,
++                  ),
++                  child: Text(_salvando ? 'Salvando...' : 'Salvar endereço'),
++                ),
++              ),
++            ],
++          ),
++        ],
++      ),
++    );
++  }
++
++  Widget _campo(
++    String rotulo,
++    TextEditingController controller, {
++    String? hint,
++    int? maxLength,
++    bool maiusculo = false,
++  }) {
++    return Padding(
++      padding: const EdgeInsets.only(bottom: 10),
++      child: TextField(
++        controller: controller,
++        maxLength: maxLength,
++        textCapitalization: maiusculo ? TextCapitalization.characters : TextCapitalization.words,
++        decoration: InputDecoration(
++          labelText: rotulo,
++          hintText: hint,
++          border: const OutlineInputBorder(),
++          isDense: true,
++          counterText: '',
++          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
++        ),
++      ),
++    );
++  }
++}
+diff -ruN a/locaobra_mobile/lib/screens/meus_pedidos_page.dart b/locaobra_mobile/lib/screens/meus_pedidos_page.dart
+--- a/locaobra_mobile/lib/screens/meus_pedidos_page.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/locaobra_mobile/lib/screens/meus_pedidos_page.dart	2026-09-24 22:55:00.871566457 +0000
+@@ -0,0 +1,322 @@
++import 'package:flutter/material.dart';
++import 'package:locaobra_mobile/models/pedido.dart';
++import 'package:locaobra_mobile/services/pedido_service.dart';
++import 'package:locaobra_mobile/utils/formatters.dart';
++
++/// "Meus Pedidos" — equivalente a `Pedidos/meusPedidos.jsx`: lista os
++/// orçamentos do cliente logado, com status e opção de cancelar enquanto
++/// ainda estiver SOLICITADO.
++class MeusPedidosPage extends StatefulWidget {
++  const MeusPedidosPage({super.key});
++
++  @override
++  State<MeusPedidosPage> createState() => _MeusPedidosPageState();
++}
++
++class _MeusPedidosPageState extends State<MeusPedidosPage> {
++  final PedidoService _service = PedidoService();
++
++  bool _carregando = true;
++  String? _erro;
++  List<Pedido> _pedidos = const [];
++  int? _cancelandoId;
++
++  @override
++  void initState() {
++    super.initState();
++    _carregar();
++  }
++
++  Future<void> _carregar() async {
++    setState(() {
++      _carregando = true;
++      _erro = null;
++    });
++    try {
++      final pedidos = await _service.listarMeus();
++      if (!mounted) return;
++      setState(() {
++        _pedidos = pedidos;
++        _carregando = false;
++      });
++    } catch (_) {
++      if (!mounted) return;
++      setState(() {
++        _erro = 'Não foi possível carregar seus pedidos.';
++        _carregando = false;
++      });
++    }
++  }
++
++  Future<void> _cancelar(Pedido pedido) async {
++    final confirmou = await showDialog<bool>(
++      context: context,
++      builder: (ctx) => AlertDialog(
++        title: const Text('Cancelar pedido'),
++        content: const Text('Tem certeza que deseja cancelar esse pedido?'),
++        actions: [
++          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar')),
++          TextButton(
++            onPressed: () => Navigator.pop(ctx, true),
++            style: TextButton.styleFrom(foregroundColor: Colors.red),
++            child: const Text('Cancelar pedido'),
++          ),
++        ],
++      ),
++    );
++    if (confirmou != true) return;
++
++    setState(() => _cancelandoId = pedido.id);
++    try {
++      await _service.cancelar(pedido.id);
++      if (!mounted) return;
++      await _carregar();
++    } catch (e) {
++      if (!mounted) return;
++      ScaffoldMessenger.of(context).showSnackBar(
++        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
++      );
++      setState(() => _cancelandoId = null);
++    }
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    return Scaffold(
++      backgroundColor: const Color(0xFFF5F5F5),
++      appBar: AppBar(
++        title: const Text('Meus Pedidos'),
++        backgroundColor: Colors.white,
++        foregroundColor: Colors.black87,
++        elevation: 0,
++      ),
++      body: SafeArea(child: _buildBody()),
++    );
++  }
++
++  Widget _buildBody() {
++    if (_carregando) {
++      return const Center(child: CircularProgressIndicator());
++    }
++    if (_erro != null) {
++      return Center(
++        child: Padding(
++          padding: const EdgeInsets.all(24),
++          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
++        ),
++      );
++    }
++    if (_pedidos.isEmpty) {
++      return Center(
++        child: Padding(
++          padding: const EdgeInsets.all(24),
++          child: Column(
++            mainAxisSize: MainAxisSize.min,
++            children: [
++              const Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey),
++              const SizedBox(height: 12),
++              const Text('Você ainda não fez nenhum pedido.', textAlign: TextAlign.center),
++              const SizedBox(height: 16),
++              ElevatedButton(
++                onPressed: () => Navigator.of(context).pop(),
++                style: ElevatedButton.styleFrom(
++                  backgroundColor: const Color.fromARGB(255, 255, 128, 0),
++                  foregroundColor: Colors.white,
++                ),
++                child: const Text('Explorar catálogo'),
++              ),
++            ],
++          ),
++        ),
++      );
++    }
++
++    return RefreshIndicator(
++      onRefresh: _carregar,
++      child: ListView.builder(
++        padding: const EdgeInsets.all(16),
++        itemCount: _pedidos.length,
++        itemBuilder: (context, i) => Padding(
++          padding: const EdgeInsets.only(bottom: 12),
++          child: _buildPedidoCard(_pedidos[i]),
++        ),
++      ),
++    );
++  }
++
++  Widget _buildPedidoCard(Pedido pedido) {
++    final corStatus = _corStatus(pedido.status);
++    final valorTotal = pedido.valorTotalEstimado + (pedido.valorFrete ?? 0);
++
++    return Container(
++      width: double.infinity,
++      decoration: BoxDecoration(
++        color: Colors.white,
++        borderRadius: BorderRadius.circular(12),
++        border: Border.all(color: Colors.grey.shade300),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Container(
++            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
++            decoration: BoxDecoration(
++              color: Colors.grey.shade50,
++              borderRadius: const BorderRadius.only(
++                topLeft: Radius.circular(12),
++                topRight: Radius.circular(12),
++              ),
++              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
++            ),
++            child: Row(
++              mainAxisAlignment: MainAxisAlignment.spaceBetween,
++              children: [
++                Expanded(
++                  child: Wrap(
++                    spacing: 8,
++                    runSpacing: 4,
++                    crossAxisAlignment: WrapCrossAlignment.center,
++                    children: [
++                      Text(pedido.codigo, style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace')),
++                      Container(
++                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
++                        decoration: BoxDecoration(
++                          color: corStatus.withOpacity(0.12),
++                          borderRadius: BorderRadius.circular(20),
++                        ),
++                        child: Text(
++                          pedido.status.label,
++                          style: TextStyle(color: corStatus, fontSize: 11, fontWeight: FontWeight.w600),
++                        ),
++                      ),
++                    ],
++                  ),
++                ),
++                Text(
++                  formatarMoeda(valorTotal),
++                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15),
++                ),
++              ],
++            ),
++          ),
++          Padding(
++            padding: const EdgeInsets.all(16),
++            child: Column(
++              crossAxisAlignment: CrossAxisAlignment.start,
++              children: [
++                _infoRow(
++                  'Período',
++                  '${pedido.dataInicio != null ? formatarData(pedido.dataInicio!) : '—'} a '
++                      '${pedido.dataFim != null ? formatarData(pedido.dataFim!) : '—'}'
++                      ' (${pedido.diasLocacao} dia${pedido.diasLocacao > 1 ? 's' : ''})',
++                ),
++                _infoRow(
++                  'Entrega',
++                  pedido.ehRetirada
++                      ? '🏬 Retirada no depósito (sem frete)'
++                      : '🚚 Entrega'
++                          '${pedido.enderecoEntrega?.formatado != null ? ' — ${pedido.enderecoEntrega!.formatado}' : ''}',
++                ),
++                if (!pedido.ehRetirada && pedido.valorFrete != null)
++                  _infoRow(
++                    'Frete',
++                    '${formatarMoeda(pedido.valorFrete!)}'
++                        '${pedido.status == StatusPedido.solicitado ? ' (estimado — valor final sai com o consultor)' : ''}',
++                  ),
++                _infoRow('Total', formatarMoeda(valorTotal)),
++                const Padding(
++                  padding: EdgeInsets.only(top: 8, bottom: 4),
++                  child: Divider(height: 1),
++                ),
++                ...pedido.itens.map(
++                  (item) => Padding(
++                    padding: const EdgeInsets.only(bottom: 4),
++                    child: Row(
++                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
++                      children: [
++                        Expanded(
++                          child: Text(
++                            '${item.equipamentoNome} × ${item.quantidade}',
++                            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
++                          ),
++                        ),
++                        Text(
++                          '${formatarMoeda(item.valorDiariaSnapshot)}/dia',
++                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
++                        ),
++                      ],
++                    ),
++                  ),
++                ),
++                if (pedido.observacoesCliente != null && pedido.observacoesCliente!.trim().isNotEmpty) ...[
++                  const SizedBox(height: 8),
++                  _infoRow('Suas observações', pedido.observacoesCliente!),
++                ],
++                if (pedido.motivoRecusa != null && pedido.motivoRecusa!.trim().isNotEmpty) ...[
++                  const SizedBox(height: 8),
++                  Container(
++                    width: double.infinity,
++                    padding: const EdgeInsets.all(10),
++                    decoration: BoxDecoration(
++                      color: Colors.red.shade50,
++                      borderRadius: BorderRadius.circular(8),
++                    ),
++                    child: Text.rich(
++                      TextSpan(
++                        children: [
++                          const TextSpan(text: 'Motivo: ', style: TextStyle(fontWeight: FontWeight.bold)),
++                          TextSpan(text: pedido.motivoRecusa!),
++                        ],
++                      ),
++                      style: TextStyle(color: Colors.red.shade700, fontSize: 13),
++                    ),
++                  ),
++                ],
++              ],
++            ),
++          ),
++          if (pedido.podeCancelar)
++            Padding(
++              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
++              child: Align(
++                alignment: Alignment.centerRight,
++                child: OutlinedButton(
++                  onPressed: _cancelandoId == pedido.id ? null : () => _cancelar(pedido),
++                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
++                  child: Text(_cancelandoId == pedido.id ? 'Cancelando...' : 'Cancelar pedido'),
++                ),
++              ),
++            ),
++        ],
++      ),
++    );
++  }
++
++  Widget _infoRow(String rotulo, String valor) {
++    return Padding(
++      padding: const EdgeInsets.only(bottom: 4),
++      child: RichText(
++        text: TextSpan(
++          style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
++          children: [
++            TextSpan(text: '$rotulo: ', style: const TextStyle(fontWeight: FontWeight.bold)),
++            TextSpan(text: valor),
++          ],
++        ),
++      ),
++    );
++  }
++
++  Color _corStatus(StatusPedido status) {
++    switch (status) {
++      case StatusPedido.aprovado:
++        return Colors.green.shade700;
++      case StatusPedido.recusado:
++        return Colors.red.shade700;
++      case StatusPedido.cancelado:
++        return Colors.grey.shade600;
++      case StatusPedido.solicitado:
++        return Colors.blue.shade700;
++    }
++  }
++}
+diff -ruN a/locaobra_mobile/lib/services/api_client.dart b/locaobra_mobile/lib/services/api_client.dart
+--- a/locaobra_mobile/lib/services/api_client.dart	2026-09-24 22:55:00.851327670 +0000
++++ b/locaobra_mobile/lib/services/api_client.dart	2026-09-24 22:55:00.852392060 +0000
+@@ -49,6 +49,22 @@
+         .timeout(const Duration(seconds: 10));
+   }
+ 
++  static Future<http.Response> put(
++    String path,
++    Map<String, dynamic> body, {
++    String? token,
++  }) async {
++    final headers = await _headers(token);
++    return http
++        .put(_uri(path), headers: headers, body: jsonEncode(body))
++        .timeout(const Duration(seconds: 10));
++  }
++
++  static Future<http.Response> delete(String path, {String? token}) async {
++    final headers = await _headers(token);
++    return http.delete(_uri(path), headers: headers).timeout(const Duration(seconds: 10));
++  }
++
+   /// POST multipart/form-data — usado por endpoints que recebem arquivos
+   /// (ex.: /api/expedicoes/{id}/confirmar-entrega, que exige a foto e a
+   /// assinatura desenhada como imagens, igual o web faz com FormData).
+diff -ruN a/locaobra_mobile/lib/services/endereco_service.dart b/locaobra_mobile/lib/services/endereco_service.dart
+--- a/locaobra_mobile/lib/services/endereco_service.dart	2026-09-24 22:55:00.856085885 +0000
++++ b/locaobra_mobile/lib/services/endereco_service.dart	2026-09-24 22:55:00.857072507 +0000
+@@ -3,9 +3,7 @@
+ import 'api_client.dart';
+ 
+ /// CRUD de endereços do cliente logado — equivalente ao que
+-/// `Perfil/meusEnderecos.jsx` consome no web. Este patch usa só a leitura
+-/// (checkout); o CRUD completo (adicionar/editar/remover/definir principal)
+-/// entra na tela "Meus Endereços" do próximo patch.
++/// `Perfil/meusEnderecos.jsx` consome no web.
+ class EnderecoService {
+   /// GET /api/clientes/meus-enderecos.
+   Future<List<Endereco>> listarMeus() async {
+@@ -28,4 +26,51 @@
+         .map(Endereco.fromJson)
+         .toList();
+   }
++
++  /// POST /api/clientes/meus-enderecos.
++  Future<Endereco> adicionar(Endereco endereco) async {
++    final response = await ApiClient.post('/api/clientes/meus-enderecos', endereco.toRequestJson());
++    if (response.statusCode != 201) {
++      throw Exception(_extrairMensagem(response.body) ?? 'Não foi possível salvar o endereço.');
++    }
++    return Endereco.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
++  }
++
++  /// PUT /api/clientes/meus-enderecos/{id}.
++  Future<Endereco> atualizar(int id, Endereco endereco) async {
++    final response = await ApiClient.put('/api/clientes/meus-enderecos/$id', endereco.toRequestJson());
++    if (response.statusCode != 200) {
++      throw Exception(_extrairMensagem(response.body) ?? 'Não foi possível salvar o endereço.');
++    }
++    return Endereco.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
++  }
++
++  /// DELETE /api/clientes/meus-enderecos/{id}.
++  Future<void> remover(int id) async {
++    final response = await ApiClient.delete('/api/clientes/meus-enderecos/$id');
++    if (response.statusCode != 204) {
++      throw Exception(_extrairMensagem(response.body) ?? 'Não foi possível remover o endereço.');
++    }
++  }
++
++  /// PATCH /api/clientes/meus-enderecos/{id}/principal.
++  Future<Endereco> definirPrincipal(int id) async {
++    final response = await ApiClient.patch('/api/clientes/meus-enderecos/$id/principal', const {});
++    if (response.statusCode != 200) {
++      throw Exception(_extrairMensagem(response.body) ?? 'Não foi possível definir como principal.');
++    }
++    return Endereco.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
++  }
++
++  String? _extrairMensagem(String body) {
++    try {
++      final data = jsonDecode(body);
++      if (data is Map<String, dynamic> && data['message'] != null) {
++        return data['message'].toString();
++      }
++    } catch (_) {
++      // corpo não é JSON, ignora
++    }
++    return null;
++  }
+ }
+diff -ruN a/locaobra_mobile/lib/services/pedido_service.dart b/locaobra_mobile/lib/services/pedido_service.dart
+--- a/locaobra_mobile/lib/services/pedido_service.dart	2026-09-24 22:55:00.860533163 +0000
++++ b/locaobra_mobile/lib/services/pedido_service.dart	2026-09-24 22:55:00.861519579 +0000
+@@ -2,6 +2,7 @@
+ import 'package:locaobra_mobile/cart/cart_item.dart';
+ import 'package:locaobra_mobile/models/endereco.dart';
+ import 'package:locaobra_mobile/models/frete_estimativa.dart';
++import 'package:locaobra_mobile/models/pedido.dart';
+ import 'package:locaobra_mobile/models/ponto_retirada.dart';
+ import 'api_client.dart';
+ 
+@@ -146,6 +147,29 @@
+         'Não foi possível enviar o pedido (status ${response.statusCode}).');
+   }
+ 
++  /// GET /api/pedidos/meus — pedidos do cliente logado, equivalente a
++  /// `Pedidos/meusPedidos.jsx`.
++  Future<List<Pedido>> listarMeus() async {
++    final response = await ApiClient.get('/api/pedidos/meus');
++    if (response.statusCode != 200) {
++      throw Exception('Não foi possível carregar seus pedidos (status ${response.statusCode}).');
++    }
++
++    final data = jsonDecode(utf8.decode(response.bodyBytes));
++    if (data is! List) return const [];
++    return data.whereType<Map<String, dynamic>>().map(Pedido.fromJson).toList();
++  }
++
++  /// POST /api/pedidos/{id}/cancelar — só permitido enquanto o pedido
++  /// estiver SOLICITADO (mesma regra do botão "Cancelar pedido" no web).
++  Future<void> cancelar(int id) async {
++    final response = await ApiClient.post('/api/pedidos/$id/cancelar', const {});
++    if (response.statusCode != 200) {
++      throw Exception(_extrairMensagem(response.body) ??
++          'Não foi possível cancelar o pedido.');
++    }
++  }
++
+   String? _extrairMensagem(String body) {
+     try {
+       final data = jsonDecode(body);

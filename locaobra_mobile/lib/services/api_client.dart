@@ -49,6 +49,22 @@ class ApiClient {
         .timeout(const Duration(seconds: 10));
   }
 
+  static Future<http.Response> put(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final headers = await _headers(token);
+    return http
+        .put(_uri(path), headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 10));
+  }
+
+  static Future<http.Response> delete(String path, {String? token}) async {
+    final headers = await _headers(token);
+    return http.delete(_uri(path), headers: headers).timeout(const Duration(seconds: 10));
+  }
+
   /// POST multipart/form-data — usado por endpoints que recebem arquivos
   /// (ex.: /api/expedicoes/{id}/confirmar-entrega, que exige a foto e a
   /// assinatura desenhada como imagens, igual o web faz com FormData).

@@ -7,6 +7,8 @@ import 'package:locaobra_mobile/cart/cart_item.dart';
 import 'package:locaobra_mobile/cart/cart_navigation.dart';
 import 'package:locaobra_mobile/cart/cart_state.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
+import 'package:locaobra_mobile/screens/meus_pedidos_page.dart';
+import 'package:locaobra_mobile/screens/meus_enderecos_page.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
 import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
@@ -114,9 +116,23 @@ class HomeScreen extends StatelessWidget {
                                     // só então atualiza o estado em memória.
                                     await AuthService().logout();
                                     AuthState.logout();
+                                    return;
                                   }
-                                  // Todo: navegar para 'pedidos', 'enderecos', 'perfil' quando
-                                  // essas telas existirem.
+                                  if (opcao == 'pedidos') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const MeusPedidosPage()),
+                                    );
+                                    return;
+                                  }
+                                  if (opcao == 'enderecos') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const MeusEnderecosPage()),
+                                    );
+                                    return;
+                                  }
+                                  // Todo: navegar para 'perfil' quando essa tela existir.
                                 },
                                 itemBuilder: (context) => [
                                   _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
