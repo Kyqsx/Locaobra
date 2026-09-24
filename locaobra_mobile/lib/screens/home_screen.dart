@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:locaobra_mobile/Categorias/concretagem.dart';
-import 'package:locaobra_mobile/Categorias/equipamentos_pesados.dart';
+import 'package:locaobra_mobile/Categorias/catalogo_page.dart';
 import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
-import 'package:locaobra_mobile/Categorias/ferramentas_eletricas.dart';
-import 'package:locaobra_mobile/Categorias/andaimes_e_escadas.dart';
-import 'package:locaobra_mobile/Categorias/acesso_e_elevacao.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
 import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
@@ -154,36 +150,18 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     _buildNavTab(
                       title: 'Acesso e Elevação',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AcessoPage()),
-                        );
-                      },
+                      onTap: () => _abrirCategoria(context, 'acesso-elevacao'),
                     ),
                     const SizedBox(width: 24),
                     _buildNavTab(
                       title: 'Concretagem',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ConcretagemPage(),
-                          ),
-                        );
-                      },
+                      onTap: () => _abrirCategoria(context, 'concretagem'),
                     ),
                     const SizedBox(width: 24),
                     _buildNavTab(
                       title: 'Ferramentas Elétricas',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FerramentasEletricasPage(),
-                          ),
-                        );
-                      },
+                      onTap: () =>
+                          _abrirCategoria(context, 'ferramentas-eletricas'),
                     ),
                   ],
                 ),
@@ -232,7 +210,7 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     // Botão Ver catálogo Completo
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => _abrirCategoria(context, null),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
@@ -279,48 +257,24 @@ class HomeScreen extends StatelessWidget {
                     _buildCategoryCard(
                       imagePath: 'assets/imagens/ferramentas.svg',
                       title: 'Ferramentas Elétricas',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FerramentasEletricasPage(),
-                          ),
-                        );
-                      },
+                      onTap: () =>
+                          _abrirCategoria(context, 'ferramentas-eletricas'),
                     ),
                     _buildCategoryCard(
                       imagePath: 'assets/imagens/andaimes.svg',
                       title: 'Andaimes e Escadas',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AndaimesEEscadasPage(),
-                          ),
-                        );
-                      },
+                      onTap: () => _abrirCategoria(context, 'andaimes'),
                     ),
                     _buildCategoryCard(
                       imagePath: 'assets/imagens/elevacao.svg',
                       title: 'Acesso e Elevação',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AcessoPage()),
-                        );
-                      },
+                      onTap: () => _abrirCategoria(context, 'acesso-elevacao'),
                     ),
                     _buildCategoryCard(
                       imagePath: 'assets/imagens/pesado.svg',
                       title: 'Equipamentos Pesados',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EquipamentosPesadosPage(),
-                          ),
-                        );
-                      },
+                      onTap: () =>
+                          _abrirCategoria(context, 'equipamentos-pesados'),
                     ),
                   ],
                 ),
@@ -481,6 +435,17 @@ class HomeScreen extends StatelessWidget {
             color: Colors.black87,
           ),
         ),
+      ),
+    );
+  }
+
+  // Abre o catálogo real (API) filtrado por categoria — ou completo, quando
+  // [categoriaSlug] é nulo (usado pelo botão "Ver catálogo completo").
+  void _abrirCategoria(BuildContext context, String? categoriaSlug) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CatalogoPagina(categoriaSlug: categoriaSlug),
       ),
     );
   }

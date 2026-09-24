@@ -5,24 +5,28 @@ import 'package:locaobra_mobile/services/api_client.dart';
 class Equipamento {
   final int id;
   final String nome;
+  final String? descricao;
   final String categoria;
   final List<String> imagens; // caminhos como vêm da API (ver [imagemCompleta])
   final int quantidadeDisponivel;
   final int quantidadeTotal;
   final double valorDiaria;
   final double mediaAvaliacoes;
+  final int totalAvaliacoes;
   final String? status;
   final Map<String, String> especificacoes;
 
   const Equipamento({
     required this.id,
     required this.nome,
+    this.descricao,
     required this.categoria,
     required this.imagens,
     required this.quantidadeDisponivel,
     required this.quantidadeTotal,
     required this.valorDiaria,
     this.mediaAvaliacoes = 0,
+    this.totalAvaliacoes = 0,
     this.status,
     this.especificacoes = const {},
   });
@@ -34,6 +38,7 @@ class Equipamento {
           ? json['id'] as int
           : int.tryParse('${json['id']}') ?? 0,
       nome: json['nome']?.toString() ?? '',
+      descricao: json['descricao']?.toString(),
       categoria: json['categoria']?.toString() ?? '',
       imagens: imagensJson
           .map((img) => img is Map ? (img['url']?.toString() ?? '') : '')
@@ -44,6 +49,7 @@ class Equipamento {
       quantidadeTotal: (json['quantidadeTotal'] as num?)?.toInt() ?? 0,
       valorDiaria: (json['valorDiaria'] as num?)?.toDouble() ?? 0,
       mediaAvaliacoes: (json['mediaAvaliacoes'] as num?)?.toDouble() ?? 0,
+      totalAvaliacoes: (json['totalAvaliacoes'] as num?)?.toInt() ?? 0,
       status: json['status']?.toString(),
       especificacoes: (json['especificacoes'] as Map?)?.map(
             (k, v) => MapEntry(k.toString(), v.toString()),
