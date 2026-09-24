@@ -40,6 +40,16 @@ class CadastroResult {
       precisaVerificarEmail = false;
 }
 
+/// Resultado de GET /api/auth/me — só os campos que o app usa pra decidir
+/// pra onde navegar depois do login.
+class PerfilResult {
+  final String? tipo;
+  final String? cargoFuncionario;
+  final int? idFuncionario;
+
+  PerfilResult({this.tipo, this.cargoFuncionario, this.idFuncionario});
+}
+
 class AuthService {
   Future<LoginResult> login(String email, String senha) async {
     try {
@@ -109,6 +119,30 @@ class AuthService {
 
   /// Remove o token salvo — chamar ao deslogar o usuário.
   Future<void> logout() => TokenStorage.limpar();
+
+  /// GET /api/auth/me — igual ao "useAuth" do web: devolve tipo (CLIENTE ou
+  /// FUNCIONARIO) e, quando for funcionário, o cargo (cargoFuncionario) e o
+  /// idFuncionario. É esse cargo que decide se a pessoa cai na área do
+  /// entregador (dashboard) ou no app normal de cliente.
+  Future<PerfilResult?> buscarPerfil() async {
+    try {
+      final response = await ApiClient.get('/api/auth/me');
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body);
+      if (data is! Map<String, dynamic>) return null;
+
+      return PerfilResult(
+        tipo: data['tipo']?.toString(),
+        cargoFuncionario: data['cargoFuncionario']?.toString(),
+        idFuncionario: data['idFuncionario'] is int
+            ? data['idFuncionario'] as int
+            : int.tryParse('${data['idFuncionario']}'),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// A API costuma responder erros como {status, message, timestamp}.
   String? _extrairMensagem(String body) {
