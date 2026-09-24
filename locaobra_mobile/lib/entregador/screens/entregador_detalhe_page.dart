@@ -1,0 +1,563 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:locaobra_mobile/entregador/models/expedicao.dart';
+import 'package:locaobra_mobile/entregador/services/expedicao_service.dart';
+import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
+import 'package:signature/signature.dart';
+
+const _corPrimaria = Color.fromARGB(255, 255, 128, 0);
+
+/// Detalhe da expedição + Passo 3 do fluxo ("Confirmação de Entrega" no
+/// web): o entregador registra nome/documento de quem recebeu, pede a
+/// assinatura desenhada na tela e tira a foto no local. Data/hora é do
+/// servidor — o app nunca manda isso.
+///
+/// Espelha ExpedicaoDetalheModal (expedicao.jsx), restrito ao que o
+/// ENTREGADOR faz: confirmar entrega/coleta ou registrar que não deu certo.
+/// Vistoria e check-out/check-in continuam só no painel web (times de
+/// técnico de manutenção e conferente).
+class EntregadorDetalhePage extends StatefulWidget {
+  final int expedicaoId;
+
+  const EntregadorDetalhePage({super.key, required this.expedicaoId});
+
+  @override
+  State<EntregadorDetalhePage> createState() => _EntregadorDetalhePageState();
+}
+
+class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
+  final _service = ExpedicaoApiService();
+  late Future<Expedicao> _futureExpedicao;
+
+  // Formulário de confirmação (passo 3).
+  final _assinaturaNomeController = TextEditingController();
+  final _documentoController = TextEditingController();
+  final _observacaoController = TextEditingController();
+  late final SignatureController _signatureController;
+  XFile? _fotoSelecionada;
+
+  bool _enviando = false;
+  bool _houveMudanca = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _signatureController = SignatureController(
+      penStrokeWidth: 3,
+      penColor: Colors.black,
+      exportBackgroundColor: Colors.white,
+    );
+    _carregar();
+  }
+
+  @override
+  void dispose() {
+    _assinaturaNomeController.dispose();
+    _documentoController.dispose();
+    _observacaoController.dispose();
+    _signatureController.dispose();
+    super.dispose();
+  }
+
+  void _carregar() {
+    setState(() {
+      _futureExpedicao = _service.buscarPorId(widget.expedicaoId);
+    });
+  }
+
+  Future<void> _tirarFoto() async {
+    try {
+      final foto = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1600,
+        imageQuality: 80,
+      );
+      if (foto == null) return;
+      setState(() => _fotoSelecionada = foto);
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarErro('Não foi possível acessar a câmera.');
+    }
+  }
+
+  Future<void> _confirmarEntrega(Expedicao expedicao) async {
+    if (_assinaturaNomeController.text.trim().isEmpty) {
+      _mostrarErro('Informe quem está assinando o recebimento.');
+      return;
+    }
+    if (_documentoController.text.trim().length < 5) {
+      _mostrarErro('Informe o documento (CPF ou RG) de quem assinou.');
+      return;
+    }
+    if (_signatureController.isEmpty) {
+      _mostrarErro('Peça para a pessoa assinar no quadro.');
+      return;
+    }
+    if (_fotoSelecionada == null) {
+      _mostrarErro('Tire a foto no local.');
+      return;
+    }
+
+    setState(() => _enviando = true);
+
+    try {
+      final Uint8List? assinaturaPng = await _signatureController.toPngBytes();
+      if (assinaturaPng == null) {
+        _mostrarErro('Não foi possível capturar a assinatura. Tente novamente.');
+        setState(() => _enviando = false);
+        return;
+      }
+      final fotoBytes = await _fotoSelecionada!.readAsBytes();
+
+      final resultado = await _service.confirmarEntrega(
+        id: expedicao.id,
+        assinatura: _assinaturaNomeController.text.trim(),
+        documento: _documentoController.text.trim(),
+        assinaturaImagemBytes: assinaturaPng,
+        fotoBytes: fotoBytes,
+        fotoNomeArquivo: _fotoSelecionada!.name,
+        observacao: _observacaoController.text.trim().isEmpty
+            ? null
+            : _observacaoController.text.trim(),
+      );
+
+      if (!mounted) return;
+      if (!resultado.sucesso) {
+        _mostrarErro(resultado.mensagemErro ?? 'Erro ao confirmar.');
+        setState(() => _enviando = false);
+        return;
+      }
+
+      _houveMudanca = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(expedicao.ehColeta ? 'Coleta confirmada!' : 'Entrega confirmada!'),
+          backgroundColor: Colors.green.shade600,
+        ),
+      );
+      setState(() => _enviando = false);
+      _carregar();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _enviando = false);
+      _mostrarErro('Não foi possível enviar. Verifique sua conexão e tente de novo.');
+    }
+  }
+
+  Future<void> _naoRealizada(Expedicao expedicao) async {
+    final motivo = await _pedirMotivo(
+      titulo: expedicao.ehColeta ? 'Não consegui coletar' : 'Não consegui entregar',
+      dica: 'Ex.: cliente ausente, recusou receber, endereço não encontrado.',
+    );
+    if (motivo == null) return; // cancelou
+    if (motivo.trim().length < 5) {
+      _mostrarErro('Descreva o motivo (mínimo 5 caracteres).');
+      return;
+    }
+
+    setState(() => _enviando = true);
+    final resultado = await _service.registrarNaoRealizada(
+      id: expedicao.id,
+      motivo: motivo.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _enviando = false);
+
+    if (!resultado.sucesso) {
+      _mostrarErro(resultado.mensagemErro ?? 'Erro ao registrar ocorrência.');
+      return;
+    }
+
+    _houveMudanca = true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Ocorrência registrada. A expedição foi encerrada.')),
+    );
+    _carregar();
+  }
+
+  Future<String?> _pedirMotivo({required String titulo, required String dica}) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(titulo),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(dica, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 300,
+              maxLines: 3,
+              decoration: const InputDecoration(hintText: 'Motivo'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Registrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: Colors.red.shade600),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          foregroundColor: Colors.black87,
+          title: const Text('Detalhe da expedição'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(_houveMudanca),
+          ),
+        ),
+        body: FutureBuilder<Expedicao>(
+          future: _futureExpedicao,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Erro: ${snapshot.error}', textAlign: TextAlign.center),
+                ),
+              );
+            }
+            final expedicao = snapshot.data!;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCabecalho(expedicao),
+                  const SizedBox(height: 16),
+                  _buildEndereco(expedicao),
+                  const SizedBox(height: 16),
+                  _buildItens(expedicao),
+                  const SizedBox(height: 16),
+                  if (expedicao.nomesAutorizados.isNotEmpty) ...[
+                    _buildAutorizados(expedicao),
+                    const SizedBox(height: 16),
+                  ],
+                  if (expedicao.observacoes != null && expedicao.observacoes!.isNotEmpty) ...[
+                    _buildCard(
+                      titulo: 'Observações',
+                      child: Text(expedicao.observacoes!),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildConfirmacaoOuStatus(expedicao),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCabecalho(Expedicao expedicao) {
+    return _buildCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${tipoExpedicaoLabel(expedicao.tipo)} · ${expedicao.codigo}',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                if (expedicao.clienteNome != null)
+                  Text(expedicao.clienteNome!, style: const TextStyle(fontSize: 15)),
+                if (expedicao.placaVeiculo != null && expedicao.placaVeiculo!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text('Veículo: ${expedicao.placaVeiculo}',
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                ],
+              ],
+            ),
+          ),
+          StatusExpedicaoBadge(status: expedicao.status),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEndereco(Expedicao expedicao) {
+    final e = expedicao.enderecoEntrega;
+    return _buildCard(
+      titulo: 'Endereço de ${expedicao.ehColeta ? 'coleta' : 'entrega'}',
+      child: Text(e.formatado?.isNotEmpty == true ? e.formatado! : 'Endereço não informado.'),
+    );
+  }
+
+  Widget _buildItens(Expedicao expedicao) {
+    return _buildCard(
+      titulo: 'Itens (${expedicao.itens.length})',
+      child: expedicao.itens.isEmpty
+          ? const Text('Nenhum item.')
+          : Column(
+              children: expedicao.itens
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.build_outlined, size: 18, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${item.equipamentoNome ?? 'Equipamento'} · ${item.rotulo}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                Text('Qtd.: ${item.quantidade}',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+    );
+  }
+
+  Widget _buildAutorizados(Expedicao expedicao) {
+    return _buildCard(
+      titulo: 'Pessoas autorizadas a receber',
+      child: Text(expedicao.nomesAutorizados.join(', ')),
+    );
+  }
+
+  Widget _buildConfirmacaoOuStatus(Expedicao expedicao) {
+    if (expedicao.status == StatusExpedicao.agendado) {
+      return _buildCard(
+        child: Row(
+          children: [
+            Icon(Icons.hourglass_empty, color: Colors.grey.shade500),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Aguardando o check-out do conferente para poder confirmar.'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (expedicao.entregaConfirmadaEm != null) {
+      return _buildCard(
+        titulo: expedicao.ehColeta ? 'Coleta confirmada' : 'Entrega confirmada',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Recebido por: ${expedicao.assinaturaEntrega ?? '-'}'),
+            Text('Documento: ${expedicao.documentoRecebedor ?? '-'}'),
+            const SizedBox(height: 4),
+            Text('Confirmado em: ${expedicao.entregaConfirmadaEm}',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            if (expedicao.fotoEntrega != null && expedicao.fotoEntrega!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(expedicao.fotoEntregaUrl, height: 160, fit: BoxFit.cover),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (expedicao.status == StatusExpedicao.cancelado) {
+      return _buildCard(
+        titulo: 'Cancelada',
+        child: Text(expedicao.motivoCancelamento ?? 'Sem motivo registrado.'),
+      );
+    }
+
+    if (!expedicao.podeConfirmar) {
+      return _buildCard(child: const Text('Ainda não chegou nesse passo.'));
+    }
+
+    // Formulário de confirmação (passo 3), só aparece quando EM_TRANSITO e
+    // ainda não confirmada.
+    return _buildCard(
+      titulo: expedicao.ehColeta ? 'Confirmar coleta' : 'Confirmar entrega',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Nome de quem está recebendo', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _assinaturaNomeController,
+            decoration: const InputDecoration(
+              hintText: 'Nome completo',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('Documento (CPF ou RG)', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _documentoController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              hintText: '000.000.000-00',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('Assinatura de quem recebeu', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            height: 180,
+            child: Signature(
+              controller: _signatureController,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _signatureController.clear()),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Limpar assinatura'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text('Foto tirada no local', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          if (_fotoSelecionada != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(_fotoSelecionada!.path),
+                  height: 160,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          OutlinedButton.icon(
+            onPressed: _tirarFoto,
+            icon: const Icon(Icons.camera_alt_outlined),
+            label: Text(_fotoSelecionada == null ? 'Tirar foto' : 'Tirar outra foto'),
+          ),
+          const SizedBox(height: 12),
+          const Text('Observações (opcional)', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _observacaoController,
+            maxLength: 1000,
+            maxLines: 2,
+            decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _enviando ? null : () => _confirmarEntrega(expedicao),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  icon: _enviando
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.check),
+                  label: Text(expedicao.ehColeta ? 'Confirmar coleta' : 'Confirmar entrega'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _enviando ? null : () => _naoRealizada(expedicao),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade700,
+                side: BorderSide(color: Colors.red.shade300),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              icon: const Icon(Icons.close),
+              label: Text(expedicao.ehColeta ? 'Não consegui coletar' : 'Não consegui entregar'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCard({String? titulo, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (titulo != null) ...[
+            Text(
+              titulo,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: _corPrimaria),
+            ),
+            const SizedBox(height: 10),
+          ],
+          child,
+        ],
+      ),
+    );
+  }
+}
