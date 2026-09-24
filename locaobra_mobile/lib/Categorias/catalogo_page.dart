@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/categoria.dart';
 import '../models/equipamento.dart';
+import '../screens/product_view_page.dart';
 import '../services/catalogo_service.dart';
 import '../widgets/category_nav_tabs.dart';
 import '../widgets/category_listagem.dart';
@@ -42,6 +43,18 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
           ? _catalogoService.buscarTodos()
           : _catalogoService.buscarPorCategoria(_slugAtual!);
     });
+  }
+
+  void _abrirProduto(Equipamento equipamento) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductViewPage(
+          equipamentoId: equipamento.id,
+          equipamentoInicial: equipamento,
+        ),
+      ),
+    );
   }
 
   void _selecionarSlug(String slug) {
@@ -113,7 +126,10 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                             ),
                           );
                         }
-                        return CategoryListagem(equipamentos: snapshot.data ?? const []);
+                        return CategoryListagem(
+                          equipamentos: snapshot.data ?? const [],
+                          onTapEquipamento: _abrirProduto,
+                        );
                       },
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/equipamento.dart';
+import '../utils/formatters.dart';
 
 /// Grade (grid) de cards de equipamento — mesmo layout visual que estava
 /// hardcoded em cada página de categoria (2 colunas, foto, nome, preço
@@ -117,7 +118,7 @@ class _ProductCard extends StatelessWidget {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'R\$ ${equipamento.valorDiaria.toStringAsFixed(2)}',
+                              text: formatarMoeda(equipamento.valorDiaria),
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,

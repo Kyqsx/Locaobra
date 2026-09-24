@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:locaobra_mobile/cart/cart_state.dart';
 import 'package:locaobra_mobile/screens/welcome_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Restaura o carrinho salvo no aparelho antes da primeira tela.
+  await CartState.carregar();
   runApp(const MyApp());
-
-  
 }
 
 class MyApp extends StatelessWidget {

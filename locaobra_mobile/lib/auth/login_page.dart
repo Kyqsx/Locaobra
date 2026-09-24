@@ -6,7 +6,12 @@ import 'package:locaobra_mobile/screens/home_screen.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  /// Quando true, ao concluir o login a tela só fecha devolvendo `true`
+  /// (usado pela tela de produto, que precisa voltar pro mesmo lugar em vez
+  /// de ir pra Home). O padrão continua sendo ir pra Home/área do entregador.
+  final bool voltarAoConcluir;
+
+  const LoginPage({super.key, this.voltarAoConcluir = false});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -65,6 +70,11 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (!mounted) return;
+
+    if (widget.voltarAoConcluir) {
+      Navigator.pop(context, true);
+      return;
+    }
 
     Navigator.pushReplacement(
       context,

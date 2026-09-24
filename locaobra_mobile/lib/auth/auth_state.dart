@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:locaobra_mobile/cart/cart_state.dart';
 
 // Estado de login compartilhado pelo app inteiro.
 //
@@ -45,6 +46,12 @@ class AuthState {
     tipoUsuario = tipo;
     cargoFuncionario = cargo;
     AuthState.idFuncionario = idFuncionario;
+
+    // Mesma regra do CartContext do web: pedido é coisa de cliente. Se quem
+    // entrou é funcionário/admin, o carrinho de antes não faz sentido — limpa.
+    if (tipo != null && tipo != 'CLIENTE') {
+      CartState.limpar();
+    }
   }
 
   static void logout() {
