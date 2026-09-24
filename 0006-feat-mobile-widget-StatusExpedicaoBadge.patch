@@ -1,0 +1,66 @@
+From a8c13d7ef65ee399a4b83463774d098085fa234a Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Thu, 24 Sep 2026 19:09:27 +0000
+Subject: [PATCH 6/9] feat(mobile): widget StatusExpedicaoBadge
+
+---
+ .../widgets/status_expedicao_badge.dart       | 47 +++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+ create mode 100644 locaobra_mobile/lib/entregador/widgets/status_expedicao_badge.dart
+
+diff --git a/locaobra_mobile/lib/entregador/widgets/status_expedicao_badge.dart b/locaobra_mobile/lib/entregador/widgets/status_expedicao_badge.dart
+new file mode 100644
+index 0000000..9d6b645
+--- /dev/null
++++ b/locaobra_mobile/lib/entregador/widgets/status_expedicao_badge.dart
+@@ -0,0 +1,47 @@
++import 'package:flutter/material.dart';
++import 'package:locaobra_mobile/entregador/models/expedicao.dart';
++
++/// Mesmas cores usadas no badge de status da tela de Expedição do web
++/// (statusBadge AGENDADO/EM_TRANSITO/ENTREGUE/CONCLUIDO/CANCELADO em
++/// Expedicao.css), adaptadas pro Material.
++Color corDoStatus(StatusExpedicao status) {
++  switch (status) {
++    case StatusExpedicao.agendado:
++      return const Color(0xFF6B7280); // cinza
++    case StatusExpedicao.emTransito:
++      return const Color(0xFF2563EB); // azul
++    case StatusExpedicao.entregue:
++      return const Color(0xFF16A34A); // verde
++    case StatusExpedicao.concluido:
++      return const Color(0xFF15803D); // verde escuro
++    case StatusExpedicao.cancelado:
++      return const Color(0xFFDC2626); // vermelho
++  }
++}
++
++class StatusExpedicaoBadge extends StatelessWidget {
++  final StatusExpedicao status;
++
++  const StatusExpedicaoBadge({super.key, required this.status});
++
++  @override
++  Widget build(BuildContext context) {
++    final cor = corDoStatus(status);
++    return Container(
++      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
++      decoration: BoxDecoration(
++        color: cor.withOpacity(0.12),
++        borderRadius: BorderRadius.circular(20),
++        border: Border.all(color: cor.withOpacity(0.4)),
++      ),
++      child: Text(
++        statusExpedicaoLabel(status),
++        style: TextStyle(
++          color: cor,
++          fontSize: 12,
++          fontWeight: FontWeight.w600,
++        ),
++      ),
++    );
++  }
++}
+-- 
+2.43.0
+
