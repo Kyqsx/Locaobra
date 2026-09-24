@@ -70,10 +70,12 @@ class CartState {
 
     if (indice >= 0) {
       final existente = lista[indice];
+      // Adicione o .toInt() no final da função min
       final novaQuantidade = min(
         disponivel,
         existente.quantidade + max(1, quantidade),
-      );
+      ).toInt(); // <--- Mudança aqui
+
       final mudou = novaQuantidade != existente.quantidade;
       if (mudou || existente.quantidadeDisponivel != disponivel) {
         lista[indice] = existente.copyWith(
