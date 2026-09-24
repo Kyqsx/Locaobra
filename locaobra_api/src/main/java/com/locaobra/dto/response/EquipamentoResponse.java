@@ -19,6 +19,11 @@ public class EquipamentoResponse {
     private String descricao;
     private String categoria;
     private BigDecimal valorDiaria;
+    // Dados logísticos usados no cálculo de frete (peso real x cubado).
+    private BigDecimal pesoKg;
+    private BigDecimal comprimentoCm;
+    private BigDecimal larguraCm;
+    private BigDecimal alturaCm;
     private String status;
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
@@ -38,6 +43,10 @@ public class EquipamentoResponse {
         r.descricao = e.getDescricao();
         r.categoria = e.getCategoria();
         r.valorDiaria = e.getValorDiaria();
+        r.pesoKg = e.getPesoKg();
+        r.comprimentoCm = e.getComprimentoCm();
+        r.larguraCm = e.getLarguraCm();
+        r.alturaCm = e.getAlturaCm();
         r.status = e.getStatus();
         r.criadoEm = e.getCriadoEm();
         r.atualizadoEm = e.getAtualizadoEm();
@@ -90,6 +99,12 @@ public class EquipamentoResponse {
     public String getCategoria() { return categoria; }
     public BigDecimal getValorDiaria() { return valorDiaria; }
     public String getStatus() { return status; }
+
+    public BigDecimal getPesoKg() { return pesoKg; }
+    public BigDecimal getComprimentoCm() { return comprimentoCm; }
+    public BigDecimal getLarguraCm() { return larguraCm; }
+    public BigDecimal getAlturaCm() { return alturaCm; }
+
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
     public Map<String, String> getEspecificacoes() { return especificacoes; }

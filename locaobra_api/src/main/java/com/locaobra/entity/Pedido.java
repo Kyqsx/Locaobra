@@ -1,6 +1,7 @@
 package com.locaobra.entity;
 
 import com.locaobra.enums.StatusPedido;
+import com.locaobra.enums.TipoEntrega;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -57,6 +58,21 @@ public class Pedido {
     // Motivo de recusa do pedido pelo consultor (ex.: sem estoque).
     @Column(name = "motivo_recusa", length = 1000)
     private String motivoRecusa;
+
+    // ENTREGA (frete calculado) ou RETIRADA (cliente busca no depósito,
+    // valorFrete fica em zero). Padrão ENTREGA pra retrocompatibilidade com
+    // pedidos criados antes dessa feature. columnDefinition com default evita
+    // erro do ALTER TABLE ... NOT NULL em banco que já tem linhas (ddl update).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_entrega", length = 20, columnDefinition = "varchar(20) default 'ENTREGA'")
+    private TipoEntrega tipoEntrega = TipoEntrega.ENTREGA;
+
+    // Frete aplicado ao pedido. Na criação (SOLICITADO) guarda a ESTIMATIVA
+    // calculada na hora; quando o consultor confirma, é RECALCULADO com base
+    // no(s) depósito(s) real(is) de onde os itens vão sair (ver
+    // PedidoService.confirmar).
+    @Column(name = "valor_frete", precision = 12, scale = 2, columnDefinition = "numeric(12,2) default 0")
+    private BigDecimal valorFrete = BigDecimal.ZERO;
 
     @Column(name = "valor_total_estimado", nullable = false)
     private BigDecimal valorTotalEstimado = BigDecimal.ZERO;
@@ -120,6 +136,12 @@ public class Pedido {
 
     public String getMotivoRecusa() { return motivoRecusa; }
     public void setMotivoRecusa(String motivoRecusa) { this.motivoRecusa = motivoRecusa; }
+
+    public TipoEntrega getTipoEntrega() { return tipoEntrega; }
+    public void setTipoEntrega(TipoEntrega tipoEntrega) { this.tipoEntrega = tipoEntrega; }
+
+    public BigDecimal getValorFrete() { return valorFrete; }
+    public void setValorFrete(BigDecimal valorFrete) { this.valorFrete = valorFrete; }
 
     public BigDecimal getValorTotalEstimado() { return valorTotalEstimado; }
     public void setValorTotalEstimado(BigDecimal valorTotalEstimado) { this.valorTotalEstimado = valorTotalEstimado; }

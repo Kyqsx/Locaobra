@@ -170,6 +170,12 @@ CREATE TABLE IF NOT EXISTS equipamentos (
     descricao     VARCHAR(500),
     categoria     VARCHAR(100) NOT NULL,
     valor_diaria  NUMERIC NOT NULL,
+    -- Dados logísticos pro cálculo de frete (peso real x peso cubado).
+    -- Opcionais: sem eles, o FreteService usa valores padrão conservadores.
+    peso_kg        NUMERIC(10,2),
+    comprimento_cm NUMERIC(10,2),
+    largura_cm     NUMERIC(10,2),
+    altura_cm      NUMERIC(10,2),
     status        VARCHAR(50) NOT NULL DEFAULT 'ativo',
     criado_em     TIMESTAMP NOT NULL,
     atualizado_em TIMESTAMP
@@ -277,6 +283,12 @@ CREATE TABLE IF NOT EXISTS pedidos (
     observacoes_cliente    VARCHAR(1000),
     observacoes_consultor  VARCHAR(1000),
     motivo_recusa          VARCHAR(1000),
+    -- ENTREGA (frete calculado) ou RETIRADA (cliente busca no depósito,
+    -- frete zero). Padrão ENTREGA pros pedidos anteriores à feature.
+    tipo_entrega           VARCHAR(20) NOT NULL DEFAULT 'ENTREGA',
+    -- Frete do pedido: estimativa na solicitação; valor final recalculado
+    -- pelo consultor na confirmação (com o depósito real de origem).
+    valor_frete            NUMERIC(12,2) NOT NULL DEFAULT 0,
     valor_total_estimado   NUMERIC(12,2) NOT NULL DEFAULT 0,
     confirmado_em          TIMESTAMP,
     cancelado_em           TIMESTAMP,

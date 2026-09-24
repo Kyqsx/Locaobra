@@ -322,3 +322,85 @@
     font-size: 12px;
     color: var(--primary-color, #f39200);
 }
+
+/* ============================================
+   TIPO DE ENTREGA (Entregar x Retirar)
+   ============================================ */
+
+.carrinho-tipo-entrega {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.carrinho-entrega-opcao {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1.5px solid var(--gray-200, #e2e2e2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.carrinho-entrega-opcao:hover {
+    border-color: var(--primary-color, #1f9d6b);
+}
+
+.carrinho-entrega-opcao.selecionado {
+    border-color: var(--primary-color, #1f9d6b);
+    background: rgba(31, 157, 107, 0.06);
+}
+
+.carrinho-entrega-opcao input[type="radio"] {
+    margin-top: 3px;
+}
+
+.carrinho-entrega-detalhe {
+    color: var(--gray-500, #8a8a8a);
+    font-size: 12.5px;
+}
+
+/* Linhas de frete/total do resumo */
+
+.carrinho-resumo-frete {
+    background: transparent;
+    border: 1px dashed var(--gray-200, #e2e2e2);
+}
+
+.carrinho-resumo-frete strong {
+    font-size: var(--text-base, 15px);
+}
+
+.carrinho-frete-status {
+    color: var(--gray-500, #8a8a8a);
+    font-size: 12px;
+    font-style: normal;
+    display: block;
+}
+
+.carrinho-resumo-total {
+    background: rgba(31, 157, 107, 0.08);
+    border: 1px solid rgba(31, 157, 107, 0.25);
+}
+
+.carrinho-resumo-total strong {
+    font-size: var(--text-xl, 20px);
+}
+
+.carrinho-frete-erro {
+    margin: 0;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: var(--radius-md, 8px);
+    padding: 8px 12px;
+    font-size: 12.5px;
+}
+
+@media (max-width: 640px) {
+    .carrinho-tipo-entrega {
+        grid-template-columns: 1fr;
+    }
+}

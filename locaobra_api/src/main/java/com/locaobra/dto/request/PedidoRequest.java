@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.locaobra.enums.TipoEntrega;
+
 // Usado pelo CLIENTE para solicitar um orçamento de aluguel pelo catálogo.
 // O clienteId NÃO vem daqui — é resolvido no service a partir do usuário
 // logado (token JWT), pra ninguém pedir em nome de outro cliente.
@@ -15,8 +17,13 @@ public class PedidoRequest {
     // Duas formas de informar o endereço de entrega — o service usa
     // enderecoId quando presente (endereço já salvo, tirado do carrinho/
     // checkout) e cai pra enderecoEntrega (digitado na hora) caso contrário.
+    // Ignorados quando tipoEntrega = RETIRADA (cliente busca no depósito).
     private Long enderecoId;
     private EnderecoRequest enderecoEntrega;
+
+    // ENTREGA (padrão) ou RETIRADA. Na retirada o endereço é dispensado e o
+    // frete sai zero.
+    private TipoEntrega tipoEntrega;
 
     private String observacoesCliente;
     private List<ItemPedidoRequest> itens = new ArrayList<>();
@@ -32,6 +39,9 @@ public class PedidoRequest {
 
     public EnderecoRequest getEnderecoEntrega() { return enderecoEntrega; }
     public void setEnderecoEntrega(EnderecoRequest enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
+
+    public TipoEntrega getTipoEntrega() { return tipoEntrega; }
+    public void setTipoEntrega(TipoEntrega tipoEntrega) { this.tipoEntrega = tipoEntrega; }
 
     public String getObservacoesCliente() { return observacoesCliente; }
     public void setObservacoesCliente(String observacoesCliente) { this.observacoesCliente = observacoesCliente; }

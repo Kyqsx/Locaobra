@@ -314,6 +314,7 @@ function AdminPedidos() {
                   <th>Código</th>
                   <th>Cliente</th>
                   <th>Período</th>
+                  <th>Entrega</th>
                   <th>Valor</th>
                   <th>Status</th>
                   <th>Ações</th>
@@ -341,6 +342,18 @@ function AdminPedidos() {
                       <td className="dateCell">
                         {formatarData(pedido.dataInicio)} a {formatarData(pedido.dataFim)}
                         {' '}({pedido.diasLocacao} dia{pedido.diasLocacao > 1 ? 's' : ''})
+                      </td>
+                      <td className="dateCell">
+                        {pedido.tipoEntrega === 'RETIRADA' ? (
+                          <span title="Cliente retira no depósito">🏬 Retirada</span>
+                        ) : (
+                          <span title={pedido.enderecoEntrega?.formatado || ''}>
+                            🚚 Entrega
+                            {pedido.valorFrete != null && (
+                              <><br /><small>R$ {Number(pedido.valorFrete).toFixed(2)}</small></>
+                            )}
+                          </span>
+                        )}
                       </td>
                       {/*<td>
                         {(pedido.itens || [])
@@ -394,7 +407,7 @@ function AdminPedidos() {
                 })}
                 {pedidos.length === 0 && (
                   <tr className="tableRow">
-                    <td colSpan="7" style={{ textAlign: 'center', color: '#999' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', color: '#999' }}>
                       Nenhum pedido {aba === 'consultor' ? 'aguardando revisão' : 'pronto para expedição'} no momento.
                     </td>
                   </tr>

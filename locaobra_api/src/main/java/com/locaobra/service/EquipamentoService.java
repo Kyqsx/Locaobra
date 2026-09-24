@@ -226,6 +226,11 @@ public class EquipamentoService {
         equipamento.setDescricao(request.getDescricao());
         equipamento.setCategoria(request.getCategoria());
         equipamento.setValorDiaria(request.getValorDiaria());
+        // Dados logísticos pro frete — opcionais; null = usa padrão do FreteService.
+        equipamento.setPesoKg(request.getPesoKg());
+        equipamento.setComprimentoCm(request.getComprimentoCm());
+        equipamento.setLarguraCm(request.getLarguraCm());
+        equipamento.setAlturaCm(request.getAlturaCm());
     }
 
     private void salvarEspecificacoes(Equipamento equipamento, Map<String, String> specs) {

@@ -83,6 +83,20 @@ function MeusPedidos() {
                     <span><strong>Endereço:</strong> {pedido.enderecoEntrega?.formatado || '---'}</span>
                   </div>
 
+                  <div className="pedido-info-row">
+                    <span><strong>Entrega:</strong> {pedido.tipoEntrega === 'RETIRADA'
+                      ? '🏬 Retirada no depósito (sem frete)'
+                      : `🚚 Entrega${pedido.enderecoEntrega?.formatado ? ` — ${pedido.enderecoEntrega.formatado}` : ''}`}</span>
+                  </div>
+                  {pedido.tipoEntrega !== 'RETIRADA' && pedido.valorFrete != null && (
+                    <div className="pedido-info-row">
+                      <span><strong>Frete:</strong> R$ {Number(pedido.valorFrete).toFixed(2)} {pedido.status === 'SOLICITADO' ? '(estimado — valor final sai com o consultor)' : ''}</span>
+                    </div>
+                  )}
+                  <div className="pedido-info-row">
+                    <span><strong>Total:</strong> R$ {(Number(pedido.valorTotalEstimado || 0) + Number(pedido.valorFrete || 0)).toFixed(2)}</span>
+                  </div>
+
                   <div className="pedido-itens">
                     {pedido.itens.map((item) => (
                       <div key={item.id} className="pedido-item">

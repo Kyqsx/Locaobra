@@ -2,16 +2,22 @@ package com.locaobra.service;
 
 import com.locaobra.dto.request.AlocacaoItemRequest;
 import com.locaobra.dto.request.ConfirmarPedidoRequest;
+import com.locaobra.dto.request.EstimarFreteRequest;
+import com.locaobra.dto.request.EnderecoRequest;
 import com.locaobra.dto.request.ItemPedidoRequest;
 import com.locaobra.dto.request.PedidoDecisaoRequest;
 import com.locaobra.dto.request.PedidoRequest;
+import com.locaobra.dto.response.FreteEstimativaResponse;
 import com.locaobra.dto.response.ItemPedidoResponse;
 import com.locaobra.dto.response.PedidoResponse;
+import com.locaobra.dto.response.PontoRetiradaResponse;
 import com.locaobra.dto.response.SugestaoAlocacaoResponse;
 import com.locaobra.entity.*;
 import com.locaobra.enums.StatusExpedicao;
 import com.locaobra.enums.StatusPedido;
 import com.locaobra.enums.StatusUnidade;
+import com.locaobra.enums.TipoEntrega;
+import com.locaobra.enums.TipoVeiculo;
 import com.locaobra.exception.BusinessException;
 import com.locaobra.exception.ResourceNotFoundException;
 import com.locaobra.repository.*;
@@ -20,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +54,7 @@ public class PedidoService {
     private final ExpedicaoRepository expedicaoRepository;
     private final EnderecoRepository enderecoRepository;
     private final EnderecoService enderecoService;
+    private final FreteService freteService;
 
     public PedidoService(
             PedidoRepository pedidoRepository,
@@ -59,7 +67,8 @@ public class PedidoService {
             UnidadeEquipamentoRepository unidadeRepository,
             ExpedicaoRepository expedicaoRepository,
             EnderecoRepository enderecoRepository,
-            EnderecoService enderecoService) {
+            EnderecoService enderecoService,
+            FreteService freteService) {
         this.pedidoRepository = pedidoRepository;
         this.itemRepository = itemRepository;
         this.clienteRepository = clienteRepository;
@@ -71,6 +80,7 @@ public class PedidoService {
         this.expedicaoRepository = expedicaoRepository;
         this.enderecoRepository = enderecoRepository;
         this.enderecoService = enderecoService;
+        this.freteService = freteService;
     }
 
     // ======================================================================
@@ -87,9 +97,20 @@ public class PedidoService {
         if (request.getDataFim().isBefore(request.getDataInicio())) {
             throw new BusinessException("A data de fim não pode ser anterior à data de início.");
         }
-        Endereco enderecoEntrega = resolverEnderecoEntrega(cliente, request);
         if (request.getItens() == null || request.getItens().isEmpty()) {
             throw new BusinessException("Adicione ao menos um equipamento ao pedido.");
+        }
+
+        // ENTREGA (padrão, retrocompatível) ou RETIRADA (endereço dispensado,
+        // frete zero). No pedido de retirada o cliente busca no depósito —
+        // qual depósito exatamente fica a cargo do consultor na confirmação.
+        TipoEntrega tipoEntrega = request.getTipoEntrega() != null
+                ? request.getTipoEntrega() : TipoEntrega.ENTREGA;
+        boolean retirada = tipoEntrega == TipoEntrega.RETIRADA;
+
+        Endereco enderecoEntrega = null;
+        if (!retirada) {
+            enderecoEntrega = resolverEnderecoEntrega(cliente, request);
         }
 
         Pedido pedido = new Pedido();
@@ -98,6 +119,7 @@ public class PedidoService {
         pedido.setCliente(cliente);
         pedido.setDataInicio(request.getDataInicio());
         pedido.setDataFim(request.getDataFim());
+        pedido.setTipoEntrega(tipoEntrega);
         pedido.setEnderecoEntrega(enderecoEntrega);
         pedido.setObservacoesCliente(request.getObservacoesCliente());
 
@@ -132,9 +154,110 @@ public class PedidoService {
         }
 
         pedido.setValorTotalEstimado(valorTotal);
+
+        // Frete: estimativa na solicitação (origem genérica, sem depósito
+        // definido ainda). RETIRADA não tem frete. O valor FINAL é recalculado
+        // pelo consultor na confirmação, com o depósito real de origem.
+        if (!retirada) {
+            pedido.setValorFrete(freteService.calcularFrete(null, null, valorTotal, false));
+        }
         pedido = pedidoRepository.save(pedido);
 
         return construirResponse(pedido);
+    }
+
+    // ======================================================================
+    // ESTIMATIVA DE FRETE (carrinho, antes de fechar o pedido)
+    // ======================================================================
+
+    // Estimativa de frete pra o carrinho: o cliente informa endereço + itens
+    // e recebe valor/prazo ANTES de finalizar. Origem: o depósito ativo mais
+    // "próximo" do destino (heurística) — a versão final é calculada pelo
+    // consultor na confirmação, com o depósito real alocado.
+    @Transactional(readOnly = true)
+    public FreteEstimativaResponse estimarFrete(EstimarFreteRequest request) {
+        if (request.getItens() == null || request.getItens().isEmpty()) {
+            throw new BusinessException("Adicione ao menos um equipamento pra estimar o frete.");
+        }
+
+        Endereco destino = resolverEnderecoDestino(request);
+
+        // Peso/dimensões por item (com quantidade) e valor total da locação
+        // precisa das datas — no carrinho elas já foram escolhidas.
+        if (request.getDataInicio() == null || request.getDataFim() == null) {
+            throw new BusinessException("Informe o período da locação pra estimar o frete.");
+        }
+        long dias = Math.max(1, ChronoUnit.DAYS.between(request.getDataInicio(), request.getDataFim()));
+
+        BigDecimal pesoTotal = BigDecimal.ZERO;
+        BigDecimal pesoCubadoTotal = BigDecimal.ZERO;
+        BigDecimal valorLocacao = BigDecimal.ZERO;
+
+        for (ItemPedidoRequest itemReq : request.getItens()) {
+            if (itemReq.getEquipamentoId() == null) {
+                throw new BusinessException("Todo item precisa de um equipamento selecionado.");
+            }
+            Equipamento eq = equipamentoRepository.findById(itemReq.getEquipamentoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Equipamento não encontrado: " + itemReq.getEquipamentoId()));
+
+            BigDecimal volume = freteService.volumeM3(
+                    eq.getComprimentoCm(), eq.getLarguraCm(), eq.getAlturaCm(), itemReq.getQuantidade());
+            pesoTotal = pesoTotal.add(freteService.pesoConsideradoKg(eq.getPesoKg(), volume));
+            pesoCubadoTotal = pesoCubadoTotal.add(
+                    volume.multiply(freteService.fatorCubagem()).setScale(2, RoundingMode.HALF_UP));
+            valorLocacao = valorLocacao.add(eq.getValorDiaria()
+                    .multiply(BigDecimal.valueOf(itemReq.getQuantidade()))
+                    .multiply(BigDecimal.valueOf(dias)));
+        }
+
+        // Origem: depósito ativo mais próximo do destino (heurística de
+        // cidade/UF). Sem depósito cadastrado, usa origem desconhecida (25 km).
+        Deposito origem = depositoRepository.findByAtivoTrue().stream()
+                .min(Comparator.comparingInt(d -> freteService.estimarDistanciaKm(d.getEndereco(), destino)))
+                .orElse(null);
+        int km = origem != null
+                ? freteService.estimarDistanciaKm(origem.getEndereco(), destino)
+                : freteService.estimarDistanciaKm(null, destino);
+
+        FreteEstimativaResponse resposta = new FreteEstimativaResponse();
+        resposta.setValorFrete(freteService.calcularFrete(pesoTotal, km, valorLocacao, false));
+        resposta.setDistanciaKm(km);
+        resposta.setPrazoEstimadoDias(freteService.prazoEstimadoDias(km));
+        resposta.setPesoTotalKg(pesoTotal);
+        resposta.setPesoCubadoKg(pesoCubadoTotal);
+        resposta.setVeiculoSugerido(freteService.sugerirVeiculo(pesoTotal));
+        return resposta;
+    }
+
+    // Resolve o endereço de destino da estimativa: endereço salvo (validando
+    // dono) ou digitado na hora — mesmas regras do PedidoRequest.
+    private Endereco resolverEnderecoDestino(EstimarFreteRequest request) {
+        if (request.getEnderecoId() != null) {
+            Cliente cliente = resolverClienteLogado();
+            Endereco endereco = enderecoRepository.findById(request.getEnderecoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Endereço não encontrado: " + request.getEnderecoId()));
+            if (endereco.getCliente() == null || !endereco.getCliente().getId().equals(cliente.getId())) {
+                throw new BusinessException("Esse endereço não pertence a esse cliente.");
+            }
+            return endereco;
+        }
+        EnderecoRequest digitado = request.getEnderecoEntrega();
+        if (digitado == null || isBlank(digitado.getCidade())) {
+            throw new BusinessException("Informe o endereço de entrega (ao menos cidade e UF) pra estimar o frete.");
+        }
+        Endereco endereco = new Endereco();
+        endereco.setCep(digitado.getCep());
+        endereco.setRua(digitado.getRua());
+        endereco.setNumero(digitado.getNumero());
+        endereco.setComplemento(digitado.getComplemento());
+        endereco.setBairro(digitado.getBairro());
+        endereco.setCidade(digitado.getCidade());
+        endereco.setEstado(digitado.getEstado());
+        return endereco;
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     // ======================================================================
@@ -201,6 +324,15 @@ public class PedidoService {
         Cliente cliente = resolverClienteLogado();
         return pedidoRepository.findByClienteId(cliente.getId()).stream()
                 .map(this::construirResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Pontos de retirada disponíveis pro cliente (depósitos ativos) — usado no
+    // carrinho quando ele escolhe RETIRADA. Só expõe nome/endereço.
+    @Transactional(readOnly = true)
+    public List<PontoRetiradaResponse> listarPontosRetirada() {
+        return depositoRepository.findByAtivoTrue().stream()
+                .map(PontoRetiradaResponse::from)
                 .collect(Collectors.toList());
     }
 
@@ -375,6 +507,31 @@ public class PedidoService {
             }
             item.setDeposito(deposito);
             itemRepository.save(item);
+        }
+
+        // Frete final: recalculado a partir do(s) depósito(s) real(is) de
+        // origem — a estimativa da solicitação (origem genérica) é substituída
+        // aqui. Pedido dividido entre depósitos soma o trecho de cada item.
+        // RETIRADA não tem frete — valorFrete permanece zero.
+        if (pedido.getTipoEntrega() == TipoEntrega.RETIRADA) {
+            pedido.setValorFrete(BigDecimal.ZERO);
+        } else {
+            BigDecimal freteFinal = BigDecimal.ZERO;
+            Endereco destino = pedido.getEnderecoEntrega();
+            for (ItemPedido item : itens) {
+                Equipamento eq = item.getEquipamento();
+                BigDecimal volume = freteService.volumeM3(
+                        eq.getComprimentoCm(), eq.getLarguraCm(), eq.getAlturaCm(), item.getQuantidade());
+                BigDecimal pesoItem = freteService.pesoConsideradoKg(eq.getPesoKg(), volume);
+                int km = freteService.estimarDistanciaKm(
+                        item.getDeposito() != null ? item.getDeposito().getEndereco() : null, destino);
+                BigDecimal valorItem = item.getValorDiariaSnapshot()
+                        .multiply(BigDecimal.valueOf(item.getQuantidade()))
+                        .multiply(BigDecimal.valueOf(Math.max(1, ChronoUnit.DAYS.between(
+                                pedido.getDataInicio(), pedido.getDataFim()))));
+                freteFinal = freteFinal.add(freteService.calcularFrete(pesoItem, km, valorItem, false));
+            }
+            pedido.setValorFrete(freteFinal.setScale(2, RoundingMode.HALF_UP));
         }
 
         pedido.setConsultor(resolverFuncionarioLogado());

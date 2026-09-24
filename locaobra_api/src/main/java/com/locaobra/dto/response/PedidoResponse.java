@@ -3,6 +3,7 @@ package com.locaobra.dto.response;
 import com.locaobra.entity.ItemPedido;
 import com.locaobra.entity.Pedido;
 import com.locaobra.enums.StatusPedido;
+import com.locaobra.enums.TipoEntrega;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,6 +31,11 @@ public class PedidoResponse {
     private String observacoesConsultor;
     private String motivoRecusa;
     private BigDecimal valorTotalEstimado;
+    // ENTREGA ou RETIRADA — como o cliente quer receber o equipamento.
+    private TipoEntrega tipoEntrega;
+    // Frete aplicado: estimativa na criação; valor recalculado quando o
+    // consultor confirma (com o(s) depósito(s) real(is)). Zero na retirada.
+    private BigDecimal valorFrete;
     private LocalDateTime confirmadoEm;
     private LocalDateTime canceladoEm;
     private LocalDateTime criadoEm;
@@ -61,6 +67,8 @@ public class PedidoResponse {
         r.observacoesConsultor = p.getObservacoesConsultor();
         r.motivoRecusa = p.getMotivoRecusa();
         r.valorTotalEstimado = p.getValorTotalEstimado();
+        r.tipoEntrega = p.getTipoEntrega();
+        r.valorFrete = p.getValorFrete();
         r.confirmadoEm = p.getConfirmadoEm();
         r.canceladoEm = p.getCanceladoEm();
         r.criadoEm = p.getCriadoEm();
@@ -88,6 +96,8 @@ public class PedidoResponse {
     public String getObservacoesConsultor() { return observacoesConsultor; }
     public String getMotivoRecusa() { return motivoRecusa; }
     public BigDecimal getValorTotalEstimado() { return valorTotalEstimado; }
+    public TipoEntrega getTipoEntrega() { return tipoEntrega; }
+    public BigDecimal getValorFrete() { return valorFrete; }
     public LocalDateTime getConfirmadoEm() { return confirmadoEm; }
     public LocalDateTime getCanceladoEm() { return canceladoEm; }
     public LocalDateTime getCriadoEm() { return criadoEm; }

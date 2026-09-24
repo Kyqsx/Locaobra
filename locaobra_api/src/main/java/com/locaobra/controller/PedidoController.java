@@ -1,9 +1,12 @@
 package com.locaobra.controller;
 
 import com.locaobra.dto.request.ConfirmarPedidoRequest;
+import com.locaobra.dto.request.EstimarFreteRequest;
 import com.locaobra.dto.request.PedidoDecisaoRequest;
 import com.locaobra.dto.request.PedidoRequest;
 import com.locaobra.dto.response.PedidoResponse;
+import com.locaobra.dto.response.FreteEstimativaResponse;
+import com.locaobra.dto.response.PontoRetiradaResponse;
 import com.locaobra.dto.response.SugestaoAlocacaoResponse;
 import com.locaobra.enums.StatusPedido;
 import com.locaobra.service.PedidoService;
@@ -30,10 +33,25 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoService.criar(request));
     }
 
+    // Estimativa de frete pro carrinho — o cliente vê o valor/prazo ANTES de
+    // fechar o pedido. É estimativa: o valor final é recalculado pelo
+    // consultor na confirmação, com o depósito real de origem.
+    @PostMapping("/estimar-frete")
+    public ResponseEntity<FreteEstimativaResponse> estimarFrete(@RequestBody EstimarFreteRequest request) {
+        return ResponseEntity.ok(pedidoService.estimarFrete(request));
+    }
+
     // "Meus pedidos" do cliente logado.
     @GetMapping("/meus")
     public ResponseEntity<List<PedidoResponse>> listarMeus() {
         return ResponseEntity.ok(pedidoService.listarMeus());
+    }
+
+    // Pontos de retirada (depósitos ativos) pro seletor do carrinho — cliente
+    // escolhe onde buscar o equipamento quando marca RETIRADA.
+    @GetMapping("/pontos-retirada")
+    public ResponseEntity<List<PontoRetiradaResponse>> listarPontosRetirada() {
+        return ResponseEntity.ok(pedidoService.listarPontosRetirada());
     }
 
     // Fila do consultor: pedidos SOLICITADO aguardando revisão.

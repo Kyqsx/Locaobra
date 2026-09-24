@@ -178,6 +178,13 @@ public class ExpedicaoService {
             expedicao.setEnderecoEntrega(
                     temEnderecoEntrega(request.getEnderecoEntrega())
                             ? enderecoService.persistirAvulso(request.getEnderecoEntrega()) : pedido.getEnderecoEntrega());
+            // Pedido de RETIRADA (tipoEntrega = RETIRADA) não tem endereço de
+            // entrega — o cliente busca no depósito. A expedição herda o
+            // endereço do depósito de origem como referência do local de
+            // busca/devolução, senão a validação de endereço abaixo quebraria.
+            if (expedicao.getEnderecoEntrega() == null && depositoOrigem != null) {
+                expedicao.setEnderecoEntrega(depositoOrigem.getEndereco());
+            }
             aplicarNomesAutorizados(expedicao, request.getNomesAutorizados());
         } else if (entregaOrigem != null) {
             // Herdado da entrega de origem — endereço é o mesmo local onde o

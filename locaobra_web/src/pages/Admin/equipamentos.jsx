@@ -167,7 +167,7 @@ function FocoPicker({ url, foco, onSave, alt, onOpen }) {
    MODAL DE CRIAÇÃO — fluxo dedicado para criar um novo modelo.
    ============================================================ */
 function EquipamentoCreateModal({ onClose, onCreated }) {
-    const [form, setForm] = useState({ nome: '', categoria: '', descricao: '', valorDiaria: '', especificacoes: [] });
+    const [form, setForm] = useState({ nome: '', categoria: '', descricao: '', valorDiaria: '', pesoKg: '', comprimentoCm: '', larguraCm: '', alturaCm: '', especificacoes: [] });
     const [message, setMessage] = useState(null);
     const [novasImagens, setNovasImagens] = useState([]);
     const [imagePickerKey, setImagePickerKey] = useState(0);
@@ -204,6 +204,11 @@ function EquipamentoCreateModal({ onClose, onCreated }) {
             descricao: form.descricao,
             categoria: form.categoria,
             valorDiaria: parseFloat(form.valorDiaria) || 0,
+            // Dados logísticos pro frete (opcionais) — null quando vazio.
+            pesoKg: form.pesoKg ? parseFloat(form.pesoKg) : null,
+            comprimentoCm: form.comprimentoCm ? parseFloat(form.comprimentoCm) : null,
+            larguraCm: form.larguraCm ? parseFloat(form.larguraCm) : null,
+            alturaCm: form.alturaCm ? parseFloat(form.alturaCm) : null,
             especificacoes: especificacoesParaBackend(form.especificacoes),
         };
 
@@ -214,7 +219,7 @@ function EquipamentoCreateModal({ onClose, onCreated }) {
         api.post('/api/equipamentos', formData)
             .then(() => {
                 setMessage({ type: 'success', text: 'Modelo cadastrado com sucesso!' });
-                setForm({ nome: '', categoria: '', descricao: '', valorDiaria: '', especificacoes: [] });
+                setForm({ nome: '', categoria: '', descricao: '', valorDiaria: '', pesoKg: '', comprimentoCm: '', larguraCm: '', alturaCm: '', especificacoes: [] });
                 setNovasImagens([]);
                 setImagePickerKey(k => k + 1);
                 onCreated();
@@ -242,6 +247,14 @@ function EquipamentoCreateModal({ onClose, onCreated }) {
                         <input className="equipInput" name="categoria" placeholder="Categoria" value={form.categoria} onChange={handleChange} required />
                         <input className="equipInput" name="valorDiaria" placeholder="Diária (0.00)" value={form.valorDiaria} onChange={handleChange} required />
                     </div>
+
+                    <div className="formGrid">
+                        <input className="equipInput" name="pesoKg" type="number" step="0.01" min="0" placeholder="Peso unitário (kg)" value={form.pesoKg} onChange={handleChange} />
+                        <input className="equipInput" name="comprimentoCm" type="number" step="0.1" min="0" placeholder="Comprimento (cm)" value={form.comprimentoCm} onChange={handleChange} />
+                        <input className="equipInput" name="larguraCm" type="number" step="0.1" min="0" placeholder="Largura (cm)" value={form.larguraCm} onChange={handleChange} />
+                        <input className="equipInput" name="alturaCm" type="number" step="0.1" min="0" placeholder="Altura (cm)" value={form.alturaCm} onChange={handleChange} />
+                    </div>
+                    <p className="equipHintFrete">Usados no cálculo do frete (peso real x cubado). Opcional — sem eles, usa-se um padrão conservador.</p>
 
                     <textarea className="equipTextarea" name="descricao" placeholder="Descrição / Especificações técnicas" value={form.descricao} onChange={handleChange} rows={2} />
 
@@ -280,7 +293,7 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
     const [eq, setEq] = useState(null);
     const [activeTab, setActiveTab] = useState(canManageCatalogo ? 'dados' : 'unidades');
 
-    const [form, setForm] = useState({ nome: '', categoria: '', descricao: '', valorDiaria: '', especificacoes: [] });
+    const [form, setForm] = useState({ nome: '', categoria: '', descricao: '', valorDiaria: '', pesoKg: '', comprimentoCm: '', larguraCm: '', alturaCm: '', especificacoes: [] });
     const [dadosMessage, setDadosMessage] = useState(null);
     const [salvandoDados, setSalvandoDados] = useState(false);
 
@@ -306,6 +319,10 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                     categoria: data.categoria || '',
                     descricao: data.descricao || '',
                     valorDiaria: data.valorDiaria?.toString() || '',
+                    pesoKg: data.pesoKg?.toString() || '',
+                    comprimentoCm: data.comprimentoCm?.toString() || '',
+                    larguraCm: data.larguraCm?.toString() || '',
+                    alturaCm: data.alturaCm?.toString() || '',
                     especificacoes: especificacoesParaArray(data.especificacoes),
                 });
             })
@@ -353,6 +370,10 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
             descricao: form.descricao,
             categoria: form.categoria,
             valorDiaria: parseFloat(form.valorDiaria) || 0,
+            pesoKg: form.pesoKg ? parseFloat(form.pesoKg) : null,
+            comprimentoCm: form.comprimentoCm ? parseFloat(form.comprimentoCm) : null,
+            larguraCm: form.larguraCm ? parseFloat(form.larguraCm) : null,
+            alturaCm: form.alturaCm ? parseFloat(form.alturaCm) : null,
             especificacoes: especificacoesParaBackend(form.especificacoes),
         };
         const formData = new FormData();
@@ -526,6 +547,15 @@ function EquipamentoEditModal({ equipamentoId, onClose, onChanged, canManageCata
                                     <input className="equipInput" name="categoria" placeholder="Categoria" value={form.categoria} onChange={handleFormChange} required />
                                     <input className="equipInput" name="valorDiaria" placeholder="Diária (0.00)" value={form.valorDiaria} onChange={handleFormChange} required />
                                 </div>
+
+                                <div className="formGrid">
+                                    <input className="equipInput" name="pesoKg" type="number" step="0.01" min="0" placeholder="Peso unitário (kg)" value={form.pesoKg} onChange={handleFormChange} />
+                                    <input className="equipInput" name="comprimentoCm" type="number" step="0.1" min="0" placeholder="Comprimento (cm)" value={form.comprimentoCm} onChange={handleFormChange} />
+                                    <input className="equipInput" name="larguraCm" type="number" step="0.1" min="0" placeholder="Largura (cm)" value={form.larguraCm} onChange={handleFormChange} />
+                                    <input className="equipInput" name="alturaCm" type="number" step="0.1" min="0" placeholder="Altura (cm)" value={form.alturaCm} onChange={handleFormChange} />
+                                </div>
+                                <p className="equipHintFrete">Peso/dimensões são usados no cálculo do frete (peso real x cubado). Opcional.</p>
+
                                 <textarea className="equipTextarea" name="descricao" placeholder="Descrição / Especificações técnicas" value={form.descricao} onChange={handleFormChange} rows={2} />
 
                                 <div className="specsContainer">

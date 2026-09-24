@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../service/api';
 import { useAuth } from '../../utils/useAuth';
@@ -30,13 +30,93 @@ function Carrinho() {
   const [enderecoSelecionadoId, setEnderecoSelecionadoId] = useState(principalSalvo ? principalSalvo.id : 'novo');
   const [enderecoNovo, setEnderecoNovo] = useState(enderecoNovoVazio);
 
+  // ENTREGA (caminhão da Locaobra leva, com frete) ou RETIRADA (cliente busca
+  // no depósito, frete zero).
+  const [tipoEntrega, setTipoEntrega] = useState('ENTREGA');
+  const [pontosRetirada, setPontosRetirada] = useState([]);
+  const [pontoRetiradaId, setPontoRetiradaId] = useState('');
+
+  const [frete, setFrete] = useState(null); // resposta de /api/pedidos/estimar-frete
+  const [carregandoFrete, setCarregandoFrete] = useState(false);
+  const [erroFrete, setErroFrete] = useState(null);
+
   const [observacoesCliente, setObservacoesCliente] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
   const [pedidoCriado, setPedidoCriado] = useState(null);
 
   const dias = Math.max(1, Math.round((new Date(`${dataFim}T00:00:00`) - new Date(`${dataInicio}T00:00:00`)) / 86400000));
-  const valorTotal = itens.reduce((soma, i) => soma + i.valorDiaria * i.quantidade * dias, 0);
+  const valorItens = itens.reduce((soma, i) => soma + i.valorDiaria * i.quantidade * dias, 0);
+  const valorFrete = tipoEntrega === 'ENTREGA' ? Number(frete?.valorFrete || 0) : 0;
+  const valorTotal = valorItens + valorFrete;
+
+  // Depósitos ativos pro seletor de retirada (só carrega quando o cliente
+  // marca RETIRADA — evita request desnecessário).
+  useEffect(() => {
+    if (tipoEntrega !== 'RETIRADA' || pontosRetirada.length > 0) return;
+    api.get('/api/pedidos/pontos-retirada')
+      .then((res) => setPontosRetirada(res.data || []))
+      .catch(() => {});
+  }, [tipoEntrega, pontosRetirada.length]);
+
+  // Evita que uma resposta antiga sobrescreva a mais recente (race de rede).
+  const estimacaoIdRef = useRef(0);
+
+  // Estimativa de frete — dispara com itens + endereço resolvido (cidade/UF)
+  // + datas, no modo ENTREGA. Debounce de 600ms quando o endereço é digitado.
+  useEffect(() => {
+    if (tipoEntrega !== 'ENTREGA' || itens.length === 0) {
+      setFrete(null);
+      setErroFrete(null);
+      return;
+    }
+
+    const enderecoResolvido = enderecoSelecionadoId === 'novo'
+      ? enderecoNovo
+      : enderecosSalvos.find((e) => String(e.id) === String(enderecoSelecionadoId));
+
+    if (!enderecoResolvido?.cidade || !enderecoResolvido?.estado) {
+      setFrete(null);
+      setErroFrete(null);
+      return;
+    }
+
+    const delay = enderecoSelecionadoId === 'novo' ? 600 : 0;
+    const id = ++estimacaoIdRef.current;
+    const timer = setTimeout(() => {
+      setCarregandoFrete(true);
+      setErroFrete(null);
+      const payload = {
+        dataInicio,
+        dataFim,
+        enderecoEntrega: {
+          cep: enderecoResolvido.cep || null,
+          rua: enderecoResolvido.rua || null,
+          numero: enderecoResolvido.numero || null,
+          complemento: enderecoResolvido.complemento || null,
+          bairro: enderecoResolvido.bairro || null,
+          cidade: enderecoResolvido.cidade,
+          estado: enderecoResolvido.estado,
+        },
+        itens: itens.map((i) => ({ equipamentoId: i.equipamentoId, quantidade: i.quantidade })),
+      };
+      api.post('/api/pedidos/estimar-frete', payload)
+        .then((res) => {
+          if (estimacaoIdRef.current !== id) return; // resposta antiga, descarta
+          setFrete(res.data);
+          setCarregandoFrete(false);
+        })
+        .catch(() => {
+          if (estimacaoIdRef.current !== id) return;
+          setFrete(null);
+          setCarregandoFrete(false);
+          setErroFrete('Não foi possível calcular o frete agora. Você ainda pode enviar o pedido — o valor final sai com o consultor.');
+        });
+    }, delay);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoEntrega, itens, enderecoSelecionadoId, enderecoNovo.cidade, enderecoNovo.estado, enderecosSalvos, dataInicio, dataFim]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,30 +134,38 @@ function Carrinho() {
       setErro('A data de fim não pode ser anterior à data de início.');
       return;
     }
-    let enderecoPayload = {};
-    if (enderecoSelecionadoId === 'novo') {
+    let payload = { dataInicio, dataFim, tipoEntrega };
+
+    if (tipoEntrega === 'RETIRADA') {
+      // Retirada: sem endereço. Se o cliente escolheu um ponto, anotamos no
+      // campo de observações pra orientar o consultor.
+      const ponto = pontosRetirada.find((p) => String(p.id) === String(pontoRetiradaId));
+      if (ponto) {
+        payload.observacoesCliente = [observacoesCliente.trim(), `Retirada no depósito ${ponto.nome}.`]
+          .filter(Boolean)
+          .join(' ');
+      }
+    } else if (enderecoSelecionadoId === 'novo') {
       if (!enderecoNovo.rua.trim() || !enderecoNovo.cidade.trim() || !enderecoNovo.estado.trim()) {
         setErro('Preencha ao menos rua, cidade e UF do endereço de entrega.');
         return;
       }
-      enderecoPayload = { enderecoEntrega: enderecoNovo };
+      payload.enderecoEntrega = enderecoNovo;
+      payload.observacoesCliente = observacoesCliente.trim() || null;
     } else {
-      enderecoPayload = { enderecoId: Number(enderecoSelecionadoId) };
+      payload.enderecoId = Number(enderecoSelecionadoId);
+      payload.observacoesCliente = observacoesCliente.trim() || null;
     }
+
+    payload.itens = itens.map((i) => ({
+      equipamentoId: i.equipamentoId,
+      quantidade: i.quantidade,
+      observacaoItem: i.observacaoItem?.trim() || null,
+    }));
 
     setEnviando(true);
     try {
-      const response = await api.post('/api/pedidos', {
-        dataInicio,
-        dataFim,
-        ...enderecoPayload,
-        observacoesCliente: observacoesCliente.trim() || null,
-        itens: itens.map((i) => ({
-          equipamentoId: i.equipamentoId,
-          quantidade: i.quantidade,
-          observacaoItem: i.observacaoItem?.trim() || null,
-        })),
-      });
+      const response = await api.post('/api/pedidos', payload);
       setPedidoCriado(response.data);
       limparCarrinho();
     } catch (err) {
@@ -237,6 +325,70 @@ function Carrinho() {
           </div>
 
           <div className="checkoutField">
+            <label>Como você quer receber?</label>
+            <div className="carrinho-tipo-entrega">
+              <label className={`carrinho-entrega-opcao ${tipoEntrega === 'ENTREGA' ? 'selecionado' : ''}`}>
+                <input
+                  type="radio"
+                  name="tipoEntrega"
+                  value="ENTREGA"
+                  checked={tipoEntrega === 'ENTREGA'}
+                  onChange={() => setTipoEntrega('ENTREGA')}
+                />
+                <span>
+                  <strong>🚚 Entregar no meu endereço</strong>
+                  <br />
+                  <span className="carrinho-entrega-detalhe">Levamos até a obra (frete calculado abaixo)</span>
+                </span>
+              </label>
+              <label className={`carrinho-entrega-opcao ${tipoEntrega === 'RETIRADA' ? 'selecionado' : ''}`}>
+                <input
+                  type="radio"
+                  name="tipoEntrega"
+                  value="RETIRADA"
+                  checked={tipoEntrega === 'RETIRADA'}
+                  onChange={() => setTipoEntrega('RETIRADA')}
+                />
+                <span>
+                  <strong>🏬 Retirar no depósito</strong>
+                  <br />
+                  <span className="carrinho-entrega-detalhe">Você busca e devolve no ponto escolhido — sem frete</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {tipoEntrega === 'RETIRADA' && (
+            <div className="checkoutField">
+              <label>Onde você vai retirar?</label>
+              {pontosRetirada.length === 0 ? (
+                <p className="carrinho-entrega-detalhe">
+                  Nenhum ponto de retirada disponível no momento — o consultor vai combinar o local com você.
+                </p>
+              ) : (
+                <div className="carrinho-enderecos-salvos">
+                  {pontosRetirada.map((ponto) => (
+                    <label key={ponto.id} className="carrinho-endereco-opcao">
+                      <input
+                        type="radio"
+                        name="pontoRetirada"
+                        checked={String(pontoRetiradaId) === String(ponto.id)}
+                        onChange={() => setPontoRetiradaId(ponto.id)}
+                      />
+                      <span>
+                        <strong>{ponto.nome}</strong>
+                        <br />
+                        <span className="carrinho-endereco-detalhe">{ponto.endereco?.formatado || '---'}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {tipoEntrega === 'ENTREGA' && (
+          <div className="checkoutField">
             <label>Endereço de entrega</label>
             {enderecosSalvos.length > 0 && (
               <div className="carrinho-enderecos-salvos">
@@ -277,6 +429,7 @@ function Carrinho() {
               </div>
             )}
           </div>
+          )}
 
           <div className="checkoutField">
             <label>Observações gerais (opcional)</label>
@@ -290,8 +443,34 @@ function Carrinho() {
 
           <div className="carrinho-resumo-linha">
             <span>{itens.reduce((n, i) => n + i.quantidade, 0)} ite{itens.reduce((n, i) => n + i.quantidade, 0) > 1 ? 'ns' : 'm'} × {dias} dia{dias > 1 ? 's' : ''}</span>
+            <strong>R$ {valorItens.toFixed(2)}</strong>
+          </div>
+
+          {tipoEntrega === 'ENTREGA' && (
+            <div className="carrinho-resumo-linha carrinho-resumo-frete">
+              <span>
+                Frete (estimado)
+                {carregandoFrete && <em className="carrinho-frete-status"> calculando...</em>}
+                {frete?.distanciaKm != null && !carregandoFrete && (
+                  <em className="carrinho-frete-status"> ~{frete.distanciaKm} km · até {frete.prazoEstimadoDias} dia{frete.prazoEstimadoDias > 1 ? 's' : ''} úteis</em>
+                )}
+              </span>
+              <strong>{carregandoFrete ? '...' : (frete ? `R$ ${valorFrete.toFixed(2)}` : 'a calcular')}</strong>
+            </div>
+          )}
+          {tipoEntrega === 'RETIRADA' && (
+            <div className="carrinho-resumo-linha carrinho-resumo-frete">
+              <span>Retirada no depósito</span>
+              <strong>Grátis</strong>
+            </div>
+          )}
+
+          <div className="carrinho-resumo-linha carrinho-resumo-total">
+            <span>Total estimado</span>
             <strong>R$ {valorTotal.toFixed(2)}</strong>
           </div>
+
+          {erroFrete && <p className="carrinho-frete-erro">{erroFrete}</p>}
 
           <button type="submit" className="btnPrimary carrinho-finalizar" disabled={enviando}>
             {enviando ? 'Enviando...' : 'Finalizar pedido'}

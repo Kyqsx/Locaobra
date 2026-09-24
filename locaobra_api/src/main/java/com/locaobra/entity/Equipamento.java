@@ -27,6 +27,22 @@ public class Equipamento {
     @Column(name = "valor_diaria", nullable = false)
     private BigDecimal valorDiaria;
 
+    // ---- Dados logísticos (base do cálculo de frete) -------------------------
+    // Peso bruto por unidade (kg) e dimensões da embalagem/estrutura (cm).
+    // Opcional: enquanto não forem preenchidos, o frete usa um peso/dimensão
+    // padrão conservador (ver FreteService) — nunca quebra o pedido.
+    @Column(name = "peso_kg", precision = 10, scale = 2)
+    private BigDecimal pesoKg;
+
+    @Column(name = "comprimento_cm", precision = 10, scale = 2)
+    private BigDecimal comprimentoCm;
+
+    @Column(name = "largura_cm", precision = 10, scale = 2)
+    private BigDecimal larguraCm;
+
+    @Column(name = "altura_cm", precision = 10, scale = 2)
+    private BigDecimal alturaCm;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status = "ativo";
 
@@ -95,6 +111,38 @@ public class Equipamento {
 
     public void setValorDiaria(BigDecimal valorDiaria) {
         this.valorDiaria = valorDiaria;
+    }
+
+    public BigDecimal getPesoKg() {
+        return pesoKg;
+    }
+
+    public void setPesoKg(BigDecimal pesoKg) {
+        this.pesoKg = pesoKg;
+    }
+
+    public BigDecimal getComprimentoCm() {
+        return comprimentoCm;
+    }
+
+    public void setComprimentoCm(BigDecimal comprimentoCm) {
+        this.comprimentoCm = comprimentoCm;
+    }
+
+    public BigDecimal getLarguraCm() {
+        return larguraCm;
+    }
+
+    public void setLarguraCm(BigDecimal larguraCm) {
+        this.larguraCm = larguraCm;
+    }
+
+    public BigDecimal getAlturaCm() {
+        return alturaCm;
+    }
+
+    public void setAlturaCm(BigDecimal alturaCm) {
+        this.alturaCm = alturaCm;
     }
 
     public String getStatus() {

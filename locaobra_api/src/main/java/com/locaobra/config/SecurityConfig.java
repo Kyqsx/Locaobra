@@ -149,7 +149,13 @@ public class SecurityConfig {
                 // ===================== PEDIDOS (aluguel) =====================
                 // Cliente solicita e acompanha/cancela os próprios pedidos.
                 .requestMatchers(HttpMethod.POST, "/api/pedidos").hasRole("CLIENTE")
+                // Estimativa de frete do carrinho — CLIENTE logado (mesma regra
+                // do POST /api/pedidos; precisa vir antes da regra genérica).
+                .requestMatchers(HttpMethod.POST, "/api/pedidos/estimar-frete").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.GET, "/api/pedidos/meus").hasRole("CLIENTE")
+                // Pontos de retirada pro carrinho (depósitos ativos, dados
+                // públicos de nome/endereço) — cliente logado.
+                .requestMatchers(HttpMethod.GET, "/api/pedidos/pontos-retirada").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.POST, "/api/pedidos/*/cancelar")
                     .hasAnyRole("CLIENTE", "ADMIN", "GERENTE_OPERACOES", "CONSULTOR_LOCACAO")
                 // Fila do consultor: revisa e confirma/recusa o orçamento.
