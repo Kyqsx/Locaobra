@@ -3,6 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:locaobra_mobile/Categorias/catalogo_page.dart';
 import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
+import 'package:locaobra_mobile/cart/cart_item.dart';
+import 'package:locaobra_mobile/cart/cart_navigation.dart';
+import 'package:locaobra_mobile/cart/cart_state.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
@@ -46,14 +49,22 @@ class HomeScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          IconButton(
-                            onPressed: () {
-                              // Todo: navegar para a tela de carrinho quando existir.
+                          ValueListenableBuilder<List<CartItem>>(
+                            valueListenable: CartState.itens,
+                            builder: (context, itens, _) {
+                              final total = CartState.totalItens;
+                              return IconButton(
+                                onPressed: () => abrirCarrinho(context),
+                                icon: Badge(
+                                  isLabelVisible: total > 0,
+                                  label: Text('$total'),
+                                  child: const Icon(Icons.shopping_cart_outlined),
+                                ),
+                                color: Colors.black87,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              );
                             },
-                            icon: const Icon(Icons.shopping_cart_outlined),
-                            color: Colors.black87,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
                           ),
                           const SizedBox(width: 16),
                           ValueListenableBuilder<String?>(
