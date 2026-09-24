@@ -30,9 +30,9 @@ class StatusExpedicaoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: cor.withOpacity(0.12),
+        color: cor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cor.withOpacity(0.4)),
+        border: Border.all(color: cor.withValues(alpha: 0.4)),
       ),
       child: Text(
         statusExpedicaoLabel(status),

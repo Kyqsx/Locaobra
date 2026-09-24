@@ -111,7 +111,7 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     itemCount: filtradas.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
                     itemBuilder: (context, index) =>
                         _ExpedicaoCard(expedicao: filtradas[index], onTap: () => _abrirDetalhe(filtradas[index])),
                   );
@@ -156,7 +156,7 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
                 label: Text(opcao.key),
                 selected: selecionado,
                 onSelected: (_) => setState(() => _filtro = opcao.value),
-                selectedColor: _corPrimaria.withOpacity(0.18),
+                selectedColor: _corPrimaria.withValues(alpha: 0.18),
                 labelStyle: TextStyle(
                   color: selecionado ? _corPrimaria : Colors.black87,
                   fontWeight: selecionado ? FontWeight.w600 : FontWeight.normal,
