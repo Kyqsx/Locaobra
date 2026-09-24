@@ -511,25 +511,42 @@ public class PedidoService {
 
         // Frete final: recalculado a partir do(s) depósito(s) real(is) de
         // origem — a estimativa da solicitação (origem genérica) é substituída
-        // aqui. Pedido dividido entre depósitos soma o trecho de cada item.
+        // aqui. Itens de um MESMO depósito saem juntos, numa única viagem, então
+        // são agrupados por depósito e o frete daquele trecho (taxa de despacho,
+        // deslocamento, pedágio) é cobrado uma única vez por grupo — só o peso e
+        // o valor da mercadoria são somados entre os itens do grupo. Pedido
+        // dividido entre depósitos diferentes soma o trecho de cada depósito.
         // RETIRADA não tem frete — valorFrete permanece zero.
         if (pedido.getTipoEntrega() == TipoEntrega.RETIRADA) {
             pedido.setValorFrete(BigDecimal.ZERO);
         } else {
-            BigDecimal freteFinal = BigDecimal.ZERO;
             Endereco destino = pedido.getEnderecoEntrega();
-            for (ItemPedido item : itens) {
-                Equipamento eq = item.getEquipamento();
-                BigDecimal volume = freteService.volumeM3(
-                        eq.getComprimentoCm(), eq.getLarguraCm(), eq.getAlturaCm(), item.getQuantidade());
-                BigDecimal pesoItem = freteService.pesoConsideradoKg(eq.getPesoKg(), volume);
+            long dias = Math.max(1, ChronoUnit.DAYS.between(pedido.getDataInicio(), pedido.getDataFim()));
+
+            Map<Long, List<ItemPedido>> itensPorDeposito = itens.stream()
+                    .collect(Collectors.groupingBy(
+                            item -> item.getDeposito() != null ? item.getDeposito().getId() : -1L,
+                            LinkedHashMap::new,
+                            Collectors.toList()));
+
+            BigDecimal freteFinal = BigDecimal.ZERO;
+            for (List<ItemPedido> itensDoDeposito : itensPorDeposito.values()) {
+                BigDecimal pesoGrupo = BigDecimal.ZERO;
+                BigDecimal valorGrupo = BigDecimal.ZERO;
+                Deposito deposito = itensDoDeposito.get(0).getDeposito();
+                for (ItemPedido item : itensDoDeposito) {
+                    Equipamento eq = item.getEquipamento();
+                    BigDecimal volume = freteService.volumeM3(
+                            eq.getComprimentoCm(), eq.getLarguraCm(), eq.getAlturaCm(), item.getQuantidade());
+                    pesoGrupo = pesoGrupo.add(freteService.pesoConsideradoKg(eq.getPesoKg(), volume));
+                    BigDecimal valorItem = item.getValorDiariaSnapshot()
+                            .multiply(BigDecimal.valueOf(item.getQuantidade()))
+                            .multiply(BigDecimal.valueOf(dias));
+                    valorGrupo = valorGrupo.add(valorItem);
+                }
                 int km = freteService.estimarDistanciaKm(
-                        item.getDeposito() != null ? item.getDeposito().getEndereco() : null, destino);
-                BigDecimal valorItem = item.getValorDiariaSnapshot()
-                        .multiply(BigDecimal.valueOf(item.getQuantidade()))
-                        .multiply(BigDecimal.valueOf(Math.max(1, ChronoUnit.DAYS.between(
-                                pedido.getDataInicio(), pedido.getDataFim()))));
-                freteFinal = freteFinal.add(freteService.calcularFrete(pesoItem, km, valorItem, false));
+                        deposito != null ? deposito.getEndereco() : null, destino);
+                freteFinal = freteFinal.add(freteService.calcularFrete(pesoGrupo, km, valorGrupo, false));
             }
             pedido.setValorFrete(freteFinal.setScale(2, RoundingMode.HALF_UP));
         }
