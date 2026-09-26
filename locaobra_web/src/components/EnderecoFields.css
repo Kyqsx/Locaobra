@@ -48,6 +48,38 @@
     cursor: pointer;
 }
 
+.enderecoCepWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.enderecoCepWrapper .enderecoInput {
+    width: 100%;
+}
+
+.enderecoCepSpinner {
+    position: absolute;
+    right: 10px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--gray-200, #e2e2e2);
+    border-top-color: var(--primary-color, #f39200);
+    border-radius: 50%;
+    animation: enderecoCepGirar 0.6s linear infinite;
+}
+
+@keyframes enderecoCepGirar {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.enderecoCepAviso {
+    font-size: 11px;
+    color: var(--warning-color, #b45309);
+}
+
 @media (max-width: 640px) {
     .enderecoFieldsGrid {
         grid-template-columns: repeat(2, 1fr);

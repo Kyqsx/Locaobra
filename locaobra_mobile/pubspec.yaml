@@ -19,7 +19,6 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.2
 
-
   # Usados pelo dashboard do entregador (confirmação de entrega no local):
   image_picker: ^1.1.2 # tirar a foto da entrega na hora
   signature: ^5.5.0 # quadro de assinatura desenhada de quem recebeu

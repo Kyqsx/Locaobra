@@ -17,6 +17,7 @@ import 'package:locaobra_mobile/services/pedido_service.dart';
 import 'package:locaobra_mobile/screens/home_screen.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
 import 'package:locaobra_mobile/theme/app_theme.dart';
+import 'package:locaobra_mobile/widgets/cep_field.dart';
 
 /// Carrinho + Checkout num patch só (como no web): revisar os itens e
 /// enviar um único pedido de orçamento — equivalente a
@@ -802,7 +803,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           ),
           if (!_usandoEnderecoSalvo) ...[
             const SizedBox(height: 4),
-            _buildCampoTexto('CEP', _cepCtrl),
+            CepField(
+              cepController: _cepCtrl,
+              ruaController: _ruaCtrl,
+              bairroController: _bairroCtrl,
+              cidadeController: _cidadeCtrl,
+              estadoController: _estadoCtrl,
+            ),
             _buildCampoTexto('Rua *', _ruaCtrl),
             Row(
               children: [

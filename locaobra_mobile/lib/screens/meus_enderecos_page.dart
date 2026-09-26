@@ -3,6 +3,7 @@ import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/models/endereco.dart';
 import 'package:locaobra_mobile/services/endereco_service.dart';
 import 'package:locaobra_mobile/theme/app_theme.dart';
+import 'package:locaobra_mobile/widgets/cep_field.dart';
 
 /// "Meus Endereços" — equivalente a `Perfil/meusEnderecos.jsx`: lista, cria,
 /// edita, remove e define o endereço principal do cliente logado.
@@ -367,7 +368,13 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
           ),
           const SizedBox(height: 12),
           _campo('Apelido (ex: Casa, Obra Centro)', _apelidoCtrl),
-          _campo('CEP', _cepCtrl, hint: '00000-000'),
+          CepField(
+            cepController: _cepCtrl,
+            ruaController: _ruaCtrl,
+            bairroController: _bairroCtrl,
+            cidadeController: _cidadeCtrl,
+            estadoController: _estadoCtrl,
+          ),
           _campo('Rua *', _ruaCtrl),
           Row(
             children: [
