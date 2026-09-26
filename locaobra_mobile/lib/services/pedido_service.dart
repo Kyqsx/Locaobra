@@ -14,6 +14,25 @@ extension TipoEntregaApi on TipoEntrega {
   String get valorApi => this == TipoEntrega.entrega ? 'ENTREGA' : 'RETIRADA';
 }
 
+/// Forma de pagamento escolhida na tela de pagamento simulado — mesmos
+/// valores do enum FormaPagamento da API. Só as usadas na simulação (a API
+/// também aceita DINHEIRO/TRANSFERENCIA, sem uso aqui).
+enum FormaPagamento { cartaoCredito, pix, boleto }
+
+extension FormaPagamentoApi on FormaPagamento {
+  String get valorApi => switch (this) {
+        FormaPagamento.cartaoCredito => 'CARTAO_CREDITO',
+        FormaPagamento.pix => 'PIX',
+        FormaPagamento.boleto => 'BOLETO',
+      };
+
+  String get label => switch (this) {
+        FormaPagamento.cartaoCredito => 'Cartão',
+        FormaPagamento.pix => 'Pix',
+        FormaPagamento.boleto => 'Boleto',
+      };
+}
+
 /// Pedido recém-criado — só o que a tela de sucesso do checkout precisa.
 class PedidoCriado {
   final int id;
@@ -109,12 +128,17 @@ class PedidoService {
     Endereco? enderecoNovo,
     String? observacoesCliente,
     required List<CartItem> itens,
+    // Preenchido pela tela de pagamento simulado, depois do cliente
+    // "pagar" — o pedido já nasce com statusPagamento PAGO. Ausente (fluxo
+    // antigo) o pedido fica PENDENTE, sem quebrar nada.
+    FormaPagamento? formaPagamento,
   }) async {
     final payload = <String, dynamic>{
       'dataInicio': _dataIso(dataInicio),
       'dataFim': _dataIso(dataFim),
       'tipoEntrega': tipoEntrega.valorApi,
       'itens': _itensJson(itens),
+      if (formaPagamento != null) 'formaPagamento': formaPagamento.valorApi,
     };
 
     if (tipoEntrega == TipoEntrega.entrega) {

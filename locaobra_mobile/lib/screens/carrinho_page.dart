@@ -5,9 +5,11 @@ import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
 import 'package:locaobra_mobile/cart/cart_item.dart';
 import 'package:locaobra_mobile/cart/cart_state.dart';
+import 'package:locaobra_mobile/cart/dados_checkout.dart';
 import 'package:locaobra_mobile/models/endereco.dart';
 import 'package:locaobra_mobile/models/frete_estimativa.dart';
 import 'package:locaobra_mobile/models/ponto_retirada.dart';
+import 'package:locaobra_mobile/screens/pagamento_page.dart';
 import 'package:locaobra_mobile/services/api_client.dart';
 import 'package:locaobra_mobile/services/endereco_service.dart';
 import 'package:locaobra_mobile/services/pedido_service.dart';
@@ -59,10 +61,9 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   Timer? _debounceFrete;
   int _estimativaId = 0;
 
-  bool _enviando = false;
+  bool _verificandoLogin = true;
   String? _erro;
   PedidoCriado? _pedidoCriado;
-  bool _verificandoLogin = true;
 
   @override
   void initState() {
@@ -284,10 +285,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Envio
+  // Envio — valida e manda pra tela de pagamento simulado, que é quem de
+  // fato chama PedidoService.criar (com a forma de pagamento escolhida) e
+  // limpa o carrinho no sucesso.
   // ---------------------------------------------------------------------------
 
-  Future<void> _enviarPedido() async {
+  Future<void> _irParaPagamento() async {
     final itens = CartState.itens.value;
     setState(() => _erro = null);
 
@@ -306,46 +309,40 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       return;
     }
 
-    setState(() => _enviando = true);
-    try {
-      String? observacoes = _observacoesCtrl.text.trim();
-      if (_tipoEntrega == TipoEntrega.retirada && _pontoRetiradaId != null) {
-        final ponto = _pontosRetirada.where((p) => p.id == _pontoRetiradaId).toList();
-        if (ponto.isNotEmpty) {
-          observacoes = [observacoes, 'Retirada no depósito ${ponto.first.nome}.']
-              .where((s) => s.isNotEmpty)
-              .join(' ');
-        }
+    String? observacoes = _observacoesCtrl.text.trim();
+    if (_tipoEntrega == TipoEntrega.retirada && _pontoRetiradaId != null) {
+      final ponto = _pontosRetirada.where((p) => p.id == _pontoRetiradaId).toList();
+      if (ponto.isNotEmpty) {
+        observacoes = [observacoes, 'Retirada no depósito ${ponto.first.nome}.']
+            .where((s) => s.isNotEmpty)
+            .join(' ');
       }
-
-      final pedido = await _pedidoService.criar(
-        dataInicio: _dataInicio,
-        dataFim: _dataFim,
-        tipoEntrega: _tipoEntrega,
-        enderecoId: _tipoEntrega == TipoEntrega.entrega && _usandoEnderecoSalvo
-            ? _enderecoSelecionadoId
-            : null,
-        enderecoNovo: _tipoEntrega == TipoEntrega.entrega && !_usandoEnderecoSalvo
-            ? _enderecoNovo
-            : null,
-        observacoesCliente: observacoes,
-        itens: itens,
-      );
-      if (!mounted) return;
-      CartState.limpar();
-      setState(() {
-        _pedidoCriado = pedido;
-        _enviando = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _enviando = false;
-        _erro = e is PedidoInvalidoException || e is Exception
-            ? e.toString().replaceFirst('Exception: ', '')
-            : 'Não foi possível enviar o pedido. Tente novamente.';
-      });
     }
+
+    final valorTotal = _valorItens(itens) + _valorFrete;
+
+    final pedido = await Navigator.of(context).push<PedidoCriado>(
+      MaterialPageRoute(
+        builder: (_) => PagamentoPage(
+          dados: DadosCheckout(
+            dataInicio: _dataInicio,
+            dataFim: _dataFim,
+            tipoEntrega: _tipoEntrega,
+            enderecoId: _tipoEntrega == TipoEntrega.entrega && _usandoEnderecoSalvo
+                ? _enderecoSelecionadoId
+                : null,
+            enderecoNovo: _tipoEntrega == TipoEntrega.entrega && !_usandoEnderecoSalvo
+                ? _enderecoNovo
+                : null,
+            observacoesCliente: observacoes,
+            itens: itens,
+            valorTotal: valorTotal,
+          ),
+        ),
+      ),
+    );
+    if (!mounted || pedido == null) return;
+    setState(() => _pedidoCriado = pedido);
   }
 
   // ---------------------------------------------------------------------------
@@ -545,13 +542,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _enviando ? null : _enviarPedido,
+                  onPressed: _irParaPagamento,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 255, 128, 0),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text(_enviando ? 'Enviando...' : 'Finalizar pedido'),
+                  child: const Text('Ir para pagamento'),
                 ),
               ),
             ],

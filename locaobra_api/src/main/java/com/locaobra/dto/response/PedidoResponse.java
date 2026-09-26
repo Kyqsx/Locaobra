@@ -2,6 +2,8 @@ package com.locaobra.dto.response;
 
 import com.locaobra.entity.ItemPedido;
 import com.locaobra.entity.Pedido;
+import com.locaobra.enums.FormaPagamento;
+import com.locaobra.enums.StatusPagamento;
 import com.locaobra.enums.StatusPedido;
 import com.locaobra.enums.TipoEntrega;
 
@@ -36,6 +38,11 @@ public class PedidoResponse {
     // Frete aplicado: estimativa na criação; valor recalculado quando o
     // consultor confirma (com o(s) depósito(s) real(is)). Zero na retirada.
     private BigDecimal valorFrete;
+    // Pagamento simulado: status (PENDENTE/PAGO), forma escolhida na tela de
+    // pagamento e quando foi "pago".
+    private StatusPagamento statusPagamento;
+    private FormaPagamento formaPagamento;
+    private LocalDateTime pagoEm;
     private LocalDateTime confirmadoEm;
     private LocalDateTime canceladoEm;
     private LocalDateTime criadoEm;
@@ -69,6 +76,9 @@ public class PedidoResponse {
         r.valorTotalEstimado = p.getValorTotalEstimado();
         r.tipoEntrega = p.getTipoEntrega();
         r.valorFrete = p.getValorFrete();
+        r.statusPagamento = p.getStatusPagamento();
+        r.formaPagamento = p.getFormaPagamento();
+        r.pagoEm = p.getPagoEm();
         r.confirmadoEm = p.getConfirmadoEm();
         r.canceladoEm = p.getCanceladoEm();
         r.criadoEm = p.getCriadoEm();
@@ -98,6 +108,9 @@ public class PedidoResponse {
     public BigDecimal getValorTotalEstimado() { return valorTotalEstimado; }
     public TipoEntrega getTipoEntrega() { return tipoEntrega; }
     public BigDecimal getValorFrete() { return valorFrete; }
+    public StatusPagamento getStatusPagamento() { return statusPagamento; }
+    public FormaPagamento getFormaPagamento() { return formaPagamento; }
+    public LocalDateTime getPagoEm() { return pagoEm; }
     public LocalDateTime getConfirmadoEm() { return confirmadoEm; }
     public LocalDateTime getCanceladoEm() { return canceladoEm; }
     public LocalDateTime getCriadoEm() { return criadoEm; }

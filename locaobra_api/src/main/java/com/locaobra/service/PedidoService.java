@@ -14,6 +14,7 @@ import com.locaobra.dto.response.PontoRetiradaResponse;
 import com.locaobra.dto.response.SugestaoAlocacaoResponse;
 import com.locaobra.entity.*;
 import com.locaobra.enums.StatusExpedicao;
+import com.locaobra.enums.StatusPagamento;
 import com.locaobra.enums.StatusPedido;
 import com.locaobra.enums.StatusUnidade;
 import com.locaobra.enums.TipoEntrega;
@@ -122,6 +123,15 @@ public class PedidoService {
         pedido.setTipoEntrega(tipoEntrega);
         pedido.setEnderecoEntrega(enderecoEntrega);
         pedido.setObservacoesCliente(request.getObservacoesCliente());
+
+        // Pagamento simulado: se a tela de pagamento (web/mobile) já mandou
+        // a forma escolhida, o pedido nasce PAGO; senão (fluxo antigo, sem
+        // passar pela simulação) fica PENDENTE, como sempre foi.
+        if (request.getFormaPagamento() != null) {
+            pedido.setFormaPagamento(request.getFormaPagamento());
+            pedido.setStatusPagamento(StatusPagamento.PAGO);
+            pedido.setPagoEm(LocalDateTime.now());
+        }
 
         long dias = Math.max(1, ChronoUnit.DAYS.between(request.getDataInicio(), request.getDataFim()));
         BigDecimal valorTotal = BigDecimal.ZERO;

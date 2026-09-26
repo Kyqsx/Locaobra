@@ -221,7 +221,6 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                   _infoRow(
                     'Frete',
                     '${formatarMoeda(pedido.valorFrete!)}'
-                        '${pedido.status == StatusPedido.solicitado ? ' (estimado — valor final sai com o consultor)' : ''}',
                   ),
                 _infoRow('Total', formatarMoeda(valorTotal)),
                 const Padding(

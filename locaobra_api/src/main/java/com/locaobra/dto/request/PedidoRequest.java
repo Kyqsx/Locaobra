@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.locaobra.enums.FormaPagamento;
 import com.locaobra.enums.TipoEntrega;
 
 // Usado pelo CLIENTE para solicitar um orçamento de aluguel pelo catálogo.
@@ -28,6 +29,12 @@ public class PedidoRequest {
     private String observacoesCliente;
     private List<ItemPedidoRequest> itens = new ArrayList<>();
 
+    // Opcional: preenchido pela tela de pagamento simulado (web/mobile) logo
+    // após o cliente "pagar". Se vier, o pedido já nasce com statusPagamento
+    // PAGO; se não vier (app antigo, sem a tela nova), fica PENDENTE — sem
+    // quebrar compatibilidade com quem ainda manda pedido direto do carrinho.
+    private FormaPagamento formaPagamento;
+
     public LocalDate getDataInicio() { return dataInicio; }
     public void setDataInicio(LocalDate dataInicio) { this.dataInicio = dataInicio; }
 
@@ -48,4 +55,7 @@ public class PedidoRequest {
 
     public List<ItemPedidoRequest> getItens() { return itens; }
     public void setItens(List<ItemPedidoRequest> itens) { this.itens = itens; }
+
+    public FormaPagamento getFormaPagamento() { return formaPagamento; }
+    public void setFormaPagamento(FormaPagamento formaPagamento) { this.formaPagamento = formaPagamento; }
 }

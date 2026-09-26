@@ -1,5 +1,7 @@
 package com.locaobra.entity;
 
+import com.locaobra.enums.FormaPagamento;
+import com.locaobra.enums.StatusPagamento;
 import com.locaobra.enums.StatusPedido;
 import com.locaobra.enums.TipoEntrega;
 import jakarta.persistence.*;
@@ -77,6 +79,21 @@ public class Pedido {
     @Column(name = "valor_total_estimado", nullable = false)
     private BigDecimal valorTotalEstimado = BigDecimal.ZERO;
 
+    // Pagamento SIMULADO no checkout: PENDENTE (pedido antigo, sem tela de
+    // pagamento) ou PAGO (passou pela simulação web/mobile). Nenhuma
+    // integração real com gateway de pagamento — é só o status que o
+    // checkout grava depois da "confirmação" fake na tela.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_pagamento", length = 20, columnDefinition = "varchar(20) default 'PENDENTE'")
+    private StatusPagamento statusPagamento = StatusPagamento.PENDENTE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "forma_pagamento", length = 20)
+    private FormaPagamento formaPagamento;
+
+    @Column(name = "pago_em")
+    private LocalDateTime pagoEm;
+
     @Column(name = "confirmado_em")
     private LocalDateTime confirmadoEm;
 
@@ -145,6 +162,15 @@ public class Pedido {
 
     public BigDecimal getValorTotalEstimado() { return valorTotalEstimado; }
     public void setValorTotalEstimado(BigDecimal valorTotalEstimado) { this.valorTotalEstimado = valorTotalEstimado; }
+
+    public StatusPagamento getStatusPagamento() { return statusPagamento; }
+    public void setStatusPagamento(StatusPagamento statusPagamento) { this.statusPagamento = statusPagamento; }
+
+    public FormaPagamento getFormaPagamento() { return formaPagamento; }
+    public void setFormaPagamento(FormaPagamento formaPagamento) { this.formaPagamento = formaPagamento; }
+
+    public LocalDateTime getPagoEm() { return pagoEm; }
+    public void setPagoEm(LocalDateTime pagoEm) { this.pagoEm = pagoEm; }
 
     public LocalDateTime getConfirmadoEm() { return confirmadoEm; }
     public void setConfirmadoEm(LocalDateTime confirmadoEm) { this.confirmadoEm = confirmadoEm; }

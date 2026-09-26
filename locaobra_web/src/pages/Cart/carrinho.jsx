@@ -41,9 +41,7 @@ function Carrinho() {
   const [erroFrete, setErroFrete] = useState(null);
 
   const [observacoesCliente, setObservacoesCliente] = useState('');
-  const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
-  const [pedidoCriado, setPedidoCriado] = useState(null);
 
   const dias = Math.max(1, Math.round((new Date(`${dataFim}T00:00:00`) - new Date(`${dataInicio}T00:00:00`)) / 86400000));
   const valorItens = itens.reduce((soma, i) => soma + i.valorDiaria * i.quantidade * dias, 0);
@@ -118,7 +116,7 @@ function Carrinho() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipoEntrega, itens, enderecoSelecionadoId, enderecoNovo.cidade, enderecoNovo.estado, enderecosSalvos, dataInicio, dataFim]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setErro(null);
 
@@ -163,39 +161,11 @@ function Carrinho() {
       observacaoItem: i.observacaoItem?.trim() || null,
     }));
 
-    setEnviando(true);
-    try {
-      const response = await api.post('/api/pedidos', payload);
-      setPedidoCriado(response.data);
-      limparCarrinho();
-    } catch (err) {
-      setErro(err?.response?.data?.message || 'Não foi possível enviar o pedido. Tente novamente.');
-    } finally {
-      setEnviando(false);
-    }
+    // Não envia o pedido daqui — só monta o payload e manda pra tela de
+    // pagamento simulado, que é quem faz o POST /api/pedidos (com a forma
+    // de pagamento escolhida) e limpa o carrinho no sucesso.
+    navigate('/carrinho/pagamento', { state: { payload, valorTotal } });
   };
-
-  if (pedidoCriado) {
-    return (
-      <div className="carrinho-container">
-        <div className="carrinho-sucesso">
-          <div className="carrinho-sucesso-icon">✅</div>
-          <h3>Pedido enviado!</h3>
-          <p>
-            Seu orçamento <strong>{pedidoCriado.codigo}</strong> foi enviado e está aguardando
-            revisão da nossa equipe. Você pode acompanhar o status a qualquer momento em
-            "Meus Pedidos".
-          </p>
-          <div className="carrinho-sucesso-acoes">
-            <Link to="/" className="btnSecondary">Continuar comprando</Link>
-            <button type="button" className="btnPrimary" onClick={() => navigate('/meus-pedidos')}>
-              Ver Meus Pedidos
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (itens.length === 0) {
     return (
@@ -472,8 +442,8 @@ function Carrinho() {
 
           {erroFrete && <p className="carrinho-frete-erro">{erroFrete}</p>}
 
-          <button type="submit" className="btnPrimary carrinho-finalizar" disabled={enviando}>
-            {enviando ? 'Enviando...' : 'Finalizar pedido'}
+          <button type="submit" className="btnPrimary carrinho-finalizar">
+            Ir para pagamento
           </button>
         </form>
       </div>

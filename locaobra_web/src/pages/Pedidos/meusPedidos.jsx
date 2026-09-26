@@ -90,7 +90,7 @@ function MeusPedidos() {
                   </div>
                   {pedido.tipoEntrega !== 'RETIRADA' && pedido.valorFrete != null && (
                     <div className="pedido-info-row">
-                      <span><strong>Frete:</strong> R$ {Number(pedido.valorFrete).toFixed(2)} {pedido.status === 'SOLICITADO' ? '(estimado — valor final sai com o consultor)' : ''}</span>
+                      <span><strong>Frete:</strong> R$ {Number(pedido.valorFrete).toFixed(2)}</span>
                     </div>
                   )}
                   <div className="pedido-info-row">
