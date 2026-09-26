@@ -5,9 +5,11 @@ import 'package:locaobra_mobile/screens/welcome_screen.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/theme/app_theme.dart';
 
-// Tela de artigo completo: breadcrumb, título, autor/data, imagem,
-// introdução, itens numerados do corpo e uma caixa de dica de segurança
-// (quando o artigo tiver uma).
+// Tela de artigo completo, com o mesmo design da visualização de produto:
+// capa em tela cheia no topo (atrás do header transparente), fundo cinza e
+// conteúdo em cards brancos com borda. Dentro dos cards: breadcrumb, título,
+// autor/data, introdução, itens numerados do corpo e caixa de dica de
+// segurança (quando o artigo tiver uma).
 class ArtigoDetalhesPage extends StatelessWidget {
   final Artigo artigo;
 
@@ -16,173 +18,188 @@ class ArtigoDetalhesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Breadcrumb "Início > Dicas LocaObra > Título do artigo"
-              _buildBreadcrumb(context),
-              const SizedBox(height: 16),
-
-              // Título do artigo
-              Text(
-                artigo.titulo,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  height: 1.3,
-                ),
+      extendBodyBehindAppBar: true,
+      body: SingleChildScrollView(
+        // Sem padding do topo: a capa começa atrás do header transparente
+        // (igual à galeria do product view). Lateral 6px no conteúdo.
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Capa em tela cheia no topo
+            AspectRatio(
+              aspectRatio: 1.6,
+              child: Image.asset(
+                artigo.imagePath,
+                fit: BoxFit.cover,
+                width: double.infinity,
               ),
-              const SizedBox(height: 10),
+            ),
 
-              // Autor e data
-              Row(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.person_outline,
-                    size: 14,
-                    color: AppColors.gray600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    artigo.autor,
-                    style: TextStyle(fontSize: 12, color: AppColors.gray700),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 13,
-                    color: AppColors.gray600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    artigo.data,
-                    style: TextStyle(fontSize: 12, color: AppColors.gray700),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
-              // Imagem de capa do artigo
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                child: Image.asset(
-                  artigo.imagePath,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(height: 16),
+                  // Breadcrumb "Início > Dicas LocaObra > Título do artigo"
+                  _buildBreadcrumb(context),
+                  const SizedBox(height: 12),
 
-              // Parágrafo de introdução, em destaque (azul, como no site)
-              Text(
-                artigo.introducao,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.steel700,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Divider(height: 1, color: AppColors.gray500),
-              const SizedBox(height: 16),
-
-              // Itens numerados do corpo do artigo
-              ...List.generate(artigo.itens.length, (index) {
-                final item = artigo.itens[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.gray800,
-                        height: 1.5,
-                      ),
+                  // Card com título + autor/data
+                  _buildCartao(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextSpan(
-                          text: '${index + 1}. ${item.titulo}\n',
+                        Text(
+                          artigo.titulo,
                           style: const TextStyle(
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
+                            height: 1.3,
                           ),
                         ),
-                        TextSpan(text: item.descricao),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              size: 14,
+                              color: AppColors.gray600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              artigo.autor,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.gray700,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 13,
+                              color: AppColors.gray600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              artigo.data,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.gray700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                );
-              }),
+                  const SizedBox(height: 12),
 
-              // Caixa de "Dica de Segurança", só aparece se o artigo tiver uma
-              if (artigo.dicaSeguranca != null) ...[
-                const Divider(height: 1, color: AppColors.gray500),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    border: Border.all(color: AppColors.primary),
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.gray800,
-                        height: 1.4,
-                      ),
+                  // Card com o conteúdo do artigo (introdução + itens + dica)
+                  _buildCartao(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const TextSpan(
-                          text: 'Dica de Segurança: ',
+                        // Introdução em destaque (azul, como no site)
+                        Text(
+                          artigo.introducao,
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            fontSize: 14,
+                            color: AppColors.steel700,
+                            height: 1.5,
                           ),
                         ),
-                        TextSpan(text: artigo.dicaSeguranca),
+                        const SizedBox(height: 16),
+
+                        // Itens numerados do corpo do artigo
+                        ...List.generate(artigo.itens.length, (index) {
+                          final item = artigo.itens[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.gray800,
+                                  height: 1.5,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: '${index + 1}. ${item.titulo}\n',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  TextSpan(text: item.descricao),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+
+                        // Caixa de "Dica de Segurança", só aparece se o artigo
+                        // tiver uma. Texto branco sobre o laranja do tema.
+                        if (artigo.dicaSeguranca != null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.lg,
+                              ),
+                            ),
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.white,
+                                  height: 1.4,
+                                ),
+                                children: [
+                                  const TextSpan(
+                                    text: 'Dica de Segurança: ',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextSpan(text: artigo.dicaSeguranca),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 16),
 
-              // Link para voltar à listagem
-              InkWell(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DicasLocaObraPage(),
-                    ),
-                  );
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.arrow_back, size: 16, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'Voltar para Dicas LocaObra',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+                  
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  // Card branco com borda, mesmo padrão dos cards do product view.
+  Widget _buildCartao({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
+      ),
+      child: child,
     );
   }
 
@@ -227,15 +244,20 @@ class ArtigoDetalhesPage extends StatelessWidget {
           ),
         ),
         Icon(Icons.chevron_right, size: 14, color: AppColors.gray600),
-        Text(
-          artigo.titulo,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+        Expanded(
+          child: Text(
+            artigo.titulo,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
       ],
     );
   }
 }
+

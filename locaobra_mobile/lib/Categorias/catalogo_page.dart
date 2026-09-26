@@ -74,13 +74,20 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
+      extendBodyBehindAppBar: true,
+      body: SingleChildScrollView(
+        // Status bar + toolbar como padding do scroll (não envolvendo), pra
+        // o conteúdo começar abaixo do header mas passar por baixo dele ao
+        // rolar. Usando MediaQuery direto em vez de SafeArea pra evitar
+        // duplicação de padding com extendBodyBehindAppBar.
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + kToolbarHeight,
+        ),
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                padding: const EdgeInsets.fromLTRB(6, 8, 6, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -91,7 +98,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                         _buildFiltrarButton(),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 6),
                     FutureBuilder<List<Equipamento>>(
                       future: _futureDados,
                       builder: (context, snapshot) {
@@ -142,7 +149,6 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
             ],
           ),
         ),
-      ),
     );
   }
 

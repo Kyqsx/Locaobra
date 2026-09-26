@@ -5,6 +5,7 @@ import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
 import 'package:locaobra_mobile/rastreio/screens/rastreio_detalhe_page.dart';
 import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
 import 'package:locaobra_mobile/theme/app_theme.dart';
+import 'package:locaobra_mobile/widgets/header_voltar.dart';
 
 /// "Minhas Entregas" — lista todas as expedições (entregas e coletas) do
 /// cliente logado, mais recentes primeiro. Ponto de entrada geral do
@@ -55,13 +56,9 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
-      appBar: AppBar(
-        title: const Text('Minhas Entregas'),
-        backgroundColor: AppColors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-      ),
-      body: SafeArea(child: _buildBody()),
+      appBar: const HeaderVoltar(),
+      extendBodyBehindAppBar: true,
+      body: _buildBody(),
     );
   }
 
@@ -103,7 +100,14 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
     return RefreshIndicator(
       onRefresh: _carregar,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        // Status bar + toolbar no padding do scroll (sem SafeArea), pra
+        // conteúdo rolar por baixo do header transparente.
+        padding: EdgeInsets.fromLTRB(
+          6,
+          MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+          6,
+          8,
+        ),
         itemCount: _entregas.length,
         itemBuilder: (context, i) => Padding(
           padding: const EdgeInsets.only(bottom: 12),

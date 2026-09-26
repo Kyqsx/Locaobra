@@ -157,7 +157,8 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
-      body: SafeArea(child: _buildBody()),
+      extendBodyBehindAppBar: true,
+      body: _buildBody(),
     );
   }
 
@@ -201,7 +202,15 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
     return RefreshIndicator(
       onRefresh: _carregar,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        // Status bar + toolbar no padding do scroll (sem SafeArea), pra
+        // conteúdo rolar por baixo do header transparente. Lateral 6px
+        // igual ao catálogo/product view/carrinho.
+        padding: EdgeInsets.fromLTRB(
+          6,
+          MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+          6,
+          8,
+        ),
         itemCount: _pedidos.length,
         itemBuilder: (context, i) => Padding(
           padding: const EdgeInsets.only(bottom: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 import 'package:locaobra_mobile/theme/app_theme.dart';
+import 'package:locaobra_mobile/widgets/header_voltar.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -68,28 +69,21 @@ class _CadastroPageState extends State<CadastroPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
+      appBar: const HeaderVoltar(),
+      extendBodyBehindAppBar: true,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          24, MediaQuery.of(context).padding.top + kToolbarHeight, 24, 0,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
 
-                // Botão voltar
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                  padding: EdgeInsets.zero,
-                  alignment: Alignment.centerLeft,
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text(
-                  'Criar conta',
+              const Text(
+                'Criar conta',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -310,7 +304,6 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
           ),
         ),
-      ),
     );
   }
 }

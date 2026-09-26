@@ -224,7 +224,8 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
-      body: SafeArea(child: _buildBody()),
+      extendBodyBehindAppBar: true,
+      body: _buildBody(),
     );
   }
 
@@ -242,7 +243,15 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      // Status bar + toolbar no padding do scroll (sem SafeArea), pra
+      // conteúdo rolar por baixo do header transparente. Lateral 6px
+      // igual ao catálogo/product view/carrinho.
+      padding: EdgeInsets.fromLTRB(
+        6,
+        MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+        6,
+        8,
+      ),
       children: [
         const Text(
           'Endereços salvos pra agilizar o checkout — pode ter mais de um, ex: casa e obra.',

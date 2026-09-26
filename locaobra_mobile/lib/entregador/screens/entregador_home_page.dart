@@ -114,7 +114,8 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
 
                   return ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
+                    // Lateral 6px igual ao resto do app.
+                    padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
                     itemCount: filtradas.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 10),
                     itemBuilder: (context, index) =>
@@ -151,7 +152,7 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Row(
           children: opcoes.map((opcao) {
             final selecionado = _filtro == opcao.value;

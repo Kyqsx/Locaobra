@@ -15,9 +15,16 @@ class DicasLocaObraPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+      extendBodyBehindAppBar: true,
+      body: SingleChildScrollView(
+        // Status bar + toolbar no padding do scroll (sem SafeArea), pra
+        // conteúdo rolar por baixo do header transparente. Lateral 6px.
+        padding: EdgeInsets.fromLTRB(
+          6,
+          MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+          6,
+          8,
+        ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -40,8 +47,6 @@ class DicasLocaObraPage extends StatelessWidget {
                 style: TextStyle(fontSize: 13, color: AppColors.gray700),
               ),
               const SizedBox(height: 16),
-              const Divider(height: 1, color: AppColors.gray500),
-              const SizedBox(height: 16),
 
               // Grade de artigos: 2 colunas
               GridView.builder(
@@ -62,7 +67,6 @@ class DicasLocaObraPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -101,13 +105,17 @@ class DicasLocaObraPage extends StatelessWidget {
   }
 
   // Card de artigo: foto no topo, título, resumo, autor e data embaixo.
-  // Ao tocar, abre a tela de detalhes desse artigo.
+  // Mesmo visual dos cards do catálogo: borda no shape da Material (acompanha
+  // os cantos arredondados) e sem divisória interna.
   Widget _buildArtigoCard(BuildContext context, Artigo artigo) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      child: Material(
-        color: AppColors.white,
-        child: InkWell(
+    return Material(
+      color: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: const BorderSide(color: AppColors.gray300, width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
           onTap: () {
             Navigator.push(
               context,
@@ -116,11 +124,7 @@ class DicasLocaObraPage extends StatelessWidget {
               ),
             );
           },
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.gray300, width: 1),
-            ),
-            child: Column(
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AspectRatio(
@@ -159,8 +163,6 @@ class DicasLocaObraPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Divider(height: 1, color: AppColors.gray500),
-                      const SizedBox(height: 6),
                       // Linha com autor e data
                       Row(
                         children: [
@@ -207,8 +209,6 @@ class DicasLocaObraPage extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
     );
   }
 }

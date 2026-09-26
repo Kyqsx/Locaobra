@@ -4,6 +4,12 @@ import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Header padrão do app para telas empilhadas: só a seta de voltar
 /// dentro de um círculo, sem título da página atual.
+
+/// Diâmetro único dos botões circulares do header (voltar, carrinho etc.).
+/// Reduzido pra 34 pra casar com o tamanho efetivo que o botão do carrinho
+/// renderiza no AppBar (o slot de actions limita o widget).
+const double kHeaderCircleSize = 34;
+
 class HeaderVoltar extends StatelessWidget implements PreferredSizeWidget {
   /// Opcional: comportamento customizado ao tocar em voltar
   /// (ex.: `Navigator.pop(context, valor)`).
@@ -41,17 +47,19 @@ class HeaderVoltar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
       // Mesma margem de 6px do leading e da página.
       actionsPadding: const EdgeInsets.only(right: 6),
-      // 6 de margem + 36 do círculo + 6 de folga (igual ao lado direito).
-      leadingWidth: 48,
+      // 6 de margem + 34 do círculo, espelhando o lado direito.
+      leadingWidth: kHeaderCircleSize + 12,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 6, top: 6, bottom: 6),
-        child: HeaderCircleButton(
-          icon: Icons.arrow_back_ios_new,
-          iconSize: 17,
-          // Mesmo diâmetro da altura do campo de pesquisa do catálogo (36),
-          // pra manter a consistência visual.
-          size: 36,
-          onTap: onPop ?? () => Navigator.of(context).maybePop(),
+        padding: const EdgeInsets.only(left: 6),
+        child: Center(
+          child: SizedBox.square(
+            dimension: kHeaderCircleSize,
+            child: HeaderCircleButton(
+              icon: Icons.arrow_back_ios_new,
+              iconSize: 17,
+              onTap: onPop ?? () => Navigator.of(context).maybePop(),
+            ),
+          ),
         ),
       ),
     );
@@ -64,7 +72,6 @@ class HeaderVoltar extends StatelessWidget implements PreferredSizeWidget {
 class HeaderCircleButton extends StatelessWidget {
   final IconData icon;
   final double iconSize;
-  final double size;
   final VoidCallback onTap;
   final Widget? badge;
 
@@ -73,12 +80,13 @@ class HeaderCircleButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.iconSize = 20,
-    this.size = 34,
     this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
+    // O botão preenche o espaço que o container (SizedBox/leading) der —
+    // o tamanho é definido por quem usa, não aqui.
     final botao = Material(
       color: AppColors.white,
       shape: CircleBorder(
@@ -87,17 +95,19 @@ class HeaderCircleButton extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: Icon(icon, size: iconSize, color: AppColors.textPrimary),
-          ),
+        child: Center(
+          child: Icon(icon, size: iconSize, color: AppColors.textPrimary),
         ),
       ),
     );
 
     if (badge == null) return botao;
-    return Stack(clipBehavior: Clip.none, children: [botao, badge!]);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(child: botao),
+        badge!,
+      ],
+    );
   }
 }

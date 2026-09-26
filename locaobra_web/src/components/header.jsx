@@ -78,9 +78,9 @@ function Header() {
                                         </Link>
                                     </>
                                 )}
-                                <Link to="/perfil" className="sub-item">
+                                {/*<Link to="/perfil" className="sub-item">
                                     <FontAwesomeIcon icon={faUser} /> Ver Perfil
-                                </Link>
+                                </Link>*/}
                                 <button onClick={handleLogout} className="sub-item logout-dropdown">
                                     <FontAwesomeIcon icon={faRightFromBracket} /> Sair
                                 </button>

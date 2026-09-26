@@ -136,7 +136,8 @@ public class ExpedicaoController {
         String fotoUrl = storageService.salvar(foto, "entregas");
         String assinaturaUrl = storageService.salvar(assinaturaImagem, "assinaturas");
 
-        return ResponseEntity.ok(expedicaoService.confirmarEntrega(id, assinatura, documento, assinaturaUrl, fotoUrl, observacao));
+        return ResponseEntity
+                .ok(expedicaoService.confirmarEntrega(id, assinatura, documento, assinaturaUrl, fotoUrl, observacao));
     }
 
     // O entregador chegou e não conseguiu entregar/coletar.

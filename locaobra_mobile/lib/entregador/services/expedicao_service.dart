@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:locaobra_mobile/entregador/models/expedicao.dart';
 import 'package:locaobra_mobile/services/api_client.dart';
 
@@ -73,11 +74,13 @@ class ExpedicaoApiService {
             'assinaturaImagem',
             assinaturaImagemBytes,
             filename: 'assinatura.png',
+            contentType: MediaType('image', 'png'),
           ),
           'foto': http.MultipartFile.fromBytes(
             'foto',
             fotoBytes,
             filename: fotoNomeArquivo,
+            contentType: _contentTypeDaFoto(fotoNomeArquivo),
           ),
         },
       );
@@ -114,6 +117,30 @@ class ExpedicaoApiService {
       );
     } catch (_) {
       return ExpedicaoResult.erro('Não foi possível conectar ao servidor.');
+    }
+  }
+
+  /// O backend (ExpedicaoController.exigirImagem) rejeita o upload se o
+  /// Content-Type do part não começar com "image/" — e MultipartFile.fromBytes
+  /// manda "application/octet-stream" por padrão quando não informamos o
+  /// contentType. Por isso montamos aqui a partir da extensão do arquivo que
+  /// o image_picker devolveu, caindo em image/jpeg (padrão da câmera) se não
+  /// reconhecer a extensão.
+  MediaType _contentTypeDaFoto(String nomeArquivo) {
+    final ext = nomeArquivo.toLowerCase().split('.').last;
+    switch (ext) {
+      case 'png':
+        return MediaType('image', 'png');
+      case 'heic':
+        return MediaType('image', 'heic');
+      case 'heif':
+        return MediaType('image', 'heif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return MediaType('image', 'jpeg');
     }
   }
 

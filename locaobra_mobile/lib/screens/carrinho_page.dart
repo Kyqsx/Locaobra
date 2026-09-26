@@ -361,17 +361,16 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
-      body: SafeArea(
-        child: _pedidoCriado != null
-            ? _buildSucesso(_pedidoCriado!)
-            : ValueListenableBuilder<List<CartItem>>(
-                valueListenable: CartState.itens,
-                builder: (context, itens, _) {
-                  if (itens.isEmpty) return _buildVazio();
-                  return _buildConteudo(itens);
-                },
-              ),
-      ),
+      extendBodyBehindAppBar: true,
+      body: _pedidoCriado != null
+          ? _buildSucesso(_pedidoCriado!)
+          : ValueListenableBuilder<List<CartItem>>(
+              valueListenable: CartState.itens,
+              builder: (context, itens, _) {
+                if (itens.isEmpty) return _buildVazio();
+                return _buildConteudo(itens);
+              },
+            ),
     );
   }
 
@@ -454,7 +453,14 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     final valorTotal = valorItens + _valorFrete;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      // Status bar + toolbar no padding do scroll (sem SafeArea, igual ao
+      // catálogo/product view), pra conteúdo rolar por baixo do header.
+      padding: EdgeInsets.fromLTRB(
+        6,
+        MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+        6,
+        8,
+      ),
       children: [
         ...itens.map((item) => _buildItemCarrinho(item)),
         const SizedBox(height: 8),

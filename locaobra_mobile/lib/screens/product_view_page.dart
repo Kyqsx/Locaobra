@@ -222,14 +222,14 @@ class _ProductViewPageState extends State<ProductViewPage> {
       extendBodyBehindAppBar: true,
       appBar: HeaderVoltar(
         actions: [
-          ValueListenableBuilder<List<CartItem>>(
+          SizedBox.square(
+            dimension: kHeaderCircleSize,
+            child: ValueListenableBuilder<List<CartItem>>(
               valueListenable: CartState.itens,
               builder: (context, itens, _) {
                 final total = CartState.totalItens;
                 return HeaderCircleButton(
                   icon: Icons.shopping_cart_outlined,
-                  // Mesmo diâmetro da altura do campo de pesquisa (36).
-                  size: 36,
                   onTap: () => abrirCarrinho(context),
                   badge: total > 0
                       ? Positioned(
@@ -240,6 +240,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                       : null,
                 );
               },
+            ),
           ),
         ],
       ),

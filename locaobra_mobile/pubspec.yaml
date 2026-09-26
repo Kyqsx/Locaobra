@@ -15,8 +15,10 @@ dependencies:
   flutter_svg: ^2.3.0
   google_fonts: ^6.2.1
   http: ^1.2.2
+  http_parser: ^4.0.2
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.2
+
 
   # Usados pelo dashboard do entregador (confirmação de entrega no local):
   image_picker: ^1.1.2 # tirar a foto da entrega na hora

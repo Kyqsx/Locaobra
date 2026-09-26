@@ -148,7 +148,6 @@ class HomeScreen extends StatelessWidget {
                                   _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
                                   _buildMenuItem('entregas', Icons.local_shipping_outlined, 'Minhas Entregas'),
                                   _buildMenuItem('enderecos', Icons.location_on_outlined, 'Meus Endereços'),
-                                  _buildMenuItem('perfil', Icons.person_outline, 'Ver Perfil'),
                                   const PopupMenuDivider(),
                                   _buildMenuItem('sair', Icons.logout, 'Sair', cor: AppColors.primary),
                                 ],

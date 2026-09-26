@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:locaobra_mobile/entregador/models/expedicao.dart';
 import 'package:locaobra_mobile/entregador/services/expedicao_service.dart';
 import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
+import 'package:locaobra_mobile/widgets/header_voltar.dart';
 import 'package:signature/signature.dart';
 import 'package:locaobra_mobile/theme/app_theme.dart';
 
@@ -226,16 +227,11 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
       canPop: true,
       child: Scaffold(
         backgroundColor: AppColors.bgPrimary,
-        appBar: AppBar(
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          foregroundColor: AppColors.textPrimary,
-          title: const Text('Detalhe da expedição'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(_houveMudanca),
-          ),
+        appBar: HeaderVoltar(
+          // Volta devolvendo se houve mudança (atualiza a lista da home).
+          onPop: () => Navigator.of(context).pop(_houveMudanca),
         ),
+        extendBodyBehindAppBar: true,
         body: FutureBuilder<Expedicao>(
           future: _futureExpedicao,
           builder: (context, snapshot) {
@@ -252,7 +248,14 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
             }
             final expedicao = snapshot.data!;
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              // Mesmo padrão das outras telas: lateral 6px e topo =
+              // status bar + header transparente (sem SafeArea).
+              padding: EdgeInsets.fromLTRB(
+                6,
+                MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+                6,
+                8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -143,9 +143,12 @@ class _PagamentoPageState extends State<PagamentoPage> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: const HeaderVoltar(),
+      extendBodyBehindAppBar: true,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(
+            16, kToolbarHeight + 16, 16, 16,
+          ),
           children: [
             const Text(
               'Simulação de pagamento — nenhum valor é cobrado de verdade.',
