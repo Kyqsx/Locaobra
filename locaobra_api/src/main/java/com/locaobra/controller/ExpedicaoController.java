@@ -1,6 +1,7 @@
 package com.locaobra.controller;
 
 import com.locaobra.dto.request.ExpedicaoRequest;
+import com.locaobra.dto.response.ExpedicaoRastreioResponse;
 import com.locaobra.dto.response.ExpedicaoResponse;
 import com.locaobra.enums.StatusExpedicao;
 import com.locaobra.exception.BusinessException;
@@ -66,6 +67,29 @@ public class ExpedicaoController {
     @GetMapping("/{id}")
     public ResponseEntity<ExpedicaoResponse> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(expedicaoService.buscarPorId(id));
+    }
+
+    // ===================== RASTREIO DO CLIENTE (app mobile) =====================
+    // Mesmo padrão de "/api/pedidos/meus": o próprio cliente logado acompanha
+    // as expedições em que é o destinatário. Retorna a versão enxuta
+    // (ExpedicaoRastreioResponse), sem dados internos de operação.
+
+    @GetMapping("/minhas")
+    public ResponseEntity<List<ExpedicaoRastreioResponse>> minhas() {
+        return ResponseEntity.ok(expedicaoService.listarRastreioDoCliente());
+    }
+
+    @GetMapping("/minhas/{id}")
+    public ResponseEntity<ExpedicaoRastreioResponse> minhaPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(expedicaoService.buscarRastreioDoCliente(id));
+    }
+
+    // Chamado a partir da tela "Meus Pedidos": mostra o rastreio da(s)
+    // expedição(ões) geradas por aquele pedido (pode ser mais de uma quando
+    // os itens saíram de depósitos diferentes).
+    @GetMapping("/pedido/{pedidoId}")
+    public ResponseEntity<List<ExpedicaoRastreioResponse>> porPedido(@PathVariable Long pedidoId) {
+        return ResponseEntity.ok(expedicaoService.listarRastreioPorPedido(pedidoId));
     }
 
     // Check-out (EM_TRANSITO) e check-in (CONCLUIDO). O check-out recebe a lista de

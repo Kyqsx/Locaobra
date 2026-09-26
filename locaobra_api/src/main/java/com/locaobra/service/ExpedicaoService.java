@@ -3,6 +3,7 @@ package com.locaobra.service;
 import com.locaobra.dto.request.ExpedicaoRequest;
 import com.locaobra.dto.request.EnderecoRequest;
 import com.locaobra.dto.request.ItemExpedicaoRequest;
+import com.locaobra.dto.response.ExpedicaoRastreioResponse;
 import com.locaobra.dto.response.ExpedicaoResponse;
 import com.locaobra.dto.response.VistoriaResponse;
 import com.locaobra.entity.*;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -422,6 +424,75 @@ public class ExpedicaoService {
         Expedicao expedicao = findOrThrow(id);
         validarAcessoMotorista(expedicao);
         return construirResponse(expedicao);
+    }
+
+    // ======================================================================
+    // RASTREIO DO CLIENTE (app mobile)
+    // ----------------------------------------------------------------------
+    // Mesmo princípio do "Meus Pedidos" (PedidoService.listarMeus): o cliente
+    // só enxerga as próprias expedições, nunca as de outro cliente — mesmo
+    // sabendo (ou adivinhando) o id. Por isso usamos ExpedicaoRastreioResponse
+    // (sem dados internos de operação) e tratamos "não é minha" como 404, não
+    // como 403: não confirmamos nem a existência da expedição de outro cliente.
+    // ======================================================================
+
+    @Transactional(readOnly = true)
+    public List<ExpedicaoRastreioResponse> listarRastreioDoCliente() {
+        Cliente cliente = resolverClienteLogado();
+        return expedicaoRepository.findByClienteId(cliente.getId()).stream()
+                .sorted(Comparator.comparing(Expedicao::getCriadoEm, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::construirRastreioResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ExpedicaoRastreioResponse buscarRastreioDoCliente(Long id) {
+        Cliente cliente = resolverClienteLogado();
+        Expedicao expedicao = findOrThrow(id);
+        if (expedicao.getCliente() == null || !expedicao.getCliente().getId().equals(cliente.getId())) {
+            throw new ResourceNotFoundException("Expedição não encontrada com ID: " + id);
+        }
+        return construirRastreioResponse(expedicao);
+    }
+
+    // Usado a partir de "Meus Pedidos": um pedido aprovado pode gerar mais de
+    // uma expedição (itens espalhados em depósitos diferentes — ver criar()),
+    // por isso devolve uma lista, não um único item.
+    @Transactional(readOnly = true)
+    public List<ExpedicaoRastreioResponse> listarRastreioPorPedido(Long pedidoId) {
+        Cliente cliente = resolverClienteLogado();
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado: " + pedidoId));
+        if (pedido.getCliente() == null || !pedido.getCliente().getId().equals(cliente.getId())) {
+            throw new ResourceNotFoundException("Pedido não encontrado: " + pedidoId);
+        }
+        return expedicaoRepository.findByPedidoId(pedidoId).stream()
+                .sorted(Comparator.comparing(Expedicao::getCriadoEm, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::construirRastreioResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ExpedicaoRastreioResponse construirRastreioResponse(Expedicao expedicao) {
+        List<ItemExpedicao> itens = itemRepository.findByExpedicaoId(expedicao.getId());
+        return ExpedicaoRastreioResponse.from(expedicao, itens);
+    }
+
+    private String emailLogado() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new BusinessException("Usuário não autenticado.");
+        }
+        return auth.getPrincipal().toString();
+    }
+
+    private Cliente resolverClienteLogado() {
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado())
+                .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
+        if (usuario.getIdCliente() == null) {
+            throw new BusinessException("Esse usuário não está vinculado a um cadastro de cliente.");
+        }
+        return clienteRepository.findById(usuario.getIdCliente())
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
     }
 
     // ======================================================================

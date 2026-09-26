@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:locaobra_mobile/models/pedido.dart';
+import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
+import 'package:locaobra_mobile/rastreio/screens/rastreio_detalhe_page.dart';
+import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
 import 'package:locaobra_mobile/services/pedido_service.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
 
@@ -15,11 +18,13 @@ class MeusPedidosPage extends StatefulWidget {
 
 class _MeusPedidosPageState extends State<MeusPedidosPage> {
   final PedidoService _service = PedidoService();
+  final RastreioService _rastreioService = RastreioService();
 
   bool _carregando = true;
   String? _erro;
   List<Pedido> _pedidos = const [];
   int? _cancelandoId;
+  int? _rastreandoId;
 
   @override
   void initState() {
@@ -77,6 +82,71 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
       setState(() => _cancelandoId = null);
+    }
+  }
+
+  // Busca a(s) expedição(ões) geradas por esse pedido e abre o rastreio.
+  // Normalmente é uma só; quando os itens saíram de depósitos diferentes,
+  // o pedido pode ter mais de uma — nesse caso deixa o cliente escolher.
+  Future<void> _rastrear(Pedido pedido) async {
+    setState(() => _rastreandoId = pedido.id);
+    try {
+      final expedicoes = await _rastreioService.listarPorPedido(pedido.id);
+      if (!mounted) return;
+      setState(() => _rastreandoId = null);
+
+      if (expedicoes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esse pedido ainda não tem uma entrega agendada.')),
+        );
+        return;
+      }
+      if (expedicoes.length == 1) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => RastreioDetalhePage(expedicaoInicial: expedicoes.first)),
+        );
+        return;
+      }
+      _escolherExpedicao(expedicoes);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _rastreandoId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  // Pedido desmembrado em mais de uma expedição (um depósito não tinha tudo):
+  // deixa o cliente escolher qual acompanhar.
+  Future<void> _escolherExpedicao(List<RastreioExpedicao> expedicoes) async {
+    final escolhida = await showModalBottomSheet<RastreioExpedicao>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Esse pedido tem mais de uma entrega. Qual você quer acompanhar?',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            for (final e in expedicoes)
+              ListTile(
+                title: Text(e.codigo),
+                subtitle: Text(e.enderecoEntrega.formatado ?? ''),
+                onTap: () => Navigator.pop(ctx, e),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (escolhida != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => RastreioDetalhePage(expedicaoInicial: escolhida)),
+      );
     }
   }
 
@@ -274,6 +344,18 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
               ],
             ),
           ),
+          if (pedido.status == StatusPedido.aprovado)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: _rastreandoId == pedido.id ? null : () => _rastrear(pedido),
+                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                  label: Text(_rastreandoId == pedido.id ? 'Buscando...' : 'Rastrear entrega'),
+                ),
+              ),
+            ),
           if (pedido.podeCancelar)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

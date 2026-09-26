@@ -1,0 +1,1134 @@
+--- a/locaobra_api/src/main/java/com/locaobra/config/SecurityConfig.java
++++ b/locaobra_api/src/main/java/com/locaobra/config/SecurityConfig.java
+@@ -141,6 +141,10 @@
+                             "FAXINEIRO", "CONSULTOR_LOCACAO")
+ 
+                 // ===================== EXPEDIÇÃO / LOGÍSTICA =====================
++                // Rastreio do cliente (app mobile): precisa vir antes da regra
++                // genérica de /api/expedicoes/**, que não libera ROLE_CLIENTE.
++                .requestMatchers(HttpMethod.GET, "/api/expedicoes/minhas", "/api/expedicoes/minhas/*",
++                        "/api/expedicoes/pedido/*").hasRole("CLIENTE")
+                 .requestMatchers(HttpMethod.DELETE, "/api/expedicoes/**")
+                     .hasAnyRole("ADMIN", "GERENTE_OPERACOES")
+                 .requestMatchers("/api/expedicoes/**")
+--- a/locaobra_api/src/main/java/com/locaobra/controller/ExpedicaoController.java
++++ b/locaobra_api/src/main/java/com/locaobra/controller/ExpedicaoController.java
+@@ -1,6 +1,7 @@
+ package com.locaobra.controller;
+ 
+ import com.locaobra.dto.request.ExpedicaoRequest;
++import com.locaobra.dto.response.ExpedicaoRastreioResponse;
+ import com.locaobra.dto.response.ExpedicaoResponse;
+ import com.locaobra.enums.StatusExpedicao;
+ import com.locaobra.exception.BusinessException;
+@@ -68,6 +69,29 @@
+         return ResponseEntity.ok(expedicaoService.buscarPorId(id));
+     }
+ 
++    // ===================== RASTREIO DO CLIENTE (app mobile) =====================
++    // Mesmo padrão de "/api/pedidos/meus": o próprio cliente logado acompanha
++    // as expedições em que é o destinatário. Retorna a versão enxuta
++    // (ExpedicaoRastreioResponse), sem dados internos de operação.
++
++    @GetMapping("/minhas")
++    public ResponseEntity<List<ExpedicaoRastreioResponse>> minhas() {
++        return ResponseEntity.ok(expedicaoService.listarRastreioDoCliente());
++    }
++
++    @GetMapping("/minhas/{id}")
++    public ResponseEntity<ExpedicaoRastreioResponse> minhaPorId(@PathVariable Long id) {
++        return ResponseEntity.ok(expedicaoService.buscarRastreioDoCliente(id));
++    }
++
++    // Chamado a partir da tela "Meus Pedidos": mostra o rastreio da(s)
++    // expedição(ões) geradas por aquele pedido (pode ser mais de uma quando
++    // os itens saíram de depósitos diferentes).
++    @GetMapping("/pedido/{pedidoId}")
++    public ResponseEntity<List<ExpedicaoRastreioResponse>> porPedido(@PathVariable Long pedidoId) {
++        return ResponseEntity.ok(expedicaoService.listarRastreioPorPedido(pedidoId));
++    }
++
+     // Check-out (EM_TRANSITO) e check-in (CONCLUIDO). O check-out recebe a lista de
+     // itens que o conferente marcou na conferência ("itensConferidos": [ids]).
+     // ENTREGUE só é alcançado por /confirmar-entrega; CANCELADO por /cancelar.
+--- a/locaobra_api/src/main/java/com/locaobra/service/ExpedicaoService.java
++++ b/locaobra_api/src/main/java/com/locaobra/service/ExpedicaoService.java
+@@ -3,6 +3,7 @@
+ import com.locaobra.dto.request.ExpedicaoRequest;
+ import com.locaobra.dto.request.EnderecoRequest;
+ import com.locaobra.dto.request.ItemExpedicaoRequest;
++import com.locaobra.dto.response.ExpedicaoRastreioResponse;
+ import com.locaobra.dto.response.ExpedicaoResponse;
+ import com.locaobra.dto.response.VistoriaResponse;
+ import com.locaobra.entity.*;
+@@ -21,6 +22,7 @@
+ import java.time.LocalDateTime;
+ import java.time.format.DateTimeFormatter;
+ import java.util.ArrayList;
++import java.util.Comparator;
+ import java.util.Collection;
+ import java.util.HashMap;
+ import java.util.HashSet;
+@@ -425,6 +427,75 @@
+     }
+ 
+     // ======================================================================
++    // RASTREIO DO CLIENTE (app mobile)
++    // ----------------------------------------------------------------------
++    // Mesmo princípio do "Meus Pedidos" (PedidoService.listarMeus): o cliente
++    // só enxerga as próprias expedições, nunca as de outro cliente — mesmo
++    // sabendo (ou adivinhando) o id. Por isso usamos ExpedicaoRastreioResponse
++    // (sem dados internos de operação) e tratamos "não é minha" como 404, não
++    // como 403: não confirmamos nem a existência da expedição de outro cliente.
++    // ======================================================================
++
++    @Transactional(readOnly = true)
++    public List<ExpedicaoRastreioResponse> listarRastreioDoCliente() {
++        Cliente cliente = resolverClienteLogado();
++        return expedicaoRepository.findByClienteId(cliente.getId()).stream()
++                .sorted(Comparator.comparing(Expedicao::getCriadoEm, Comparator.nullsLast(Comparator.reverseOrder())))
++                .map(this::construirRastreioResponse)
++                .collect(Collectors.toList());
++    }
++
++    @Transactional(readOnly = true)
++    public ExpedicaoRastreioResponse buscarRastreioDoCliente(Long id) {
++        Cliente cliente = resolverClienteLogado();
++        Expedicao expedicao = findOrThrow(id);
++        if (expedicao.getCliente() == null || !expedicao.getCliente().getId().equals(cliente.getId())) {
++            throw new ResourceNotFoundException("Expedição não encontrada com ID: " + id);
++        }
++        return construirRastreioResponse(expedicao);
++    }
++
++    // Usado a partir de "Meus Pedidos": um pedido aprovado pode gerar mais de
++    // uma expedição (itens espalhados em depósitos diferentes — ver criar()),
++    // por isso devolve uma lista, não um único item.
++    @Transactional(readOnly = true)
++    public List<ExpedicaoRastreioResponse> listarRastreioPorPedido(Long pedidoId) {
++        Cliente cliente = resolverClienteLogado();
++        Pedido pedido = pedidoRepository.findById(pedidoId)
++                .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado: " + pedidoId));
++        if (pedido.getCliente() == null || !pedido.getCliente().getId().equals(cliente.getId())) {
++            throw new ResourceNotFoundException("Pedido não encontrado: " + pedidoId);
++        }
++        return expedicaoRepository.findByPedidoId(pedidoId).stream()
++                .sorted(Comparator.comparing(Expedicao::getCriadoEm, Comparator.nullsLast(Comparator.reverseOrder())))
++                .map(this::construirRastreioResponse)
++                .collect(Collectors.toList());
++    }
++
++    private ExpedicaoRastreioResponse construirRastreioResponse(Expedicao expedicao) {
++        List<ItemExpedicao> itens = itemRepository.findByExpedicaoId(expedicao.getId());
++        return ExpedicaoRastreioResponse.from(expedicao, itens);
++    }
++
++    private String emailLogado() {
++        var auth = SecurityContextHolder.getContext().getAuthentication();
++        if (auth == null || auth.getPrincipal() == null) {
++            throw new BusinessException("Usuário não autenticado.");
++        }
++        return auth.getPrincipal().toString();
++    }
++
++    private Cliente resolverClienteLogado() {
++        Usuario usuario = usuarioRepository.findByEmail(emailLogado())
++                .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
++        if (usuario.getIdCliente() == null) {
++            throw new BusinessException("Esse usuário não está vinculado a um cadastro de cliente.");
++        }
++        return clienteRepository.findById(usuario.getIdCliente())
++                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
++    }
++
++    // ======================================================================
+     // Filtro de visibilidade por motorista
+     // ----------------------------------------------------------------------
+     // O motorista de uma expedição é um funcionário com cargo ENTREGADOR
+--- /dev/null
++++ b/locaobra_api/src/main/java/com/locaobra/dto/response/ExpedicaoRastreioResponse.java
+@@ -0,0 +1,97 @@
++package com.locaobra.dto.response;
++
++import com.locaobra.entity.Expedicao;
++import com.locaobra.entity.ItemExpedicao;
++import com.locaobra.enums.StatusExpedicao;
++import com.locaobra.enums.TipoExpedicao;
++
++import java.time.LocalDate;
++import java.time.LocalDateTime;
++import java.util.Collections;
++import java.util.List;
++import java.util.stream.Collectors;
++
++/**
++ * Versão enxuta do ExpedicaoResponse pra tela de RASTREIO DO CLIENTE
++ * (mobile). Só o que ajuda o cliente a acompanhar a própria entrega/coleta —
++ * sem ids/campos internos de operação (motorista/depósito por id, documento
++ * de quem recebeu, vistorias, etc.), que não dizem respeito a quem só quer
++ * saber "cadê meu equipamento".
++ */
++public class ExpedicaoRastreioResponse {
++
++    private Long id;
++    private String codigo;
++    private TipoExpedicao tipo;
++    private StatusExpedicao status;
++    private String pedidoCodigo;
++    private LocalDate dataProgramada;
++    private String horarioProgramado;
++    private EnderecoResponse enderecoEntrega;
++    private String motoristaNome;
++    private String observacoes;
++    private LocalDateTime criadoEm;
++    private LocalDateTime checkoutEm;
++    private LocalDateTime entregaConfirmadaEm;
++    private String assinaturaEntrega;
++    private String fotoEntrega;
++    private String motivoCancelamento;
++    private List<ItemRastreioResponse> itens;
++
++    public static ExpedicaoRastreioResponse from(Expedicao e, List<ItemExpedicao> itens) {
++        ExpedicaoRastreioResponse r = new ExpedicaoRastreioResponse();
++        r.id = e.getId();
++        r.codigo = e.getCodigo();
++        r.tipo = e.getTipo();
++        r.status = e.getStatus();
++        r.pedidoCodigo = e.getPedido() != null ? e.getPedido().getCodigo() : null;
++        r.dataProgramada = e.getDataProgramada();
++        r.horarioProgramado = e.getHorarioProgramado();
++        r.enderecoEntrega = EnderecoResponse.from(e.getEnderecoEntrega());
++        r.motoristaNome = e.getMotorista() != null ? e.getMotorista().getNome() : null;
++        r.observacoes = e.getObservacoes();
++        r.criadoEm = e.getCriadoEm();
++        r.checkoutEm = e.getCheckoutEm();
++        r.entregaConfirmadaEm = e.getEntregaConfirmadaEm();
++        r.assinaturaEntrega = e.getAssinaturaEntrega();
++        r.fotoEntrega = e.getFotoEntrega();
++        r.motivoCancelamento = e.getMotivoCancelamento();
++        r.itens = itens != null
++                ? itens.stream().map(ItemRastreioResponse::from).collect(Collectors.toList())
++                : Collections.emptyList();
++        return r;
++    }
++
++    public Long getId() { return id; }
++    public String getCodigo() { return codigo; }
++    public TipoExpedicao getTipo() { return tipo; }
++    public StatusExpedicao getStatus() { return status; }
++    public String getPedidoCodigo() { return pedidoCodigo; }
++    public LocalDate getDataProgramada() { return dataProgramada; }
++    public String getHorarioProgramado() { return horarioProgramado; }
++    public EnderecoResponse getEnderecoEntrega() { return enderecoEntrega; }
++    public String getMotoristaNome() { return motoristaNome; }
++    public String getObservacoes() { return observacoes; }
++    public LocalDateTime getCriadoEm() { return criadoEm; }
++    public LocalDateTime getCheckoutEm() { return checkoutEm; }
++    public LocalDateTime getEntregaConfirmadaEm() { return entregaConfirmadaEm; }
++    public String getAssinaturaEntrega() { return assinaturaEntrega; }
++    public String getFotoEntrega() { return fotoEntrega; }
++    public String getMotivoCancelamento() { return motivoCancelamento; }
++    public List<ItemRastreioResponse> getItens() { return itens; }
++
++    public static class ItemRastreioResponse {
++        private String equipamentoNome;
++        private Integer quantidade;
++
++        public static ItemRastreioResponse from(ItemExpedicao i) {
++            ItemRastreioResponse r = new ItemRastreioResponse();
++            r.equipamentoNome = i.getEquipamento() != null ? i.getEquipamento().getNome() : null;
++            r.quantidade = i.getQuantidade();
++            return r;
++        }
++
++        public String getEquipamentoNome() { return equipamentoNome; }
++        public Integer getQuantidade() { return quantidade; }
++    }
++}
+--- a/locaobra_mobile/lib/screens/meus_pedidos_page.dart
++++ b/locaobra_mobile/lib/screens/meus_pedidos_page.dart
+@@ -1,5 +1,8 @@
+ import 'package:flutter/material.dart';
+ import 'package:locaobra_mobile/models/pedido.dart';
++import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
++import 'package:locaobra_mobile/rastreio/screens/rastreio_detalhe_page.dart';
++import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
+ import 'package:locaobra_mobile/services/pedido_service.dart';
+ import 'package:locaobra_mobile/utils/formatters.dart';
+ 
+@@ -15,11 +18,13 @@
+ 
+ class _MeusPedidosPageState extends State<MeusPedidosPage> {
+   final PedidoService _service = PedidoService();
++  final RastreioService _rastreioService = RastreioService();
+ 
+   bool _carregando = true;
+   String? _erro;
+   List<Pedido> _pedidos = const [];
+   int? _cancelandoId;
++  int? _rastreandoId;
+ 
+   @override
+   void initState() {
+@@ -80,6 +85,71 @@
+     }
+   }
+ 
++  // Busca a(s) expedição(ões) geradas por esse pedido e abre o rastreio.
++  // Normalmente é uma só; quando os itens saíram de depósitos diferentes,
++  // o pedido pode ter mais de uma — nesse caso deixa o cliente escolher.
++  Future<void> _rastrear(Pedido pedido) async {
++    setState(() => _rastreandoId = pedido.id);
++    try {
++      final expedicoes = await _rastreioService.listarPorPedido(pedido.id);
++      if (!mounted) return;
++      setState(() => _rastreandoId = null);
++
++      if (expedicoes.isEmpty) {
++        ScaffoldMessenger.of(context).showSnackBar(
++          const SnackBar(content: Text('Esse pedido ainda não tem uma entrega agendada.')),
++        );
++        return;
++      }
++      if (expedicoes.length == 1) {
++        Navigator.push(
++          context,
++          MaterialPageRoute(builder: (_) => RastreioDetalhePage(expedicaoInicial: expedicoes.first)),
++        );
++        return;
++      }
++      _escolherExpedicao(expedicoes);
++    } catch (e) {
++      if (!mounted) return;
++      setState(() => _rastreandoId = null);
++      ScaffoldMessenger.of(context).showSnackBar(
++        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
++      );
++    }
++  }
++
++  // Pedido desmembrado em mais de uma expedição (um depósito não tinha tudo):
++  // deixa o cliente escolher qual acompanhar.
++  Future<void> _escolherExpedicao(List<RastreioExpedicao> expedicoes) async {
++    final escolhida = await showModalBottomSheet<RastreioExpedicao>(
++      context: context,
++      builder: (ctx) => SafeArea(
++        child: Column(
++          mainAxisSize: MainAxisSize.min,
++          children: [
++            const Padding(
++              padding: EdgeInsets.all(16),
++              child: Text('Esse pedido tem mais de uma entrega. Qual você quer acompanhar?',
++                  style: TextStyle(fontWeight: FontWeight.bold)),
++            ),
++            for (final e in expedicoes)
++              ListTile(
++                title: Text(e.codigo),
++                subtitle: Text(e.enderecoEntrega.formatado ?? ''),
++                onTap: () => Navigator.pop(ctx, e),
++              ),
++          ],
++        ),
++      ),
++    );
++    if (escolhida != null && mounted) {
++      Navigator.push(
++        context,
++        MaterialPageRoute(builder: (_) => RastreioDetalhePage(expedicaoInicial: escolhida)),
++      );
++    }
++  }
++
+   @override
+   Widget build(BuildContext context) {
+     return Scaffold(
+@@ -274,6 +344,18 @@
+               ],
+             ),
+           ),
++          if (pedido.status == StatusPedido.aprovado)
++            Padding(
++              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
++              child: Align(
++                alignment: Alignment.centerRight,
++                child: OutlinedButton.icon(
++                  onPressed: _rastreandoId == pedido.id ? null : () => _rastrear(pedido),
++                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
++                  label: Text(_rastreandoId == pedido.id ? 'Buscando...' : 'Rastrear entrega'),
++                ),
++              ),
++            ),
+           if (pedido.podeCancelar)
+             Padding(
+               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+--- a/locaobra_mobile/lib/screens/home_screen.dart
++++ b/locaobra_mobile/lib/screens/home_screen.dart
+@@ -7,6 +7,7 @@
+ import 'package:locaobra_mobile/cart/cart_navigation.dart';
+ import 'package:locaobra_mobile/cart/cart_state.dart';
+ import 'package:locaobra_mobile/services/auth_service.dart';
++import 'package:locaobra_mobile/rastreio/screens/minhas_entregas_page.dart';
+ import 'package:locaobra_mobile/screens/meus_pedidos_page.dart';
+ import 'package:locaobra_mobile/screens/meus_enderecos_page.dart';
+ import 'package:locaobra_mobile/utils/formatters.dart';
+@@ -133,10 +134,18 @@
+                                     );
+                                     return;
+                                   }
++                                  if (opcao == 'entregas') {
++                                    Navigator.push(
++                                      context,
++                                      MaterialPageRoute(builder: (_) => const MinhasEntregasPage()),
++                                    );
++                                    return;
++                                  }
+                                   // Todo: navegar para 'perfil' quando essa tela existir.
+                                 },
+                                 itemBuilder: (context) => [
+                                   _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
++                                  _buildMenuItem('entregas', Icons.local_shipping_outlined, 'Minhas Entregas'),
+                                   _buildMenuItem('enderecos', Icons.location_on_outlined, 'Meus Endereços'),
+                                   _buildMenuItem('perfil', Icons.person_outline, 'Ver Perfil'),
+                                   const PopupMenuDivider(),
+--- /dev/null
++++ b/locaobra_mobile/lib/rastreio/models/rastreio_expedicao.dart
+@@ -0,0 +1,94 @@
++import 'package:locaobra_mobile/entregador/models/expedicao.dart'
++    show StatusExpedicao, TipoExpedicao, EnderecoExpedicao, statusExpedicaoFromJson, tipoExpedicaoFromJson;
++import 'package:locaobra_mobile/services/api_client.dart';
++
++/// Item de uma expedição, na visão enxuta do rastreio do cliente — só o
++/// nome do equipamento e a quantidade (sem patrimônio/observação interna).
++class ItemRastreio {
++  final String? equipamentoNome;
++  final int quantidade;
++
++  const ItemRastreio({this.equipamentoNome, required this.quantidade});
++
++  factory ItemRastreio.fromJson(Map<String, dynamic> json) {
++    return ItemRastreio(
++      equipamentoNome: json['equipamentoNome']?.toString(),
++      quantidade: (json['quantidade'] as num?)?.toInt() ?? 1,
++    );
++  }
++}
++
++/// Espelha com.locaobra.dto.response.ExpedicaoRastreioResponse — a versão
++/// enxuta da expedição usada pelo cliente pra acompanhar a própria
++/// entrega/coleta (reaproveita os enums/rótulos já usados na tela do
++/// entregador, pra manter os mesmos textos e cores em toda a app).
++class RastreioExpedicao {
++  final int id;
++  final String codigo;
++  final TipoExpedicao tipo;
++  final StatusExpedicao status;
++  final String? pedidoCodigo;
++  final String? dataProgramada; // yyyy-MM-dd
++  final String? horarioProgramado;
++  final EnderecoExpedicao enderecoEntrega;
++  final String? motoristaNome;
++  final String? observacoes;
++  final String? criadoEm;
++  final String? checkoutEm;
++  final String? entregaConfirmadaEm;
++  final String? assinaturaEntrega;
++  final String? fotoEntrega;
++  final String? motivoCancelamento;
++  final List<ItemRastreio> itens;
++
++  const RastreioExpedicao({
++    required this.id,
++    required this.codigo,
++    required this.tipo,
++    required this.status,
++    this.pedidoCodigo,
++    this.dataProgramada,
++    this.horarioProgramado,
++    this.enderecoEntrega = const EnderecoExpedicao(),
++    this.motoristaNome,
++    this.observacoes,
++    this.criadoEm,
++    this.checkoutEm,
++    this.entregaConfirmadaEm,
++    this.assinaturaEntrega,
++    this.fotoEntrega,
++    this.motivoCancelamento,
++    this.itens = const [],
++  });
++
++  factory RastreioExpedicao.fromJson(Map<String, dynamic> json) {
++    final itensJson = json['itens'] as List<dynamic>? ?? [];
++    return RastreioExpedicao(
++      id: (json['id'] as num?)?.toInt() ?? 0,
++      codigo: json['codigo']?.toString() ?? '',
++      tipo: tipoExpedicaoFromJson(json['tipo']?.toString()),
++      status: statusExpedicaoFromJson(json['status']?.toString()),
++      pedidoCodigo: json['pedidoCodigo']?.toString(),
++      dataProgramada: json['dataProgramada']?.toString(),
++      horarioProgramado: json['horarioProgramado']?.toString(),
++      enderecoEntrega:
++          EnderecoExpedicao.fromJson(json['enderecoEntrega'] as Map<String, dynamic>?),
++      motoristaNome: json['motoristaNome']?.toString(),
++      observacoes: json['observacoes']?.toString(),
++      criadoEm: json['criadoEm']?.toString(),
++      checkoutEm: json['checkoutEm']?.toString(),
++      entregaConfirmadaEm: json['entregaConfirmadaEm']?.toString(),
++      assinaturaEntrega: json['assinaturaEntrega']?.toString(),
++      fotoEntrega: json['fotoEntrega']?.toString(),
++      motivoCancelamento: json['motivoCancelamento']?.toString(),
++      itens: itensJson
++          .map((i) => ItemRastreio.fromJson(i as Map<String, dynamic>))
++          .toList(),
++    );
++  }
++
++  bool get ehColeta => tipo == TipoExpedicao.coleta;
++  bool get cancelada => status == StatusExpedicao.cancelado;
++
++  String get fotoEntregaUrl => ApiClient.resolveUrl(fotoEntrega);
++}
+--- /dev/null
++++ b/locaobra_mobile/lib/rastreio/services/rastreio_service.dart
+@@ -0,0 +1,65 @@
++import 'dart:convert';
++import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
++import 'package:locaobra_mobile/services/api_client.dart';
++
++/// Rastreio de entrega/coleta pro cliente logado — espelha a fatia de
++/// /api/expedicoes consumida pelo app do cliente (só leitura; quem altera o
++/// status é sempre o conferente/entregador).
++class RastreioService {
++  /// GET /api/expedicoes/minhas — todas as expedições (entrega e coleta) em
++  /// que o cliente logado é o destinatário, mais recentes primeiro.
++  Future<List<RastreioExpedicao>> listarMinhas() async {
++    final response = await ApiClient.get('/api/expedicoes/minhas');
++    if (response.statusCode != 200) {
++      throw Exception(_extrairMensagem(response.body) ??
++          'Não foi possível carregar suas entregas (status ${response.statusCode}).');
++    }
++    final data = jsonDecode(utf8.decode(response.bodyBytes));
++    if (data is! List) return const [];
++    return data
++        .whereType<Map<String, dynamic>>()
++        .map(RastreioExpedicao.fromJson)
++        .toList();
++  }
++
++  /// GET /api/expedicoes/minhas/{id} — detalhe de uma expedição específica
++  /// (a API garante que só devolve se for do cliente logado).
++  Future<RastreioExpedicao> buscarPorId(int id) async {
++    final response = await ApiClient.get('/api/expedicoes/minhas/$id');
++    if (response.statusCode != 200) {
++      throw Exception(_extrairMensagem(response.body) ??
++          'Não foi possível carregar essa entrega (status ${response.statusCode}).');
++    }
++    return RastreioExpedicao.fromJson(
++        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
++  }
++
++  /// GET /api/expedicoes/pedido/{pedidoId} — expedição(ões) geradas por um
++  /// pedido específico. Normalmente uma só, mas pode ser mais de uma quando
++  /// os itens saíram de depósitos diferentes.
++  Future<List<RastreioExpedicao>> listarPorPedido(int pedidoId) async {
++    final response = await ApiClient.get('/api/expedicoes/pedido/$pedidoId');
++    if (response.statusCode != 200) {
++      throw Exception(_extrairMensagem(response.body) ??
++          'Não foi possível carregar o rastreio desse pedido (status ${response.statusCode}).');
++    }
++    final data = jsonDecode(utf8.decode(response.bodyBytes));
++    if (data is! List) return const [];
++    return data
++        .whereType<Map<String, dynamic>>()
++        .map(RastreioExpedicao.fromJson)
++        .toList();
++  }
++
++  String? _extrairMensagem(String body) {
++    try {
++      final data = jsonDecode(body);
++      if (data is Map<String, dynamic> && data['message'] != null) {
++        return data['message'].toString();
++      }
++    } catch (_) {
++      // corpo não é JSON, ignora
++    }
++    return null;
++  }
++}
+--- /dev/null
++++ b/locaobra_mobile/lib/rastreio/screens/rastreio_detalhe_page.dart
+@@ -0,0 +1,407 @@
++import 'package:flutter/material.dart';
++import 'package:locaobra_mobile/entregador/models/expedicao.dart'
++    show StatusExpedicao, statusExpedicaoLabel, tipoExpedicaoLabel;
++import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
++import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
++import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
++
++/// Rastreio de UMA expedição (entrega ou coleta) pro cliente: linha do
++/// tempo com as etapas já percorridas, endereço, itens e — quando já
++/// confirmada no local — quem recebeu e a foto tirada pelo entregador.
++///
++/// Recebe ou o [id] da expedição (rota "/minhas/{id}", usada quando se vem
++/// da lista geral de entregas) ou uma [expedicaoInicial] já carregada
++/// (usada quando se vem de "Meus Pedidos", que já buscou por pedidoId) —
++/// nesse segundo caso ainda assim faz um refresh puxando pra baixo.
++class RastreioDetalhePage extends StatefulWidget {
++  final int? id;
++  final RastreioExpedicao? expedicaoInicial;
++
++  const RastreioDetalhePage({super.key, this.id, this.expedicaoInicial})
++      : assert(id != null || expedicaoInicial != null,
++            'Informe o id da expedição ou uma expedição já carregada.');
++
++  @override
++  State<RastreioDetalhePage> createState() => _RastreioDetalhePageState();
++}
++
++class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
++  final RastreioService _service = RastreioService();
++
++  RastreioExpedicao? _expedicao;
++  bool _carregando = true;
++  String? _erro;
++
++  @override
++  void initState() {
++    super.initState();
++    _expedicao = widget.expedicaoInicial;
++    _carregar();
++  }
++
++  Future<void> _carregar() async {
++    final id = widget.id ?? widget.expedicaoInicial!.id;
++    setState(() {
++      _carregando = _expedicao == null;
++      _erro = null;
++    });
++    try {
++      final expedicao = await _service.buscarPorId(id);
++      if (!mounted) return;
++      setState(() {
++        _expedicao = expedicao;
++        _carregando = false;
++      });
++    } catch (e) {
++      if (!mounted) return;
++      setState(() {
++        _erro = _expedicao == null
++            ? e.toString().replaceFirst('Exception: ', '')
++            : null; // já tem algo na tela (o inicial); só ignora o refresh
++        _carregando = false;
++      });
++    }
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    return Scaffold(
++      backgroundColor: const Color(0xFFF5F5F5),
++      appBar: AppBar(
++        title: Text(
++          _expedicao != null ? 'Rastreio — ${tipoExpedicaoLabel(_expedicao!.tipo)}' : 'Rastreio da entrega',
++        ),
++        backgroundColor: Colors.white,
++        foregroundColor: Colors.black87,
++        elevation: 0,
++      ),
++      body: SafeArea(child: _buildBody()),
++    );
++  }
++
++  Widget _buildBody() {
++    if (_carregando && _expedicao == null) {
++      return const Center(child: CircularProgressIndicator());
++    }
++    if (_erro != null && _expedicao == null) {
++      return Center(
++        child: Padding(
++          padding: const EdgeInsets.all(24),
++          child: Column(
++            mainAxisSize: MainAxisSize.min,
++            children: [
++              Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
++              const SizedBox(height: 12),
++              OutlinedButton(onPressed: _carregar, child: const Text('Tentar de novo')),
++            ],
++          ),
++        ),
++      );
++    }
++
++    final expedicao = _expedicao!;
++    return RefreshIndicator(
++      onRefresh: _carregar,
++      child: ListView(
++        padding: const EdgeInsets.all(16),
++        children: [
++          _buildCabecalho(expedicao),
++          const SizedBox(height: 16),
++          if (expedicao.cancelada)
++            _buildCanceladaBanner(expedicao)
++          else
++            _buildLinhaDoTempo(expedicao),
++          const SizedBox(height: 16),
++          _buildCard(
++            titulo: 'Endereço',
++            child: Text(
++              expedicao.enderecoEntrega.formatado?.isNotEmpty == true
++                  ? expedicao.enderecoEntrega.formatado!
++                  : 'Não informado',
++              style: const TextStyle(fontSize: 14),
++            ),
++          ),
++          const SizedBox(height: 12),
++          _buildCard(
++            titulo: 'Itens',
++            child: Column(
++              crossAxisAlignment: CrossAxisAlignment.start,
++              children: expedicao.itens.isEmpty
++                  ? const [Text('Nenhum item informado.')]
++                  : expedicao.itens
++                      .map((i) => Padding(
++                            padding: const EdgeInsets.only(bottom: 4),
++                            child: Text('• ${i.equipamentoNome ?? 'Equipamento'} × ${i.quantidade}'),
++                          ))
++                      .toList(),
++            ),
++          ),
++          if (expedicao.observacoes != null && expedicao.observacoes!.trim().isNotEmpty) ...[
++            const SizedBox(height: 12),
++            _buildCard(titulo: 'Observações', child: Text(expedicao.observacoes!)),
++          ],
++          if (expedicao.entregaConfirmadaEm != null) ...[
++            const SizedBox(height: 12),
++            _buildConfirmacaoCard(expedicao),
++          ],
++        ],
++      ),
++    );
++  }
++
++  Widget _buildCabecalho(RastreioExpedicao expedicao) {
++    return Container(
++      width: double.infinity,
++      padding: const EdgeInsets.all(16),
++      decoration: BoxDecoration(
++        color: Colors.white,
++        borderRadius: BorderRadius.circular(12),
++        border: Border.all(color: Colors.grey.shade300),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Row(
++            mainAxisAlignment: MainAxisAlignment.spaceBetween,
++            children: [
++              Text(expedicao.codigo,
++                  style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace', fontSize: 15)),
++              StatusExpedicaoBadge(status: expedicao.status),
++            ],
++          ),
++          const SizedBox(height: 8),
++          if (expedicao.pedidoCodigo != null) _linha('Pedido', expedicao.pedidoCodigo!),
++          _linha(
++            'Data prevista',
++            '${_formatarDataSimples(expedicao.dataProgramada)}'
++                '${expedicao.horarioProgramado != null && expedicao.horarioProgramado!.isNotEmpty ? ' às ${expedicao.horarioProgramado}' : ''}',
++          ),
++          if (expedicao.motoristaNome != null) _linha('Entregador', expedicao.motoristaNome!),
++        ],
++      ),
++    );
++  }
++
++  Widget _linha(String rotulo, String valor) {
++    return Padding(
++      padding: const EdgeInsets.only(top: 4),
++      child: RichText(
++        text: TextSpan(
++          style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
++          children: [
++            TextSpan(text: '$rotulo: ', style: const TextStyle(fontWeight: FontWeight.bold)),
++            TextSpan(text: valor),
++          ],
++        ),
++      ),
++    );
++  }
++
++  Widget _buildCanceladaBanner(RastreioExpedicao expedicao) {
++    return Container(
++      width: double.infinity,
++      padding: const EdgeInsets.all(14),
++      decoration: BoxDecoration(
++        color: Colors.red.shade50,
++        borderRadius: BorderRadius.circular(10),
++        border: Border.all(color: Colors.red.shade200),
++      ),
++      child: Row(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Icon(Icons.cancel_outlined, color: Colors.red.shade700),
++          const SizedBox(width: 10),
++          Expanded(
++            child: Text.rich(
++              TextSpan(
++                children: [
++                  const TextSpan(text: 'Cancelada. ', style: TextStyle(fontWeight: FontWeight.bold)),
++                  TextSpan(text: expedicao.motivoCancelamento ?? 'Nenhum motivo informado.'),
++                ],
++              ),
++              style: TextStyle(color: Colors.red.shade700, fontSize: 13),
++            ),
++          ),
++        ],
++      ),
++    );
++  }
++
++  // Etapas da entrega: Agendado -> Em trânsito -> Entregue.
++  // Etapas da coleta: as mesmas, mais Concluído (equipamento de volta ao depósito).
++  Widget _buildLinhaDoTempo(RastreioExpedicao expedicao) {
++    final etapas = expedicao.ehColeta
++        ? const [
++            StatusExpedicao.agendado,
++            StatusExpedicao.emTransito,
++            StatusExpedicao.entregue,
++            StatusExpedicao.concluido,
++          ]
++        : const [
++            StatusExpedicao.agendado,
++            StatusExpedicao.emTransito,
++            StatusExpedicao.entregue,
++          ];
++    final indiceAtual = etapas.indexOf(expedicao.status);
++
++    return Container(
++      width: double.infinity,
++      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
++      decoration: BoxDecoration(
++        color: Colors.white,
++        borderRadius: BorderRadius.circular(12),
++        border: Border.all(color: Colors.grey.shade300),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          for (var i = 0; i < etapas.length; i++)
++            _buildEtapa(
++              rotulo: statusExpedicaoLabel(etapas[i]),
++              concluida: indiceAtual >= 0 && i <= indiceAtual,
++              atual: i == indiceAtual,
++              ultima: i == etapas.length - 1,
++              dataHora: _dataHoraDaEtapa(expedicao, etapas[i]),
++            ),
++        ],
++      ),
++    );
++  }
++
++  String? _dataHoraDaEtapa(RastreioExpedicao expedicao, StatusExpedicao etapa) {
++    switch (etapa) {
++      case StatusExpedicao.agendado:
++        return _formatarDataHora(expedicao.criadoEm);
++      case StatusExpedicao.emTransito:
++        return _formatarDataHora(expedicao.checkoutEm);
++      case StatusExpedicao.entregue:
++        return _formatarDataHora(expedicao.entregaConfirmadaEm);
++      default:
++        return null; // CONCLUIDO: a API de rastreio não expõe checkinEm (não é relevante pro cliente)
++    }
++  }
++
++  Widget _buildEtapa({
++    required String rotulo,
++    required bool concluida,
++    required bool atual,
++    required bool ultima,
++    String? dataHora,
++  }) {
++    final cor = concluida ? Colors.green.shade700 : Colors.grey.shade400;
++    return Padding(
++      padding: const EdgeInsets.only(bottom: 12),
++      child: IntrinsicHeight(
++        child: Row(
++          crossAxisAlignment: CrossAxisAlignment.start,
++          children: [
++            Column(
++              children: [
++                Icon(
++                  concluida ? Icons.check_circle : Icons.radio_button_unchecked,
++                  color: cor,
++                  size: 20,
++                ),
++                if (!ultima)
++                  Expanded(
++                    child: Container(
++                      width: 2,
++                      margin: const EdgeInsets.symmetric(vertical: 2),
++                      color: concluida ? Colors.green.shade200 : Colors.grey.shade300,
++                    ),
++                  ),
++              ],
++            ),
++            const SizedBox(width: 12),
++            Expanded(
++              child: Padding(
++                padding: const EdgeInsets.only(top: 1),
++                child: Column(
++                  crossAxisAlignment: CrossAxisAlignment.start,
++                  children: [
++                    Text(
++                      rotulo,
++                      style: TextStyle(
++                        fontWeight: atual || concluida ? FontWeight.bold : FontWeight.normal,
++                        color: concluida ? Colors.black87 : Colors.grey.shade600,
++                        fontSize: 14,
++                      ),
++                    ),
++                    if (dataHora != null)
++                      Padding(
++                        padding: const EdgeInsets.only(top: 2),
++                        child: Text(dataHora, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
++                      ),
++                  ],
++                ),
++              ),
++            ),
++          ],
++        ),
++      ),
++    );
++  }
++
++  Widget _buildConfirmacaoCard(RastreioExpedicao expedicao) {
++    return _buildCard(
++      titulo: expedicao.ehColeta ? 'Confirmação da coleta' : 'Confirmação da entrega',
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          if (expedicao.assinaturaEntrega != null) _linha('Recebido por', expedicao.assinaturaEntrega!),
++          _linha('Confirmado em', _formatarDataHora(expedicao.entregaConfirmadaEm) ?? '—'),
++          if (expedicao.fotoEntrega != null && expedicao.fotoEntrega!.isNotEmpty) ...[
++            const SizedBox(height: 10),
++            ClipRRect(
++              borderRadius: BorderRadius.circular(8),
++              child: Image.network(
++                expedicao.fotoEntregaUrl,
++                height: 180,
++                width: double.infinity,
++                fit: BoxFit.cover,
++                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
++              ),
++            ),
++          ],
++        ],
++      ),
++    );
++  }
++
++  Widget _buildCard({required String titulo, required Widget child}) {
++    return Container(
++      width: double.infinity,
++      padding: const EdgeInsets.all(16),
++      decoration: BoxDecoration(
++        color: Colors.white,
++        borderRadius: BorderRadius.circular(12),
++        border: Border.all(color: Colors.grey.shade300),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
++          const SizedBox(height: 8),
++          child,
++        ],
++      ),
++    );
++  }
++
++  // 'yyyy-MM-dd' -> 'dd/MM/yyyy' (mesmo formato de formatarData, mas a
++  // partir da string ISO que vem pronta da API, sem precisar de DateTime).
++  String _formatarDataSimples(String? iso) {
++    if (iso == null || iso.length < 10) return '—';
++    final partes = iso.substring(0, 10).split('-');
++    if (partes.length != 3) return iso;
++    return '${partes[2]}/${partes[1]}/${partes[0]}';
++  }
++
++  // 'yyyy-MM-ddTHH:mm:ss...' -> 'dd/MM/yyyy às HH:mm'.
++  String? _formatarDataHora(String? iso) {
++    if (iso == null || iso.length < 16) return null;
++    final data = _formatarDataSimples(iso);
++    final hora = iso.substring(11, 16);
++    return '$data às $hora';
++  }
++}
+--- /dev/null
++++ b/locaobra_mobile/lib/rastreio/screens/minhas_entregas_page.dart
+@@ -0,0 +1,164 @@
++import 'package:flutter/material.dart';
++import 'package:locaobra_mobile/entregador/models/expedicao.dart' show tipoExpedicaoLabel;
++import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
++import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
++import 'package:locaobra_mobile/rastreio/screens/rastreio_detalhe_page.dart';
++import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
++
++/// "Minhas Entregas" — lista todas as expedições (entregas e coletas) do
++/// cliente logado, mais recentes primeiro. Ponto de entrada geral do
++/// rastreio (menu do usuário); o rastreio de um pedido específico também
++/// pode ser aberto direto a partir de "Meus Pedidos".
++class MinhasEntregasPage extends StatefulWidget {
++  const MinhasEntregasPage({super.key});
++
++  @override
++  State<MinhasEntregasPage> createState() => _MinhasEntregasPageState();
++}
++
++class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
++  final RastreioService _service = RastreioService();
++
++  bool _carregando = true;
++  String? _erro;
++  List<RastreioExpedicao> _entregas = const [];
++
++  @override
++  void initState() {
++    super.initState();
++    _carregar();
++  }
++
++  Future<void> _carregar() async {
++    setState(() {
++      _carregando = true;
++      _erro = null;
++    });
++    try {
++      final entregas = await _service.listarMinhas();
++      if (!mounted) return;
++      setState(() {
++        _entregas = entregas;
++        _carregando = false;
++      });
++    } catch (e) {
++      if (!mounted) return;
++      setState(() {
++        _erro = e.toString().replaceFirst('Exception: ', '');
++        _carregando = false;
++      });
++    }
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    return Scaffold(
++      backgroundColor: const Color(0xFFF5F5F5),
++      appBar: AppBar(
++        title: const Text('Minhas Entregas'),
++        backgroundColor: Colors.white,
++        foregroundColor: Colors.black87,
++        elevation: 0,
++      ),
++      body: SafeArea(child: _buildBody()),
++    );
++  }
++
++  Widget _buildBody() {
++    if (_carregando) {
++      return const Center(child: CircularProgressIndicator());
++    }
++    if (_erro != null) {
++      return Center(
++        child: Padding(
++          padding: const EdgeInsets.all(24),
++          child: Column(
++            mainAxisSize: MainAxisSize.min,
++            children: [
++              Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
++              const SizedBox(height: 12),
++              OutlinedButton(onPressed: _carregar, child: const Text('Tentar de novo')),
++            ],
++          ),
++        ),
++      );
++    }
++    if (_entregas.isEmpty) {
++      return Center(
++        child: Padding(
++          padding: const EdgeInsets.all(24),
++          child: Column(
++            mainAxisSize: MainAxisSize.min,
++            children: const [
++              Icon(Icons.local_shipping_outlined, size: 56, color: Colors.grey),
++              SizedBox(height: 12),
++              Text('Você ainda não tem entregas ou coletas agendadas.', textAlign: TextAlign.center),
++            ],
++          ),
++        ),
++      );
++    }
++
++    return RefreshIndicator(
++      onRefresh: _carregar,
++      child: ListView.builder(
++        padding: const EdgeInsets.all(16),
++        itemCount: _entregas.length,
++        itemBuilder: (context, i) => Padding(
++          padding: const EdgeInsets.only(bottom: 12),
++          child: _buildCard(_entregas[i]),
++        ),
++      ),
++    );
++  }
++
++  Widget _buildCard(RastreioExpedicao expedicao) {
++    return Material(
++      color: Colors.white,
++      borderRadius: BorderRadius.circular(12),
++      child: InkWell(
++        borderRadius: BorderRadius.circular(12),
++        onTap: () => Navigator.push(
++          context,
++          MaterialPageRoute(builder: (_) => RastreioDetalhePage(expedicaoInicial: expedicao)),
++        ),
++        child: Container(
++          padding: const EdgeInsets.all(16),
++          decoration: BoxDecoration(
++            borderRadius: BorderRadius.circular(12),
++            border: Border.all(color: Colors.grey.shade300),
++          ),
++          child: Column(
++            crossAxisAlignment: CrossAxisAlignment.start,
++            children: [
++              Row(
++                mainAxisAlignment: MainAxisAlignment.spaceBetween,
++                children: [
++                  Expanded(
++                    child: Text(
++                      '${tipoExpedicaoLabel(expedicao.tipo)} • ${expedicao.codigo}',
++                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
++                      overflow: TextOverflow.ellipsis,
++                    ),
++                  ),
++                  StatusExpedicaoBadge(status: expedicao.status),
++                ],
++              ),
++              const SizedBox(height: 6),
++              if (expedicao.pedidoCodigo != null)
++                Text('Pedido ${expedicao.pedidoCodigo}',
++                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
++              const SizedBox(height: 4),
++              Text(
++                expedicao.enderecoEntrega.formatado?.isNotEmpty == true
++                    ? expedicao.enderecoEntrega.formatado!
++                    : 'Endereço não informado',
++                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
++              ),
++            ],
++          ),
++        ),
++      ),
++    );
++  }
++}

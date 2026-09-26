@@ -7,6 +7,7 @@ import 'package:locaobra_mobile/cart/cart_item.dart';
 import 'package:locaobra_mobile/cart/cart_navigation.dart';
 import 'package:locaobra_mobile/cart/cart_state.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
+import 'package:locaobra_mobile/rastreio/screens/minhas_entregas_page.dart';
 import 'package:locaobra_mobile/screens/meus_pedidos_page.dart';
 import 'package:locaobra_mobile/screens/meus_enderecos_page.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
@@ -133,10 +134,18 @@ class HomeScreen extends StatelessWidget {
                                     );
                                     return;
                                   }
+                                  if (opcao == 'entregas') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const MinhasEntregasPage()),
+                                    );
+                                    return;
+                                  }
                                   // Todo: navegar para 'perfil' quando essa tela existir.
                                 },
                                 itemBuilder: (context) => [
                                   _buildMenuItem('pedidos', Icons.receipt_long, 'Meus Pedidos'),
+                                  _buildMenuItem('entregas', Icons.local_shipping_outlined, 'Minhas Entregas'),
                                   _buildMenuItem('enderecos', Icons.location_on_outlined, 'Meus Endereços'),
                                   _buildMenuItem('perfil', Icons.person_outline, 'Ver Perfil'),
                                   const PopupMenuDivider(),

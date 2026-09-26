@@ -141,6 +141,10 @@ public class SecurityConfig {
                             "FAXINEIRO", "CONSULTOR_LOCACAO")
 
                 // ===================== EXPEDIÇÃO / LOGÍSTICA =====================
+                // Rastreio do cliente (app mobile): precisa vir antes da regra
+                // genérica de /api/expedicoes/**, que não libera ROLE_CLIENTE.
+                .requestMatchers(HttpMethod.GET, "/api/expedicoes/minhas", "/api/expedicoes/minhas/*",
+                        "/api/expedicoes/pedido/*").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.DELETE, "/api/expedicoes/**")
                     .hasAnyRole("ADMIN", "GERENTE_OPERACOES")
                 .requestMatchers("/api/expedicoes/**")
