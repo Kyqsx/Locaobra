@@ -1,0 +1,59 @@
+--- a/locaobra_api/src/main/java/com/locaobra/service/PedidoService.java
++++ b/locaobra_api/src/main/java/com/locaobra/service/PedidoService.java
+@@ -162,12 +162,14 @@
+ 
+         pedido.setValorTotalEstimado(valorTotal);
+ 
+-        // Frete: estimativa na solicitação (origem genérica, sem depósito
+-        // definido ainda, mas já considerando peso/cubagem dos itens). O
+-        // valor FINAL é recalculado pelo consultor na confirmação, com o
+-        // depósito real de origem.
++        // Frete: estimativa na solicitação, já usando o depósito ativo mais
++        // próximo do endereço de entrega (mesma heurística do carrinho, em
++        // estimarFrete/estimarKmAteDepositoMaisProximo) em vez de assumir uma
++        // origem genérica de 25 km. O valor FINAL ainda é recalculado pelo
++        // consultor na confirmação, com o depósito real alocado por item.
+         if (!retirada) {
+-            pedido.setValorFrete(freteService.calcularFrete(pesoTotal, null, valorTotal, false));
++            int km = estimarKmAteDepositoMaisProximo(enderecoEntrega);
++            pedido.setValorFrete(freteService.calcularFrete(pesoTotal, km, valorTotal, false));
+         }
+         pedido = pedidoRepository.save(pedido);
+ 
+@@ -221,14 +223,7 @@
+                     .multiply(BigDecimal.valueOf(dias)));
+         }
+ 
+-        // Origem: depósito ativo mais próximo do destino (heurística de
+-        // cidade/UF). Sem depósito cadastrado, usa origem desconhecida (25 km).
+-        Deposito origem = depositoRepository.findByAtivoTrue().stream()
+-                .min(Comparator.comparingInt(d -> freteService.estimarDistanciaKm(d.getEndereco(), destino)))
+-                .orElse(null);
+-        int km = origem != null
+-                ? freteService.estimarDistanciaKm(origem.getEndereco(), destino)
+-                : freteService.estimarDistanciaKm(null, destino);
++        int km = estimarKmAteDepositoMaisProximo(destino);
+ 
+         FreteEstimativaResponse resposta = new FreteEstimativaResponse();
+         resposta.setValorFrete(freteService.calcularFrete(pesoTotal, km, valorLocacao, false));
+@@ -240,6 +235,20 @@
+         return resposta;
+     }
+ 
++    // Km estimado do depósito ativo mais próximo até o destino informado —
++    // usado tanto na criação do pedido (criar) quanto na estimativa do
++    // carrinho (estimarFrete), pra que os dois mostrem/persistam o MESMO
++    // valor de frete pro mesmo endereço. Sem depósito ativo cadastrado, cai
++    // na heurística de origem desconhecida do próprio FreteService.
++    private int estimarKmAteDepositoMaisProximo(Endereco destino) {
++        Deposito origem = depositoRepository.findByAtivoTrue().stream()
++                .min(Comparator.comparingInt(d -> freteService.estimarDistanciaKm(d.getEndereco(), destino)))
++                .orElse(null);
++        return origem != null
++                ? freteService.estimarDistanciaKm(origem.getEndereco(), destino)
++                : freteService.estimarDistanciaKm(null, destino);
++    }
++
+     // Resolve o endereço de destino da estimativa: endereço salvo (validando
+     // dono) ou digitado na hora — mesmas regras do PedidoRequest.
+     private Endereco resolverEnderecoDestino(EstimarFreteRequest request) {

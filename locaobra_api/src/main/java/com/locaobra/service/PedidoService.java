@@ -125,6 +125,7 @@ public class PedidoService {
 
         long dias = Math.max(1, ChronoUnit.DAYS.between(request.getDataInicio(), request.getDataFim()));
         BigDecimal valorTotal = BigDecimal.ZERO;
+        BigDecimal pesoTotal = BigDecimal.ZERO;
 
         pedido = pedidoRepository.save(pedido);
 
@@ -151,15 +152,24 @@ public class PedidoService {
                             .multiply(BigDecimal.valueOf(itemReq.getQuantidade()))
                             .multiply(BigDecimal.valueOf(dias))
             );
+
+            BigDecimal volume = freteService.volumeM3(
+                    equipamento.getComprimentoCm(), equipamento.getLarguraCm(), equipamento.getAlturaCm(),
+                    itemReq.getQuantidade());
+            pesoTotal = pesoTotal.add(
+                    freteService.pesoConsideradoKg(equipamento.getPesoKg(), itemReq.getQuantidade(), volume));
         }
 
         pedido.setValorTotalEstimado(valorTotal);
 
-        // Frete: estimativa na solicitação (origem genérica, sem depósito
-        // definido ainda). RETIRADA não tem frete. O valor FINAL é recalculado
-        // pelo consultor na confirmação, com o depósito real de origem.
+        // Frete: estimativa na solicitação, já usando o depósito ativo mais
+        // próximo do endereço de entrega (mesma heurística do carrinho, em
+        // estimarFrete/estimarKmAteDepositoMaisProximo) em vez de assumir uma
+        // origem genérica de 25 km. O valor FINAL ainda é recalculado pelo
+        // consultor na confirmação, com o depósito real alocado por item.
         if (!retirada) {
-            pedido.setValorFrete(freteService.calcularFrete(null, null, valorTotal, false));
+            int km = estimarKmAteDepositoMaisProximo(enderecoEntrega);
+            pedido.setValorFrete(freteService.calcularFrete(pesoTotal, km, valorTotal, false));
         }
         pedido = pedidoRepository.save(pedido);
 
@@ -197,12 +207,15 @@ public class PedidoService {
             if (itemReq.getEquipamentoId() == null) {
                 throw new BusinessException("Todo item precisa de um equipamento selecionado.");
             }
+            if (itemReq.getQuantidade() == null || itemReq.getQuantidade() < 1) {
+                throw new BusinessException("Quantidade inválida para um dos itens.");
+            }
             Equipamento eq = equipamentoRepository.findById(itemReq.getEquipamentoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Equipamento não encontrado: " + itemReq.getEquipamentoId()));
 
             BigDecimal volume = freteService.volumeM3(
                     eq.getComprimentoCm(), eq.getLarguraCm(), eq.getAlturaCm(), itemReq.getQuantidade());
-            pesoTotal = pesoTotal.add(freteService.pesoConsideradoKg(eq.getPesoKg(), volume));
+            pesoTotal = pesoTotal.add(freteService.pesoConsideradoKg(eq.getPesoKg(), itemReq.getQuantidade(), volume));
             pesoCubadoTotal = pesoCubadoTotal.add(
                     volume.multiply(freteService.fatorCubagem()).setScale(2, RoundingMode.HALF_UP));
             valorLocacao = valorLocacao.add(eq.getValorDiaria()
@@ -210,14 +223,7 @@ public class PedidoService {
                     .multiply(BigDecimal.valueOf(dias)));
         }
 
-        // Origem: depósito ativo mais próximo do destino (heurística de
-        // cidade/UF). Sem depósito cadastrado, usa origem desconhecida (25 km).
-        Deposito origem = depositoRepository.findByAtivoTrue().stream()
-                .min(Comparator.comparingInt(d -> freteService.estimarDistanciaKm(d.getEndereco(), destino)))
-                .orElse(null);
-        int km = origem != null
-                ? freteService.estimarDistanciaKm(origem.getEndereco(), destino)
-                : freteService.estimarDistanciaKm(null, destino);
+        int km = estimarKmAteDepositoMaisProximo(destino);
 
         FreteEstimativaResponse resposta = new FreteEstimativaResponse();
         resposta.setValorFrete(freteService.calcularFrete(pesoTotal, km, valorLocacao, false));
@@ -227,6 +233,20 @@ public class PedidoService {
         resposta.setPesoCubadoKg(pesoCubadoTotal);
         resposta.setVeiculoSugerido(freteService.sugerirVeiculo(pesoTotal));
         return resposta;
+    }
+
+    // Km estimado do depósito ativo mais próximo até o destino informado —
+    // usado tanto na criação do pedido (criar) quanto na estimativa do
+    // carrinho (estimarFrete), pra que os dois mostrem/persistam o MESMO
+    // valor de frete pro mesmo endereço. Sem depósito ativo cadastrado, cai
+    // na heurística de origem desconhecida do próprio FreteService.
+    private int estimarKmAteDepositoMaisProximo(Endereco destino) {
+        Deposito origem = depositoRepository.findByAtivoTrue().stream()
+                .min(Comparator.comparingInt(d -> freteService.estimarDistanciaKm(d.getEndereco(), destino)))
+                .orElse(null);
+        return origem != null
+                ? freteService.estimarDistanciaKm(origem.getEndereco(), destino)
+                : freteService.estimarDistanciaKm(null, destino);
     }
 
     // Resolve o endereço de destino da estimativa: endereço salvo (validando
@@ -538,7 +558,7 @@ public class PedidoService {
                     Equipamento eq = item.getEquipamento();
                     BigDecimal volume = freteService.volumeM3(
                             eq.getComprimentoCm(), eq.getLarguraCm(), eq.getAlturaCm(), item.getQuantidade());
-                    pesoGrupo = pesoGrupo.add(freteService.pesoConsideradoKg(eq.getPesoKg(), volume));
+                    pesoGrupo = pesoGrupo.add(freteService.pesoConsideradoKg(eq.getPesoKg(), item.getQuantidade(), volume));
                     BigDecimal valorItem = item.getValorDiariaSnapshot()
                             .multiply(BigDecimal.valueOf(item.getQuantidade()))
                             .multiply(BigDecimal.valueOf(dias));

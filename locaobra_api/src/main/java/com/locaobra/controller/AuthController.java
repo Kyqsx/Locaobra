@@ -50,23 +50,7 @@ public class AuthController {
     public ResponseEntity<String> signup(@Valid @RequestBody SignupRequest request) {
         authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Cadastro realizado! Verifique seu email para ativar a conta.");
-    }
-
-    @GetMapping("/verificar")
-    public ResponseEntity<String> verificar(@org.springframework.web.bind.annotation.RequestParam("token") String token) {
-        authService.verificarEmail(token);
-        return ResponseEntity.ok("Email verificado com sucesso! Você já pode fazer login.");
-    }
-
-    @PostMapping("/reenviar-verificacao")
-    public ResponseEntity<String> reenviarVerificacao(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        if (email == null || email.isBlank()) {
-            return ResponseEntity.badRequest().body("Informe o email.");
-        }
-        authService.reenviarVerificacao(email.trim());
-        return ResponseEntity.ok("Email de verificação reenviado!");
+                .body("Cadastro realizado com sucesso!");
     }
 
     @GetMapping("/me")

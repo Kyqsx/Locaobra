@@ -361,7 +361,7 @@ function AdminPedidos() {
                           .join(', ') || '---'}
                       </td>*/}
                       <td className="dateCell">
-                        R$ {Number(pedido.valorTotalEstimado || 0).toFixed(2)}
+                        R$ {(Number(pedido.valorTotalEstimado || 0) + Number(pedido.valorFrete || 0)).toFixed(2)}
                       </td>
                       <td>
                         <span className={`pedido-status-badge ${statusInfo.className}`}>

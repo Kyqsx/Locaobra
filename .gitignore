@@ -8,3 +8,4 @@ locaobra_api/uploads/
 # Node
 locaobra_web/node_modules/
 locaobra_web/dist/
+*.zip

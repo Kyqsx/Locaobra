@@ -290,7 +290,7 @@ const ProductPageLocaObra = () => {
                 onClick={handleComprarAgora}
                 disabled={disponivel < 1}
               >
-                <span><FontAwesomeIcon icon={faShoppingCart} /></span> {disponivel < 1 ? 'Indisponível no momento' : 'Comprar agora'}
+                <span><FontAwesomeIcon icon={faShoppingCart} /></span> {disponivel < 1 ? 'Indisponível no momento' : 'Alugar agora'}
               </button>
               <button
                 className="btn-secondary"

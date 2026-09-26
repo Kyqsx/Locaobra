@@ -698,7 +698,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                         ),
                       ),
                       child: Text(
-                        indisponivel ? 'Indisponível no momento' : 'Comprar agora',
+                        indisponivel ? 'Indisponível no momento' : 'Alugar agora',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 12,

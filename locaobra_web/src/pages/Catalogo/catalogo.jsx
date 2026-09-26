@@ -6,8 +6,37 @@ import { formatarMedia } from '../../utils/avaliacoes';
 import { objectPositionDe, imageUrl } from '../../utils/imagem';
 import './Catalogo.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSearch } from '@fortawesome/free-solid-svg-icons';
 import Lightbox from '../../components/Lightbox';
+
+// Opções de ordenação do painel de filtros.
+const OPCOES_ORDENACAO = [
+  { valor: 'relevancia', rotulo: 'Relevância' },
+  { valor: 'menor-preco', rotulo: 'Menor preço' },
+  { valor: 'maior-preco', rotulo: 'Maior preço' },
+  { valor: 'nome', rotulo: 'Nome (A-Z)' },
+  { valor: 'avaliacao', rotulo: 'Melhor avaliados' },
+];
+
+// Devolve uma cópia ordenada da lista conforme a ordenação escolhida.
+function ordenarEquipamentos(lista, ordenacao) {
+  const ordenada = [...lista];
+  switch (ordenacao) {
+    case 'menor-preco':
+      return ordenada.sort((a, b) => (a.valorDiaria ?? 0) - (b.valorDiaria ?? 0));
+    case 'maior-preco':
+      return ordenada.sort((a, b) => (b.valorDiaria ?? 0) - (a.valorDiaria ?? 0));
+    case 'nome':
+      return ordenada.sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+    case 'avaliacao':
+      return ordenada.sort((a, b) =>
+        (b.mediaAvaliacoes ?? 0) - (a.mediaAvaliacoes ?? 0) ||
+        (b.totalAvaliacoes ?? 0) - (a.totalAvaliacoes ?? 0)
+      );
+    default:
+      return ordenada;
+  }
+}
 
 function Catalogo() {
   const { slug } = useParams();
@@ -15,9 +44,29 @@ function Catalogo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [ordenacao, setOrdenacao] = useState('relevancia');
+  const [apenasDisponiveis, setApenasDisponiveis] = useState(false);
 
   const isCatalogoCompleto = !slug;
   const nomeFormatado = slug ? slug.replace(/-/g, ' ') : "Catálogo Completo";
+
+  // Busca local (nome ou descrição) + filtros do painel, sobre os
+  // equipamentos já carregados — sem nova chamada de API.
+  const termoBusca = busca.trim().toLowerCase();
+  let listaBase = termoBusca
+    ? equipamentos.filter(eq =>
+      (eq.nome || '').toLowerCase().includes(termoBusca) ||
+      (eq.descricao || '').toLowerCase().includes(termoBusca)
+    )
+    : equipamentos;
+  if (apenasDisponiveis) {
+    listaBase = listaBase.filter(eq => (eq.quantidadeDisponivel ?? 0) > 0);
+  }
+  const equipamentosFiltrados = ordenarEquipamentos(listaBase, ordenacao);
+  const filtrosAtivos =
+    (ordenacao !== 'relevancia' ? 1 : 0) + (apenasDisponiveis ? 1 : 0);
 
   function fetchEquipamentos() {
     setLoading(true);
@@ -43,6 +92,7 @@ function Catalogo() {
 
   useEffect(() => {
     fetchEquipamentos();
+    setBusca('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]); // Recarrega sempre que mudar a categoria na URL
 
@@ -55,9 +105,75 @@ function Catalogo() {
           <span className="separador">›</span>
           <span className="pagina-atual">{nomeFormatado}</span>
         </nav>
-        <button className="btn-filtrar">
-          <FontAwesomeIcon icon={faFilter} /> Filtrar
-        </button>
+        <div className="acoes-catalogo">
+          <div className="campo-busca">
+            <FontAwesomeIcon icon={faSearch} className="icone-busca" />
+            <input
+              type="text"
+              className="input-busca"
+              placeholder="Buscar equipamento..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </div>
+          <div className="filtros-wrapper">
+            <button
+              className={`btn-filtrar${filtrosAtivos > 0 ? ' com-filtro' : ''}`}
+              onClick={() => setFiltrosAbertos(aberto => !aberto)}
+            >
+              <FontAwesomeIcon icon={faFilter} /> Filtrar{filtrosAtivos > 0 ? ` (${filtrosAtivos})` : ''}
+            </button>
+            {filtrosAbertos && (
+              <>
+                <div className="overlay-filtros" onClick={() => setFiltrosAbertos(false)} />
+                <div className="painel-filtros">
+                  <div className="painel-filtros-header">
+                    <h4>Filtros</h4>
+                    {filtrosAtivos > 0 && (
+                      <button
+                        type="button"
+                        className="limpar-filtros"
+                        onClick={() => {
+                          setOrdenacao('relevancia');
+                          setApenasDisponiveis(false);
+                        }}
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  <p className="filtros-label">Ordenar por</p>
+                  {OPCOES_ORDENACAO.map(op => (
+                    <label key={op.valor} className="opcao-filtro">
+                      <input
+                        type="radio"
+                        name="ordenacao-catalogo"
+                        checked={ordenacao === op.valor}
+                        onChange={() => setOrdenacao(op.valor)}
+                      />
+                      <span>{op.rotulo}</span>
+                    </label>
+                  ))}
+                  <label className="opcao-filtro">
+                    <input
+                      type="checkbox"
+                      checked={apenasDisponiveis}
+                      onChange={(e) => setApenasDisponiveis(e.target.checked)}
+                    />
+                    <span>Somente equipamentos disponíveis</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="aplicar-filtros"
+                    onClick={() => setFiltrosAbertos(false)}
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="grid-produtos">
@@ -65,8 +181,8 @@ function Catalogo() {
           <div className="loading-container">Carregando equipamentos...</div>
         ) : error ? (
           <div className="error-container">{error}</div>
-        ) : equipamentos.length > 0 ? (
-          equipamentos.map(item => (
+        ) : equipamentosFiltrados.length > 0 ? (
+          equipamentosFiltrados.map(item => (
             <div key={item.id} className="card-produto">
               <Link to={`/productview/${item.id}`} className="btn-card">
                 <div className="image-container">
@@ -109,7 +225,11 @@ function Catalogo() {
           ))
         ) : (
           <div className="vazio">
-            {isCatalogoCompleto ? (
+            {termoBusca ? (
+              <p>Nenhum equipamento encontrado para <strong>"{busca}"</strong>.</p>
+            ) : apenasDisponiveis ? (
+              <p>Nenhum equipamento disponível com os filtros aplicados.</p>
+            ) : isCatalogoCompleto ? (
               <p>Nenhum equipamento disponível no momento.</p>
             ) : (
               <p>Nenhum equipamento disponível em <strong>{nomeFormatado}</strong> no momento.</p>

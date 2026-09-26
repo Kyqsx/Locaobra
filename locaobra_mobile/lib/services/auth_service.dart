@@ -24,20 +24,14 @@ class LoginResult {
       nome = null;
 }
 
-/// Resultado de um cadastro. A API responde 201 quando a conta é criada mas
-/// ainda exige verificação de e-mail antes do primeiro login (igual ao web).
+/// Resultado de um cadastro. A API responde 201 quando a conta é criada.
 class CadastroResult {
   final bool sucesso;
-  final bool precisaVerificarEmail;
   final String? mensagemErro;
 
-  CadastroResult.sucesso({this.precisaVerificarEmail = true})
-    : sucesso = true,
-      mensagemErro = null;
+  CadastroResult.sucesso() : sucesso = true, mensagemErro = null;
 
-  CadastroResult.erro(this.mensagemErro)
-    : sucesso = false,
-      precisaVerificarEmail = false;
+  CadastroResult.erro(this.mensagemErro) : sucesso = false;
 }
 
 /// Resultado de GET /api/auth/me — só os campos que o app usa pra decidir

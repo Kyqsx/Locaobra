@@ -9,6 +9,7 @@ import 'package:locaobra_mobile/cart/cart_state.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 import 'package:locaobra_mobile/screens/meus_pedidos_page.dart';
 import 'package:locaobra_mobile/screens/meus_enderecos_page.dart';
+import 'package:locaobra_mobile/utils/formatters.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
 import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
@@ -148,7 +149,9 @@ class HomeScreen extends StatelessWidget {
                                     const SizedBox(width: 4),
                                     Flexible(
                                       child: Text(
-                                        nomeUsuario,
+                                        // Header mobile: mostra só o primeiro
+                                        // e o último nome pra não estourar.
+                                        abreviarNome(nomeUsuario),
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           color: Colors.orange,

@@ -1,4 +1,4 @@
-/// Formatadores pt-BR usados pelas telas (sem depender do pacote intl).
+// Formatadores pt-BR usados pelas telas (sem depender do pacote intl).
 
 /// 1234.5 -> "R$ 1.234,50"
 String formatarMoeda(num valor) {
@@ -22,4 +22,18 @@ String formatarData(DateTime data) {
   final dia = data.day.toString().padLeft(2, '0');
   final mes = data.month.toString().padLeft(2, '0');
   return '$dia/$mes/${data.year}';
+}
+
+/// Abrevia o nome pro header: "Guilherme Augusto da Silva Almeida" vira
+/// "Guilherme Almeida" — primeiro e último nome, pra caber em telas
+/// estreitas sem estourar o layout. Nomes com 1 ou 2 palavras voltam
+/// como estão (nesse caso "primeiro e último" já é o nome inteiro).
+String abreviarNome(String nome) {
+  final partes = nome
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
+  if (partes.length <= 2) return partes.join(' ');
+  return '${partes.first} ${partes.last}';
 }

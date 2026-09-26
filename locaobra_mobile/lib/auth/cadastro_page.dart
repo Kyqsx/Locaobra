@@ -54,12 +54,8 @@ class _CadastroPageState extends State<CadastroPage> {
       return;
     }
 
-    // A API exige verificação de e-mail antes do primeiro login (igual ao
-    // web), então volta pra tela de login em vez de ir direto pra Home.
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Conta criada! Verifique seu e-mail antes de entrar.'),
-      ),
+      const SnackBar(content: Text('Conta criada! Faça login para continuar.')),
     );
     Navigator.pushReplacement(
       context,

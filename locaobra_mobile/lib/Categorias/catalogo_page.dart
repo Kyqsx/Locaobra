@@ -3,7 +3,6 @@ import '../models/categoria.dart';
 import '../models/equipamento.dart';
 import '../screens/product_view_page.dart';
 import '../services/catalogo_service.dart';
-import '../widgets/category_nav_tabs.dart';
 import '../widgets/category_listagem.dart';
 
 /// Página única e dinâmica de catálogo/categoria — busca os equipamentos
@@ -27,14 +26,26 @@ class CatalogoPagina extends StatefulWidget {
 
 class _CatalogoPaginaState extends State<CatalogoPagina> {
   final CatalogoService _catalogoService = CatalogoService();
+  final TextEditingController _buscaController = TextEditingController();
   late Future<List<Equipamento>> _futureDados;
   late String? _slugAtual;
+  String _termoBusca = '';
+  String _ordenacao = 'relevancia';
+  bool _apenasDisponiveis = false;
+  int get _filtrosAtivos =>
+      (_ordenacao != 'relevancia' ? 1 : 0) + (_apenasDisponiveis ? 1 : 0);
 
   @override
   void initState() {
     super.initState();
     _slugAtual = widget.categoriaSlug;
     _carregarDados();
+  }
+
+  @override
+  void dispose() {
+    _buscaController.dispose();
+    super.dispose();
   }
 
   void _carregarDados() {
@@ -55,12 +66,6 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
         ),
       ),
     );
-  }
-
-  void _selecionarSlug(String slug) {
-    if (slug == _slugAtual) return;
-    setState(() => _slugAtual = slug);
-    _carregarDados();
   }
 
   String get _nomeFormatado {
@@ -86,20 +91,15 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CategoryNavTabs(
-                selectedSlug: _slugAtual,
-                onSelect: _selecionarSlug,
-              ),
-              const Divider(height: 1, color: Colors.grey),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: _buildBreadcrumb(context)),
+                        Expanded(child: _buildCampoBusca()),
+                        const SizedBox(width: 12),
                         _buildFiltrarButton(),
                       ],
                     ),
@@ -126,8 +126,26 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                             ),
                           );
                         }
+                        final dados = snapshot.data ?? const <Equipamento>[];
+                        final listaFiltrada = _aplicarFiltros(dados);
+                        if (listaFiltrada.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: Center(
+                              child: Text(
+                                _termoBusca.trim().isNotEmpty
+                                    ? 'Nenhum equipamento encontrado para "${_termoBusca.trim()}".'
+                                    : _filtrosAtivos > 0
+                                        ? 'Nenhum equipamento disponível com os filtros aplicados.'
+                                        : 'Nenhum equipamento disponível.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade700),
+                              ),
+                            ),
+                          );
+                        }
                         return CategoryListagem(
-                          equipamentos: snapshot.data ?? const [],
+                          equipamentos: listaFiltrada,
                           onTapEquipamento: _abrirProduto,
                         );
                       },
@@ -142,47 +160,241 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
     );
   }
 
-  // "Início" volta pra primeira tela da pilha de navegação (Home/Welcome).
-  Widget _buildBreadcrumb(BuildContext context) {
-    return Row(
-      children: [
-        InkWell(
-          onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
-          child: Text(
-            'Início',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-              decoration: TextDecoration.underline,
-            ),
-          ),
+  // Campo de pesquisa — filtra os equipamentos já carregados por nome ou
+  // descrição, sem nova chamada de API (igual ao catálogo do web).
+  Widget _buildCampoBusca() {
+    return TextField(
+      controller: _buscaController,
+      onChanged: (valor) => setState(() => _termoBusca = valor),
+      style: const TextStyle(fontSize: 14, color: Colors.black87),
+      decoration: InputDecoration(
+        hintText: 'Buscar equipamento...',
+        hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+        prefixIcon: Icon(Icons.search, size: 20, color: Colors.grey.shade600),
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 10,
         ),
-        Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade600),
-        Text(
-          _nomeFormatado,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-      ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: const BorderSide(color: Colors.orange),
+        ),
+        suffixIcon: _termoBusca.isEmpty
+            ? null
+            : IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(Icons.close, size: 18, color: Colors.grey.shade600),
+                onPressed: () {
+                  _buscaController.clear();
+                  setState(() => _termoBusca = '');
+                },
+              ),
+      ),
+    );
+  }
+
+  // Busca (nome/descrição) + filtros do painel, sobre os equipamentos já
+  // carregados — sem nova chamada de API (igual ao catálogo do web).
+  List<Equipamento> _aplicarFiltros(List<Equipamento> dados) {
+    var lista = dados;
+    final termo = _termoBusca.trim().toLowerCase();
+    if (termo.isNotEmpty) {
+      lista = lista.where((eq) {
+        final nome = eq.nome.toLowerCase();
+        final descricao = eq.descricao?.toLowerCase() ?? '';
+        return nome.contains(termo) || descricao.contains(termo);
+      }).toList();
+    }
+    if (_apenasDisponiveis) {
+      lista = lista.where((eq) => eq.quantidadeDisponivel > 0).toList();
+    }
+    return _ordenar(lista);
+  }
+
+  // Devolve uma cópia ordenada da lista conforme a ordenação escolhida.
+  List<Equipamento> _ordenar(List<Equipamento> lista) {
+    final ordenada = [...lista];
+    switch (_ordenacao) {
+      case 'menor-preco':
+        ordenada.sort((a, b) => a.valorDiaria.compareTo(b.valorDiaria));
+      case 'maior-preco':
+        ordenada.sort((a, b) => b.valorDiaria.compareTo(a.valorDiaria));
+      case 'nome':
+        ordenada.sort(
+          (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+        );
+      case 'avaliacao':
+        ordenada.sort((a, b) {
+          final porNota = b.mediaAvaliacoes.compareTo(a.mediaAvaliacoes);
+          return porNota != 0
+              ? porNota
+              : b.totalAvaliacoes.compareTo(a.totalAvaliacoes);
+        });
+    }
+    return ordenada;
+  }
+
+  // Painel de filtros em bottom sheet: ordenação + "somente disponíveis".
+  // As escolhas ficam em variáveis temporárias e só valem ao tocar "Aplicar".
+  Future<void> _abrirFiltros() async {
+    String? ordenacaoTemp = _ordenacao;
+    bool disponiveisTemp = _apenasDisponiveis;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (contextSheet) {
+        return StatefulBuilder(
+          builder: (contextSheet, setSheetState) {
+            Widget opcaoOrdenacao(String valor, String rotulo) {
+              return RadioListTile<String>(
+                value: valor,
+                title: Text(
+                  rotulo,
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                activeColor: Colors.orange,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              );
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Filtros',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              ordenacaoTemp = 'relevancia';
+                              disponiveisTemp = false;
+                            });
+                          },
+                          child: Text(
+                            'Limpar',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Text(
+                      'ORDENAR POR',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    RadioGroup<String>(
+                      groupValue: ordenacaoTemp,
+                      onChanged: (novo) =>
+                          setSheetState(() => ordenacaoTemp = novo),
+                      child: Column(
+                        children: [
+                          opcaoOrdenacao('relevancia', 'Relevância'),
+                          opcaoOrdenacao('menor-preco', 'Menor preço'),
+                          opcaoOrdenacao('maior-preco', 'Maior preço'),
+                          opcaoOrdenacao('nome', 'Nome (A-Z)'),
+                          opcaoOrdenacao('avaliacao', 'Melhor avaliados'),
+                        ],
+                      ),
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      value: disponiveisTemp,
+                      onChanged: (v) => setSheetState(() => disponiveisTemp = v),
+                      title: const Text(
+                        'Somente equipamentos disponíveis',
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                      ),
+                      activeThumbColor: Colors.orange,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _ordenacao = ordenacaoTemp ?? 'relevancia';
+                            _apenasDisponiveis = disponiveisTemp;
+                          });
+                          Navigator.pop(contextSheet);
+                        },
+                        child: const Text(
+                          'Aplicar',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
   Widget _buildFiltrarButton() {
+    final comFiltro = _filtrosAtivos > 0;
     return OutlinedButton.icon(
-      onPressed: () {
-        // TODO: abrir tela/bottom sheet de filtros
-      },
-      icon: const Icon(Icons.filter_list, size: 18, color: Colors.black87),
-      label: const Text(
-        'Filtrar',
-        style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+      onPressed: _abrirFiltros,
+      icon: const Icon(Icons.filter_list, size: 18),
+      label: Text(
+        comFiltro ? 'Filtrar ($_filtrosAtivos)' : 'Filtrar',
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        side: BorderSide(color: Colors.grey.shade300),
+        backgroundColor: comFiltro ? Colors.orange : Colors.white,
+        foregroundColor: comFiltro ? Colors.white : Colors.black87,
+        side: BorderSide(
+          color: comFiltro ? Colors.orange : Colors.grey.shade300,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       ),

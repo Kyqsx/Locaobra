@@ -1,8 +1,8 @@
 package com.locaobra.enums;
 
 // Porte de veículo sugerido pelo FreteService a partir da carga (peso
-// considerado). Apenas informativo pra logística — por enquanto não altera o
-// valor do frete.
+// considerado). Define o R$/km e os eixos usados no cálculo do frete — não é
+// só informativo, equipamento pesado/volumoso sai mais caro por causa disso.
 public enum TipoVeiculo {
     MOTO,        // até ~30 kg
     UTILITARIO,  // 30–300 kg (carro pequeno / kombi)

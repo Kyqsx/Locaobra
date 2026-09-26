@@ -6,6 +6,7 @@ import 'package:locaobra_mobile/entregador/screens/entregador_detalhe_page.dart'
 import 'package:locaobra_mobile/entregador/services/expedicao_service.dart';
 import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
+import 'package:locaobra_mobile/utils/formatters.dart';
 
 const _corPrimaria = Color.fromARGB(255, 255, 128, 0);
 
@@ -68,7 +69,10 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
             ValueListenableBuilder<String?>(
               valueListenable: AuthState.usuarioLogado,
               builder: (context, nome, _) => Text(
-                nome ?? '',
+                // AppBar apertada: só primeiro e último nome também.
+                nome == null ? '' : abreviarNome(nome),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ),

@@ -4,8 +4,8 @@ import 'token_storage.dart';
 
 /// Base da API, igual ao service/api.js do locaobra_web.
 /// Os paths de cada chamada já incluem o prefixo '/api'.
-// const String kApiBaseUrl = 'https://locaobra-7c7d.vercel.app';
-const String kApiBaseUrl = 'http://localhost:8080'; // para dev local, com o web rodando em localhost:3000
+const String kApiBaseUrl = 'https://locaobra-7c7d.vercel.app';
+// const String kApiBaseUrl = 'http://localhost:8080'; // para dev local, com o web rodando em localhost:3000
 
 class ApiClient {
   static Uri _uri(String path) => Uri.parse('$kApiBaseUrl$path');

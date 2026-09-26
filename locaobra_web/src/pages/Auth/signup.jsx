@@ -73,8 +73,8 @@ const Signup = () => {
             console.log("Resposta do servidor (Sucesso):", response.data);
 
             if (response.status === 201) {
-                // Conta criada, mas exige verificação de email antes do login
-                navigate(`/verificar-email?email=${encodeURIComponent(email)}`);
+                // Conta criada — já pode fazer login normalmente
+                navigate('/login');
             }
         } catch (error) {
             console.error("Erro detalhado na requisição:", error);

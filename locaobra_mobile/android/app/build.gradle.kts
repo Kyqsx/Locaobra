@@ -7,8 +7,8 @@ plugins {
 android {
     namespace = "com.example.locaobra_mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
+    ndkVersion = "30.0.16248370"
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
