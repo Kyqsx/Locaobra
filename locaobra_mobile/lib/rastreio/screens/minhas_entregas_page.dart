@@ -4,6 +4,7 @@ import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
 import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
 import 'package:locaobra_mobile/rastreio/screens/rastreio_detalhe_page.dart';
 import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// "Minhas Entregas" — lista todas as expedições (entregas e coletas) do
 /// cliente logado, mais recentes primeiro. Ponto de entrada geral do
@@ -53,11 +54,11 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
         title: const Text('Minhas Entregas'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
       body: SafeArea(child: _buildBody()),
@@ -75,7 +76,7 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
+              Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.error)),
               const SizedBox(height: 12),
               OutlinedButton(onPressed: _carregar, child: const Text('Tentar de novo')),
             ],
@@ -90,7 +91,7 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.local_shipping_outlined, size: 56, color: Colors.grey),
+              Icon(Icons.local_shipping_outlined, size: 56, color: AppColors.gray500),
               SizedBox(height: 12),
               Text('Você ainda não tem entregas ou coletas agendadas.', textAlign: TextAlign.center),
             ],
@@ -114,10 +115,10 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
 
   Widget _buildCard(RastreioExpedicao expedicao) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => RastreioDetalhePage(expedicaoInicial: expedicao)),
@@ -125,8 +126,8 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.gray300),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,13 +148,13 @@ class _MinhasEntregasPageState extends State<MinhasEntregasPage> {
               const SizedBox(height: 6),
               if (expedicao.pedidoCodigo != null)
                 Text('Pedido ${expedicao.pedidoCodigo}',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    style: TextStyle(color: AppColors.gray600, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
                 expedicao.enderecoEntrega.formatado?.isNotEmpty == true
                     ? expedicao.enderecoEntrega.formatado!
                     : 'Endereço não informado',
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                style: TextStyle(color: AppColors.gray700, fontSize: 13),
               ),
             ],
           ),

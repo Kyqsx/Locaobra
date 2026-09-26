@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Estrelas de avaliação (0–5), com meia estrela — equivalente ao
 /// componente Estrelas do locaobra_web.
@@ -25,7 +26,7 @@ class Estrelas extends StatelessWidget {
         } else {
           icone = Icons.star_border;
         }
-        return Icon(icone, size: tamanho, color: Colors.orange);
+        return Icon(icone, size: tamanho, color: AppColors.primary);
       }),
     );
   }

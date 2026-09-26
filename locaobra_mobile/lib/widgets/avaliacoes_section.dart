@@ -3,6 +3,7 @@ import 'package:locaobra_mobile/models/avaliacao.dart';
 import 'package:locaobra_mobile/services/avaliacao_service.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
 import 'package:locaobra_mobile/widgets/estrelas.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Seção "Avaliações" da tela de produto: resumo (média + distribuição por
 /// nota) e lista de comentários. Somente leitura — o formulário de
@@ -41,9 +42,9 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +54,7 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -72,7 +73,7 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
                   children: [
                     Text(
                       'Não foi possível carregar as avaliações.',
-                      style: TextStyle(color: Colors.grey.shade700),
+                      style: TextStyle(color: AppColors.gray700),
                     ),
                     TextButton(
                       onPressed: _recarregar,
@@ -93,7 +94,7 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
     if (resumo.total == 0 || resumo.avaliacoes.isEmpty) {
       return Text(
         'Ainda não há avaliações para este equipamento.',
-        style: TextStyle(color: Colors.grey.shade700),
+        style: TextStyle(color: AppColors.gray700),
       );
     }
 
@@ -137,14 +138,14 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
               style: const TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
             Estrelas(valor: resumo.media, tamanho: 16),
             const SizedBox(height: 4),
             Text(
               '${resumo.total} $rotulo',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: AppColors.gray600),
             ),
           ],
         ),
@@ -176,18 +177,18 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
             width: 10,
             child: Text(
               '$nota',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 11, color: AppColors.gray700),
             ),
           ),
-          const Icon(Icons.star, size: 11, color: Colors.orange),
+          const Icon(Icons.star, size: 11, color: AppColors.primary),
           const SizedBox(width: 6),
           Expanded(
             child: LinearProgressIndicator(
               value: proporcao,
               minHeight: 6,
-              color: Colors.orange,
-              backgroundColor: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(3),
+              color: AppColors.primary,
+              backgroundColor: AppColors.gray200,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
           ),
           const SizedBox(width: 6),
@@ -196,7 +197,7 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
             child: Text(
               '$quantidade',
               textAlign: TextAlign.right,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 11, color: AppColors.gray700),
             ),
           ),
         ],
@@ -220,14 +221,14 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
             if (avaliacao.criadoEm != null)
               Text(
                 formatarData(avaliacao.criadoEm!),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: AppColors.gray600),
               ),
           ],
         ),
@@ -237,7 +238,7 @@ class _AvaliacoesSectionState extends State<AvaliacoesSection> {
           const SizedBox(height: 6),
           Text(
             comentario,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+            style: TextStyle(fontSize: 13, color: AppColors.gray800),
           ),
         ],
       ],

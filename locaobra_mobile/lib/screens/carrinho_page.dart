@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
 import 'package:locaobra_mobile/cart/cart_item.dart';
@@ -15,6 +16,7 @@ import 'package:locaobra_mobile/services/endereco_service.dart';
 import 'package:locaobra_mobile/services/pedido_service.dart';
 import 'package:locaobra_mobile/screens/home_screen.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Carrinho + Checkout num patch só (como no web): revisar os itens e
 /// enviar um único pedido de orçamento — equivalente a
@@ -357,13 +359,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Seu carrinho'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.bgPrimary,
+      appBar: const HeaderVoltar(),
       body: SafeArea(
         child: _pedidoCriado != null
             ? _buildSucesso(_pedidoCriado!)
@@ -385,7 +382,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.shopping_cart_outlined, size: 56, color: Colors.grey),
+            const Icon(Icons.shopping_cart_outlined, size: 56, color: AppColors.gray500),
             const SizedBox(height: 12),
             const Text('Seu carrinho está vazio no momento.', textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -393,7 +390,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
               ),
               child: const Text('Ver catálogo'),
             ),
@@ -419,7 +416,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
               'nossa equipe. Você pode acompanhar o status a qualquer momento em '
               '"Meus Pedidos".',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade700),
+              style: TextStyle(color: AppColors.gray700),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -437,7 +434,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 // A tela "Meus Pedidos" chega num próximo patch — por
@@ -472,11 +469,11 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
+                    color: AppColors.errorBg,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.errorLight),
                   ),
-                  child: Text(_erro!, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+                  child: Text(_erro!, style: TextStyle(color: AppColors.error, fontSize: 13)),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -544,7 +541,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 _buildLinhaResumo('Retirada no depósito', 'Grátis'),
               if (_erroFrete != null) ...[
                 const SizedBox(height: 6),
-                Text(_erroFrete!, style: TextStyle(color: Colors.orange.shade800, fontSize: 12)),
+                Text(_erroFrete!, style: TextStyle(color: AppColors.primaryDark, fontSize: 12)),
               ],
               const Divider(height: 24),
               _buildLinhaResumo('Total estimado', formatarMoeda(valorTotal), destaque: true),
@@ -555,7 +552,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   onPressed: _irParaPagamento,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: const Text('Ir para pagamento'),
@@ -576,7 +573,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: SizedBox(
                 width: 72,
                 height: 72,
@@ -586,13 +583,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                         fit: BoxFit.cover,
                         alignment: Alignment(item.focoX / 50 - 1, item.focoY / 50 - 1),
                         errorBuilder: (_, __, ___) => Container(
-                          color: Colors.grey.shade100,
+                          color: AppColors.gray100,
                           alignment: Alignment.center,
                           child: const Text('📐', style: TextStyle(fontSize: 24)),
                         ),
                       )
                     : Container(
-                        color: Colors.grey.shade100,
+                        color: AppColors.gray100,
                         alignment: Alignment.center,
                         child: const Text('📐', style: TextStyle(fontSize: 24)),
                       ),
@@ -605,7 +602,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 children: [
                   Text(item.nome, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   Text('${formatarMoeda(item.valorDiaria)} / diária',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                      style: TextStyle(color: AppColors.gray600, fontSize: 12)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -621,7 +618,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                       Expanded(
                         child: Text(
                           '${item.quantidadeDisponivel} disponíve${item.quantidadeDisponivel == 1 ? 'l' : 'is'}',
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                          style: TextStyle(color: AppColors.gray500, fontSize: 11),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -656,7 +653,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     CartState.removerItem(item.equipamentoId);
                     _agendarRecalculoFrete(imediato: true);
                   },
-                  child: Text('Remover', style: TextStyle(color: Colors.red.shade400, fontSize: 12)),
+                  child: Text('Remover', style: TextStyle(color: AppColors.errorLight, fontSize: 12)),
                 ),
               ],
             ),
@@ -670,7 +667,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(rotulo, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(rotulo, style: TextStyle(fontSize: 12, color: AppColors.gray600)),
         const SizedBox(height: 4),
         InkWell(
           onTap: onTap,
@@ -695,20 +692,20 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selecionado ? Colors.orange.shade50 : Colors.white,
-          border: Border.all(color: selecionado ? Colors.orange : Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(10),
+          color: selecionado ? AppColors.primaryTint : AppColors.white,
+          border: Border.all(color: selecionado ? AppColors.primary : AppColors.gray300),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
         ),
         child: Row(
           children: [
             Icon(
               selecionado ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selecionado ? Colors.orange : Colors.grey,
+              color: selecionado ? AppColors.primary : AppColors.gray500,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -717,7 +714,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text(detalhe, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  Text(detalhe, style: TextStyle(color: AppColors.gray600, fontSize: 12)),
                 ],
               ),
             ),
@@ -737,7 +734,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     if (_pontosRetirada.isEmpty) {
       return Text(
         'Nenhum ponto de retirada disponível no momento — o consultor vai combinar o local com você.',
-        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        style: TextStyle(color: AppColors.gray600, fontSize: 12),
       );
     }
     return Column(
@@ -858,7 +855,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             style: TextStyle(
               fontSize: destaque ? 15 : 13,
               fontWeight: destaque ? FontWeight.bold : FontWeight.normal,
-              color: Colors.grey.shade700,
+              color: AppColors.gray700,
             ),
           ),
         ),
@@ -867,7 +864,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           style: TextStyle(
             fontSize: destaque ? 17 : 13,
             fontWeight: FontWeight.bold,
-            color: destaque ? Colors.orange : Colors.black87,
+            color: destaque ? AppColors.primary : AppColors.textPrimary,
           ),
         ),
       ],
@@ -885,9 +882,9 @@ class _Cartao extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: child,
     );
@@ -907,8 +904,8 @@ class _SeletorQuantidade extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.gray300),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
 import 'package:locaobra_mobile/screens/welcome_screen.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 // Tela de listagem "Dicas LocaObra": breadcrumb, título, subtítulo e uma
 // grade de cards de artigo (foto, título, resumo, autor e data).
@@ -11,13 +13,8 @@ class DicasLocaObraPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Dicas LocaObra'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.bgPrimary,
+      appBar: const HeaderVoltar(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -33,17 +30,17 @@ class DicasLocaObraPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Conteúdo para ajudar você a planejar sua obra e aproveitar '
                 'melhor os equipamentos alugados.',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                style: TextStyle(fontSize: 13, color: AppColors.gray700),
               ),
               const SizedBox(height: 16),
-              const Divider(height: 1, color: Colors.grey),
+              const Divider(height: 1, color: AppColors.gray500),
               const SizedBox(height: 16),
 
               // Grade de artigos: 2 colunas
@@ -85,18 +82,18 @@ class DicasLocaObraPage extends StatelessWidget {
             'Início',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey.shade600,
+              color: AppColors.gray600,
               decoration: TextDecoration.underline,
             ),
           ),
         ),
-        Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade600),
+        Icon(Icons.chevron_right, size: 16, color: AppColors.gray600),
         const Text(
           'Dicas LocaObra',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.textPrimary,
           ),
         ),
       ],
@@ -107,9 +104,9 @@ class DicasLocaObraPage extends StatelessWidget {
   // Ao tocar, abre a tela de detalhes desse artigo.
   Widget _buildArtigoCard(BuildContext context, Artigo artigo) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Material(
-        color: Colors.white,
+        color: AppColors.white,
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -121,7 +118,7 @@ class DicasLocaObraPage extends StatelessWidget {
           },
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300, width: 1),
+              border: Border.all(color: AppColors.gray300, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +144,7 @@ class DicasLocaObraPage extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -157,12 +154,12 @@ class DicasLocaObraPage extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade600,
+                          color: AppColors.gray600,
                           height: 1.3,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Divider(height: 1, color: Colors.grey),
+                      const Divider(height: 1, color: AppColors.gray500),
                       const SizedBox(height: 6),
                       // Linha com autor e data
                       Row(
@@ -170,7 +167,7 @@ class DicasLocaObraPage extends StatelessWidget {
                           Icon(
                             Icons.person_outline,
                             size: 12,
-                            color: Colors.grey.shade600,
+                            color: AppColors.gray600,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -180,7 +177,7 @@ class DicasLocaObraPage extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 10,
-                                color: Colors.grey.shade600,
+                                color: AppColors.gray600,
                               ),
                             ),
                           ),
@@ -192,14 +189,14 @@ class DicasLocaObraPage extends StatelessWidget {
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 11,
-                            color: Colors.grey.shade600,
+                            color: AppColors.gray600,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             artigo.data,
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.grey.shade600,
+                              color: AppColors.gray600,
                             ),
                           ),
                         ],

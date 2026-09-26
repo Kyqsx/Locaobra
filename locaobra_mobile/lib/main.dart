@@ -6,6 +6,7 @@ import 'package:locaobra_mobile/screens/home_screen.dart';
 import 'package:locaobra_mobile/screens/welcome_screen.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 import 'package:locaobra_mobile/services/token_storage.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
       home: telaInicial,
     );
   }

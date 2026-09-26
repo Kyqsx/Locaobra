@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
 import 'package:locaobra_mobile/screens/welcome_screen.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 // Tela de artigo completo: breadcrumb, título, autor/data, imagem,
 // introdução, itens numerados do corpo e uma caixa de dica de segurança
@@ -14,13 +16,8 @@ class ArtigoDetalhesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Dicas LocaObra'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.white,
+      appBar: const HeaderVoltar(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -37,7 +34,7 @@ class ArtigoDetalhesPage extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.textPrimary,
                   height: 1.3,
                 ),
               ),
@@ -49,23 +46,23 @@ class ArtigoDetalhesPage extends StatelessWidget {
                   Icon(
                     Icons.person_outline,
                     size: 14,
-                    color: Colors.grey.shade600,
+                    color: AppColors.gray600,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     artigo.autor,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: AppColors.gray700),
                   ),
                   const SizedBox(width: 16),
                   Icon(
                     Icons.calendar_today_outlined,
                     size: 13,
-                    color: Colors.grey.shade600,
+                    color: AppColors.gray600,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     artigo.data,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: AppColors.gray700),
                   ),
                 ],
               ),
@@ -73,7 +70,7 @@ class ArtigoDetalhesPage extends StatelessWidget {
 
               // Imagem de capa do artigo
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
                 child: Image.asset(
                   artigo.imagePath,
                   width: double.infinity,
@@ -87,12 +84,12 @@ class ArtigoDetalhesPage extends StatelessWidget {
                 artigo.introducao,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.blueGrey.shade700,
+                  color: AppColors.steel700,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 16),
-              const Divider(height: 1, color: Colors.grey),
+              const Divider(height: 1, color: AppColors.gray500),
               const SizedBox(height: 16),
 
               // Itens numerados do corpo do artigo
@@ -104,7 +101,7 @@ class ArtigoDetalhesPage extends StatelessWidget {
                     text: TextSpan(
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade800,
+                        color: AppColors.gray800,
                         height: 1.5,
                       ),
                       children: [
@@ -112,7 +109,7 @@ class ArtigoDetalhesPage extends StatelessWidget {
                           text: '${index + 1}. ${item.titulo}\n',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         TextSpan(text: item.descricao),
@@ -124,20 +121,20 @@ class ArtigoDetalhesPage extends StatelessWidget {
 
               // Caixa de "Dica de Segurança", só aparece se o artigo tiver uma
               if (artigo.dicaSeguranca != null) ...[
-                const Divider(height: 1, color: Colors.grey),
+                const Divider(height: 1, color: AppColors.gray500),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange,
-                    border: Border.all(color: Colors.orange),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.primary,
+                    border: Border.all(color: AppColors.primary),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   child: RichText(
                     text: TextSpan(
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade800,
+                        color: AppColors.gray800,
                         height: 1.4,
                       ),
                       children: [
@@ -145,7 +142,7 @@ class ArtigoDetalhesPage extends StatelessWidget {
                           text: 'Dica de Segurança: ',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange,
+                            color: AppColors.primary,
                           ),
                         ),
                         TextSpan(text: artigo.dicaSeguranca),
@@ -169,14 +166,14 @@ class ArtigoDetalhesPage extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.arrow_back, size: 16, color: Colors.orange),
+                    Icon(Icons.arrow_back, size: 16, color: AppColors.primary),
                     const SizedBox(width: 6),
                     const Text(
                       'Voltar para Dicas LocaObra',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
@@ -207,12 +204,12 @@ class ArtigoDetalhesPage extends StatelessWidget {
             'Início',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: AppColors.gray600,
               decoration: TextDecoration.underline,
             ),
           ),
         ),
-        Icon(Icons.chevron_right, size: 14, color: Colors.grey.shade600),
+        Icon(Icons.chevron_right, size: 14, color: AppColors.gray600),
         InkWell(
           onTap: () {
             Navigator.pushReplacement(
@@ -224,18 +221,18 @@ class ArtigoDetalhesPage extends StatelessWidget {
             'Dicas LocaObra',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: AppColors.gray600,
               decoration: TextDecoration.underline,
             ),
           ),
         ),
-        Icon(Icons.chevron_right, size: 14, color: Colors.grey.shade600),
+        Icon(Icons.chevron_right, size: 14, color: AppColors.gray600),
         Text(
           artigo.titulo,
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.textPrimary,
           ),
         ),
       ],

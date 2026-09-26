@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/models/pedido.dart';
 import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
 import 'package:locaobra_mobile/rastreio/screens/rastreio_detalhe_page.dart';
 import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
 import 'package:locaobra_mobile/services/pedido_service.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// "Meus Pedidos" — equivalente a `Pedidos/meusPedidos.jsx`: lista os
 /// orçamentos do cliente logado, com status e opção de cancelar enquanto
@@ -63,7 +65,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Cancelar pedido'),
           ),
         ],
@@ -153,13 +155,8 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Meus Pedidos'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.bgPrimary,
+      appBar: const HeaderVoltar(),
       body: SafeArea(child: _buildBody()),
     );
   }
@@ -172,7 +169,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
+          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.error)),
         ),
       );
     }
@@ -183,7 +180,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey),
+              const Icon(Icons.receipt_long_outlined, size: 56, color: AppColors.gray500),
               const SizedBox(height: 12),
               const Text('Você ainda não fez nenhum pedido.', textAlign: TextAlign.center),
               const SizedBox(height: 16),
@@ -191,7 +188,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                 ),
                 child: const Text('Explorar catálogo'),
               ),
@@ -221,9 +218,9 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,12 +228,12 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: AppColors.gray50,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(AppRadius.xl),
+                topRight: Radius.circular(AppRadius.xl),
               ),
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              border: Border(bottom: BorderSide(color: AppColors.gray200)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -252,7 +249,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: corStatus.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
                           pedido.status.label,
@@ -264,7 +261,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                 ),
                 Text(
                   formatarMoeda(valorTotal),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 15),
                 ),
               ],
             ),
@@ -306,12 +303,12 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                         Expanded(
                           child: Text(
                             '${item.equipamentoNome} × ${item.quantidade}',
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                            style: TextStyle(color: AppColors.gray700, fontSize: 13),
                           ),
                         ),
                         Text(
                           '${formatarMoeda(item.valorDiariaSnapshot)}/dia',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          style: TextStyle(color: AppColors.gray600, fontSize: 13),
                         ),
                       ],
                     ),
@@ -327,8 +324,8 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.errorBg,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: Text.rich(
                       TextSpan(
@@ -337,7 +334,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                           TextSpan(text: pedido.motivoRecusa!),
                         ],
                       ),
-                      style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                      style: TextStyle(color: AppColors.error, fontSize: 13),
                     ),
                   ),
                 ],
@@ -363,7 +360,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
                 alignment: Alignment.centerRight,
                 child: OutlinedButton(
                   onPressed: _cancelandoId == pedido.id ? null : () => _cancelar(pedido),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
                   child: Text(_cancelandoId == pedido.id ? 'Cancelando...' : 'Cancelar pedido'),
                 ),
               ),
@@ -378,7 +375,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
       padding: const EdgeInsets.only(bottom: 4),
       child: RichText(
         text: TextSpan(
-          style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+          style: TextStyle(color: AppColors.gray800, fontSize: 13),
           children: [
             TextSpan(text: '$rotulo: ', style: const TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: valor),
@@ -391,13 +388,13 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
   Color _corStatus(StatusPedido status) {
     switch (status) {
       case StatusPedido.aprovado:
-        return Colors.green.shade700;
+        return AppColors.success;
       case StatusPedido.recusado:
-        return Colors.red.shade700;
+        return AppColors.error;
       case StatusPedido.cancelado:
-        return Colors.grey.shade600;
+        return AppColors.gray600;
       case StatusPedido.solicitado:
-        return Colors.blue.shade700;
+        return AppColors.info;
     }
   }
 }

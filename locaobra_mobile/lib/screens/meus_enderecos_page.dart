@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/models/endereco.dart';
 import 'package:locaobra_mobile/services/endereco_service.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// "Meus Endereços" — equivalente a `Perfil/meusEnderecos.jsx`: lista, cria,
 /// edita, remove e define o endereço principal do cliente logado.
@@ -176,7 +178,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Remover'),
           ),
         ],
@@ -208,7 +210,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(texto),
-        backgroundColor: erro ? Colors.red.shade700 : Colors.green.shade700,
+        backgroundColor: erro ? AppColors.error : AppColors.success,
       ),
     );
   }
@@ -220,13 +222,8 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Meus Endereços'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.bgPrimary,
+      appBar: const HeaderVoltar(),
       body: SafeArea(child: _buildBody()),
     );
   }
@@ -239,7 +236,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
+          child: Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.error)),
         ),
       );
     }
@@ -249,14 +246,14 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
       children: [
         const Text(
           'Endereços salvos pra agilizar o checkout — pode ter mais de um, ex: casa e obra.',
-          style: TextStyle(color: Colors.black54, fontSize: 13),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 16),
         if (_enderecos.isEmpty && !_formAberto)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text('Você ainda não tem nenhum endereço salvo.', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text('Você ainda não tem nenhum endereço salvo.', style: TextStyle(color: AppColors.gray600)),
             ),
           ),
         for (final endereco in _enderecos)
@@ -272,7 +269,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
               onPressed: _abrirNovo,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: const Text('+ Adicionar endereço'),
@@ -288,9 +285,9 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,17 +303,17 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.orange.shade200),
+                    color: AppColors.primaryTint,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    border: Border.all(color: AppColors.primaryTint),
                   ),
-                  child: Text('Principal', style: TextStyle(color: Colors.orange.shade800, fontSize: 11)),
+                  child: Text('Principal', style: TextStyle(color: AppColors.primaryDark, fontSize: 11)),
                 ),
               ],
             ],
           ),
           const SizedBox(height: 6),
-          Text(endereco.resumo, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+          Text(endereco.resumo, style: TextStyle(color: AppColors.gray700, fontSize: 13)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 12,
@@ -325,7 +322,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
               if (!endereco.principal)
                 _linkBotao('Definir como principal', () => _definirPrincipal(endereco)),
               _linkBotao('Editar', () => _abrirEdicao(endereco)),
-              _linkBotao('Remover', () => _remover(endereco), cor: Colors.red),
+              _linkBotao('Remover', () => _remover(endereco), cor: AppColors.error),
             ],
           ),
         ],
@@ -338,7 +335,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
       onTap: onTap,
       child: Text(
         texto,
-        style: TextStyle(color: cor ?? Colors.orange.shade800, fontWeight: FontWeight.w600, fontSize: 13),
+        style: TextStyle(color: cor ?? AppColors.primaryDark, fontWeight: FontWeight.w600, fontSize: 13),
       ),
     );
   }
@@ -348,9 +345,9 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +398,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage> {
                   onPressed: _salvando ? null : _salvar,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                   ),
                   child: Text(_salvando ? 'Salvando...' : 'Salvar endereço'),
                 ),

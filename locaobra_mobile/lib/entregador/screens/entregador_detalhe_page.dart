@@ -7,6 +7,7 @@ import 'package:locaobra_mobile/entregador/models/expedicao.dart';
 import 'package:locaobra_mobile/entregador/services/expedicao_service.dart';
 import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
 import 'package:signature/signature.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 const _corPrimaria = Color.fromARGB(255, 255, 128, 0);
 
@@ -48,7 +49,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
     _signatureController = SignatureController(
       penStrokeWidth: 3,
       penColor: Colors.black,
-      exportBackgroundColor: Colors.white,
+      exportBackgroundColor: AppColors.white,
     );
     _carregar();
   }
@@ -135,7 +136,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(expedicao.ehColeta ? 'Coleta confirmada!' : 'Entrega confirmada!'),
-          backgroundColor: Colors.green.shade600,
+          backgroundColor: AppColors.success,
         ),
       );
       setState(() => _enviando = false);
@@ -188,7 +189,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(dica, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(dica, style: TextStyle(fontSize: 12, color: AppColors.gray600)),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
@@ -215,7 +216,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
 
   void _mostrarErro(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), backgroundColor: Colors.red.shade600),
+      SnackBar(content: Text(mensagem), backgroundColor: AppColors.error),
     );
   }
 
@@ -224,11 +225,11 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
     return PopScope(
       canPop: true,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: AppColors.bgPrimary,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
           elevation: 0,
-          foregroundColor: Colors.black87,
+          foregroundColor: AppColors.textPrimary,
           title: const Text('Detalhe da expedição'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -302,7 +303,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
                 if (expedicao.placaVeiculo != null && expedicao.placaVeiculo!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text('Veículo: ${expedicao.placaVeiculo}',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                      style: TextStyle(fontSize: 13, color: AppColors.gray600)),
                 ],
               ],
             ),
@@ -334,7 +335,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.build_outlined, size: 18, color: Colors.grey),
+                          const Icon(Icons.build_outlined, size: 18, color: AppColors.gray500),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
@@ -345,7 +346,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
                                   style: const TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 Text('Qtd.: ${item.quantidade}',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                    style: TextStyle(fontSize: 12, color: AppColors.gray600)),
                               ],
                             ),
                           ),
@@ -370,7 +371,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
       return _buildCard(
         child: Row(
           children: [
-            Icon(Icons.hourglass_empty, color: Colors.grey.shade500),
+            Icon(Icons.hourglass_empty, color: AppColors.gray500),
             const SizedBox(width: 8),
             const Expanded(
               child: Text('Aguardando o check-out do conferente para poder confirmar.'),
@@ -390,11 +391,11 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
             Text('Documento: ${expedicao.documentoRecebedor ?? '-'}'),
             const SizedBox(height: 4),
             Text('Confirmado em: ${expedicao.entregaConfirmadaEm}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                style: TextStyle(fontSize: 12, color: AppColors.gray600)),
             if (expedicao.fotoEntrega != null && expedicao.fotoEntrega!.isNotEmpty) ...[
               const SizedBox(height: 12),
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
                 child: Image.network(expedicao.fotoEntregaUrl, height: 160, fit: BoxFit.cover),
               ),
             ],
@@ -448,13 +449,13 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
           const SizedBox(height: 6),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.gray400),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             height: 180,
             child: Signature(
               controller: _signatureController,
-              backgroundColor: Colors.white,
+              backgroundColor: AppColors.white,
             ),
           ),
           Align(
@@ -472,7 +473,7 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Image.file(
                   File(_fotoSelecionada!.path),
                   height: 160,
@@ -501,15 +502,15 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
                 child: ElevatedButton.icon(
                   onPressed: _enviando ? null : () => _confirmarEntrega(expedicao),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.success,
+                    foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: _enviando
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
                         )
                       : const Icon(Icons.check),
                   label: Text(expedicao.ehColeta ? 'Confirmar coleta' : 'Confirmar entrega'),
@@ -523,8 +524,8 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
             child: OutlinedButton.icon(
               onPressed: _enviando ? null : () => _naoRealizada(expedicao),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red.shade700,
-                side: BorderSide(color: Colors.red.shade300),
+                foregroundColor: AppColors.error,
+                side: BorderSide(color: AppColors.errorLight),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               icon: const Icon(Icons.close),
@@ -541,9 +542,9 @@ class _EntregadorDetalhePageState extends State<EntregadorDetalhePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl2),
+        border: Border.all(color: AppColors.gray200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

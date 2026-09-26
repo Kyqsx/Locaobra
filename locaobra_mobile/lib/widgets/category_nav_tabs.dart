@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/categoria.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Linha horizontal de abas de categoria — reaproveita o visual que
 /// estava duplicado em cada página de categoria (Ferramentas_Eletricas,
@@ -62,7 +63,7 @@ class _NavTab extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: selecionada ? Colors.orange : Colors.black87,
+            color: selecionada ? AppColors.primary : AppColors.textPrimary,
           ),
         ),
       ),

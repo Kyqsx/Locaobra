@@ -14,6 +14,7 @@ import 'package:locaobra_mobile/utils/formatters.dart';
 import 'package:locaobra_mobile/models/artigo.dart';
 import 'package:locaobra_mobile/Dicas/dicas_locaobra_page.dart';
 import 'package:locaobra_mobile/Dicas/artigo_detalhes_page.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,7 +22,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -64,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                                   label: Text('$total'),
                                   child: const Icon(Icons.shopping_cart_outlined),
                                 ),
-                                color: Colors.black87,
+                                color: AppColors.textPrimary,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                               );
@@ -86,13 +87,13 @@ class HomeScreen extends StatelessWidget {
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                                      foregroundColor: Colors.white,
+                                      foregroundColor: AppColors.white,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 18,
                                         vertical: 10,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(AppRadius.lg),
                                       ),
                                       elevation: 0,
                                     ),
@@ -109,7 +110,7 @@ class HomeScreen extends StatelessWidget {
                               return PopupMenuButton<String>(
                                 offset: const Offset(0, 40),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(AppRadius.xl),
                                 ),
                                 onSelected: (opcao) async {
                                   if (opcao == 'sair') {
@@ -149,12 +150,12 @@ class HomeScreen extends StatelessWidget {
                                   _buildMenuItem('enderecos', Icons.location_on_outlined, 'Meus Endereços'),
                                   _buildMenuItem('perfil', Icons.person_outline, 'Ver Perfil'),
                                   const PopupMenuDivider(),
-                                  _buildMenuItem('sair', Icons.logout, 'Sair', cor: Colors.orange),
+                                  _buildMenuItem('sair', Icons.logout, 'Sair', cor: AppColors.primary),
                                 ],
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.person, color: Colors.orange, size: 18),
+                                    const Icon(Icons.person, color: AppColors.primary, size: 18),
                                     const SizedBox(width: 4),
                                     Flexible(
                                       child: Text(
@@ -163,7 +164,7 @@ class HomeScreen extends StatelessWidget {
                                         abreviarNome(nomeUsuario),
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          color: Colors.orange,
+                                          color: AppColors.primary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
                                         ),
@@ -231,7 +232,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.white,
                         height: 1.2,
                       ),
                     ),
@@ -251,14 +252,14 @@ class HomeScreen extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () => _abrirCategoria(context, null),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         elevation: 0,
                       ),
@@ -287,7 +288,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -332,7 +333,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     TextButton(
@@ -355,14 +356,14 @@ class HomeScreen extends StatelessWidget {
                           Text(
                             'Ver tudo',
                             style: TextStyle(
-                              color: Colors.orange,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
                           ),
                           Icon(
                             Icons.chevron_right,
-                            color: Colors.orange,
+                            color: AppColors.primary,
                             size: 18,
                           ),
                         ],
@@ -427,7 +428,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -471,7 +472,7 @@ class HomeScreen extends StatelessWidget {
           style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.textPrimary,
           ),
         ),
       ),
@@ -500,9 +501,9 @@ class HomeScreen extends StatelessWidget {
       value: valor,
       child: Row(
         children: [
-          Icon(icone, size: 18, color: cor ?? Colors.black87),
+          Icon(icone, size: 18, color: cor ?? AppColors.textPrimary),
           const SizedBox(width: 10),
-          Text(texto, style: TextStyle(color: cor ?? Colors.black87)),
+          Text(texto, style: TextStyle(color: cor ?? AppColors.textPrimary)),
         ],
       ),
     );
@@ -516,18 +517,18 @@ class HomeScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Material(
-          color: Colors.white,
+          color: AppColors.white,
           child: InkWell(
             onTap: onTap,
-            splashColor: Colors.orange,
-            highlightColor: Colors.orange,
+            splashColor: AppColors.primary,
+            highlightColor: AppColors.primary,
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               width: double.infinity,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300, width: 1),
+                border: Border.all(color: AppColors.gray300, width: 1),
               ),
               child: Column(
                 children: [
@@ -538,7 +539,7 @@ class HomeScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -558,14 +559,14 @@ class HomeScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Material(
-        color: Colors.white,
+        color: AppColors.white,
         child: InkWell(
           onTap: onTap,
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300, width: 1),
+              border: Border.all(color: AppColors.gray300, width: 1),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,8 +574,8 @@ class HomeScreen extends StatelessWidget {
                 // Imagem à esquerda
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
+                    topLeft: Radius.circular(AppRadius.xl),
+                    bottomLeft: Radius.circular(AppRadius.xl),
                   ),
                   child: Image.asset(
                     imagePath,
@@ -598,7 +599,7 @@ class HomeScreen extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -608,7 +609,7 @@ class HomeScreen extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade600,
+                            color: AppColors.gray600,
                             height: 1.3,
                           ),
                         ),
@@ -618,7 +619,7 @@ class HomeScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange,
+                            color: AppColors.primary,
                           ),
                         ),
                       ],
@@ -638,20 +639,20 @@ class HomeScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Theme(
           data: ThemeData().copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             shape: RoundedRectangleBorder(
-              side: const BorderSide(color: Colors.orange),
-              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.primary),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
             collapsedShape: RoundedRectangleBorder(
-              side: BorderSide(color: Colors.orange),
-              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: AppColors.primary),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
-            iconColor: Colors.orange,
-            collapsedIconColor: Colors.orange,
+            iconColor: AppColors.primary,
+            collapsedIconColor: AppColors.primary,
             leading: SvgPicture.asset(
               'assets/imagens/interroga.svg',
               width: 22,
@@ -662,7 +663,7 @@ class HomeScreen extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -673,7 +674,7 @@ class HomeScreen extends StatelessWidget {
                   answer,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade700,
+                    color: AppColors.gray700,
                     height: 1.4,
                   ),
                 ),

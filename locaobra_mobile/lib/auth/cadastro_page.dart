@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -66,7 +67,7 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -92,7 +93,7 @@ class _CadastroPageState extends State<CadastroPage> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.textPrimary,
                   ),
                 ),
 
@@ -100,7 +101,7 @@ class _CadastroPageState extends State<CadastroPage> {
 
                 Text(
                   'Preencha os dados abaixo para começar.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 14, color: AppColors.gray600),
                 ),
 
                 const SizedBox(height: 28),
@@ -117,7 +118,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     hintText: 'Seu nome',
                     prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                   ),
                   validator: (value) {
@@ -143,7 +144,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     hintText: 'seuemail@exemplo.com',
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                   ),
                   validator: (value) {
@@ -182,7 +183,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       },
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                   ),
                   validator: (value) {
@@ -224,7 +225,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       },
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                   ),
                   validator: (value) {
@@ -240,7 +241,7 @@ class _CadastroPageState extends State<CadastroPage> {
                 if (_erro != null) ...[
                   Text(
                     _erro!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                    style: const TextStyle(color: AppColors.error, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -252,9 +253,9 @@ class _CadastroPageState extends State<CadastroPage> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadius.xl2),
                       ),
                       elevation: 0,
                     ),
@@ -264,7 +265,7 @@ class _CadastroPageState extends State<CadastroPage> {
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: AppColors.white,
                               strokeWidth: 2.5,
                             ),
                           )

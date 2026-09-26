@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:locaobra_mobile/entregador/models/expedicao.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Mesmas cores usadas no badge de status da tela de Expedição do web
 /// (statusBadge AGENDADO/EM_TRANSITO/ENTREGUE/CONCLUIDO/CANCELADO em
-/// Expedicao.css), adaptadas pro Material.
+/// Expedicao.css), agora vindas do design system compartilhado.
 Color corDoStatus(StatusExpedicao status) {
   switch (status) {
     case StatusExpedicao.agendado:
-      return const Color(0xFF6B7280); // cinza
+      return AppColors.gray500;
     case StatusExpedicao.emTransito:
-      return const Color(0xFF2563EB); // azul
+      return AppColors.info;
     case StatusExpedicao.entregue:
-      return const Color(0xFF16A34A); // verde
+      return AppColors.success;
     case StatusExpedicao.concluido:
-      return const Color(0xFF15803D); // verde escuro
+      return AppColors.success;
     case StatusExpedicao.cancelado:
-      return const Color(0xFFDC2626); // vermelho
+      return AppColors.error;
   }
 }
 
@@ -31,7 +32,7 @@ class StatusExpedicaoBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: cor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(color: cor.withValues(alpha: 0.4)),
       ),
       child: Text(

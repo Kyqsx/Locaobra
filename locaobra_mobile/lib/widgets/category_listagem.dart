@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/equipamento.dart';
 import '../utils/formatters.dart';
+import 'estrelas.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Grade (grid) de cards de equipamento — mesmo layout visual que estava
 /// hardcoded em cada página de categoria (2 colunas, foto, nome, preço
@@ -24,7 +26,7 @@ class CategoryListagem extends StatelessWidget {
         child: Center(
           child: Text(
             'Nenhum equipamento disponível nesta categoria.',
-            style: TextStyle(color: Colors.black54),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
       );
@@ -59,14 +61,14 @@ class _ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Material(
-        color: Colors.white,
+        color: AppColors.white,
         child: InkWell(
           onTap: onTap,
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300, width: 1),
+              border: Border.all(color: AppColors.gray300, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,24 +97,24 @@ class _ProductCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      if (equipamento.mediaAvaliacoes > 0) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 12, color: Colors.orange),
-                            const SizedBox(width: 4),
-                            Text(
-                              equipamento.mediaAvaliacoes.toStringAsFixed(1),
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
-                      ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Estrelas(valor: equipamento.mediaAvaliacoes, tamanho: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            equipamento.totalAvaliacoes > 0
+                                ? equipamento.mediaAvaliacoes.toStringAsFixed(1)
+                                : 'Sem avaliações',
+                            style: TextStyle(fontSize: 11, color: AppColors.gray600),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
-                      const Divider(height: 1, color: Colors.grey),
+                      const Divider(height: 1, color: AppColors.gray500),
                       const SizedBox(height: 8),
                       RichText(
                         text: TextSpan(
@@ -122,12 +124,12 @@ class _ProductCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.orange,
+                                color: AppColors.primary,
                               ),
                             ),
                             TextSpan(
                               text: ' / dia',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 11, color: AppColors.gray600),
                             ),
                           ],
                         ),
@@ -150,7 +152,7 @@ class _Placeholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100,
+      color: AppColors.gray100,
       alignment: Alignment.center,
       child: const Text('🏗️', style: TextStyle(fontSize: 32)),
     );

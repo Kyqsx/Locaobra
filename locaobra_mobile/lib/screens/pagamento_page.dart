@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:flutter/services.dart';
 import 'package:locaobra_mobile/cart/cart_state.dart';
 import 'package:locaobra_mobile/cart/dados_checkout.dart';
 import 'package:locaobra_mobile/services/pedido_service.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Pagamento simulado — equivalente a `Cart/pagamento.jsx` no web. Não
 /// valida nem envia dado de cartão pra lugar nenhum: só espera ~1.4s pra
@@ -139,20 +141,15 @@ class _PagamentoPageState extends State<PagamentoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Pagamento'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.bgPrimary,
+      appBar: const HeaderVoltar(),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             const Text(
               'Simulação de pagamento — nenhum valor é cobrado de verdade.',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: 16),
             _Cartao(
@@ -166,11 +163,11 @@ class _PagamentoPageState extends State<PagamentoPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
+                        color: AppColors.errorBg,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: AppColors.errorLight),
                       ),
-                      child: Text(_erro!, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+                      child: Text(_erro!, style: TextStyle(color: AppColors.error, fontSize: 13)),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -187,22 +184,22 @@ class _PagamentoPageState extends State<PagamentoPage> {
                   if (_forma == FormaPagamento.pix)
                     Text(
                       'Ao confirmar, geraríamos um QR Code Pix aqui (simulado — o pedido já sai marcado como pago).',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      style: TextStyle(color: AppColors.gray600, fontSize: 12),
                     ),
                   if (_forma == FormaPagamento.boleto)
                     Text(
                       'Ao confirmar, geraríamos um boleto aqui (simulado — o pedido já sai marcado como pago).',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      style: TextStyle(color: AppColors.gray600, fontSize: 12),
                     ),
                   const Divider(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Total a pagar',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                       Text(
                         formatarMoeda(widget.dados.valorTotal),
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.orange),
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
                     ],
                   ),
@@ -213,7 +210,7 @@ class _PagamentoPageState extends State<PagamentoPage> {
                       onPressed: _pagando ? null : _pagar,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 255, 128, 0),
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: _pagando
@@ -223,7 +220,7 @@ class _PagamentoPageState extends State<PagamentoPage> {
                                 SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
                                 ),
                                 SizedBox(width: 10),
                                 Text('Processando pagamento...'),
@@ -252,21 +249,21 @@ class _PagamentoPageState extends State<PagamentoPage> {
     final selecionado = _forma == forma;
     return InkWell(
       onTap: () => setState(() => _forma = forma),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selecionado ? Colors.orange.shade50 : Colors.white,
-          border: Border.all(color: selecionado ? Colors.orange : Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(10),
+          color: selecionado ? AppColors.primaryTint : AppColors.white,
+          border: Border.all(color: selecionado ? AppColors.primary : AppColors.gray300),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
         ),
         child: Text(
           forma.label,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13,
-            color: selecionado ? Colors.orange.shade800 : Colors.grey.shade700,
+            color: selecionado ? AppColors.primaryDark : AppColors.gray700,
           ),
         ),
       ),
@@ -336,9 +333,9 @@ class _Cartao extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: child,
     );

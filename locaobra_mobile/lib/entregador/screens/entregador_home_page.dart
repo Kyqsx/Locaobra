@@ -7,6 +7,7 @@ import 'package:locaobra_mobile/entregador/services/expedicao_service.dart';
 import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
 import 'package:locaobra_mobile/services/auth_service.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 const _corPrimaria = Color.fromARGB(255, 255, 128, 0);
 
@@ -54,11 +55,11 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: AppColors.textPrimary,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -73,7 +74,7 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
                 nome == null ? '' : abreviarNome(nome),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: AppColors.gray600),
               ),
             ),
           ],
@@ -146,7 +147,7 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
       const MapEntry('Todas', null),
     ];
     return Container(
-      color: Colors.white,
+      color: AppColors.white,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -162,10 +163,10 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
                 onSelected: (_) => setState(() => _filtro = opcao.value),
                 selectedColor: _corPrimaria.withValues(alpha: 0.18),
                 labelStyle: TextStyle(
-                  color: selecionado ? _corPrimaria : Colors.black87,
+                  color: selecionado ? _corPrimaria : AppColors.textPrimary,
                   fontWeight: selecionado ? FontWeight.w600 : FontWeight.normal,
                 ),
-                side: BorderSide(color: selecionado ? _corPrimaria : Colors.grey.shade300),
+                side: BorderSide(color: selecionado ? _corPrimaria : AppColors.gray300),
               ),
             );
           }).toList(),
@@ -186,11 +187,11 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.local_shipping_outlined, size: 56, color: Colors.grey.shade400),
+                  Icon(Icons.local_shipping_outlined, size: 56, color: AppColors.gray400),
                   const SizedBox(height: 12),
                   Text(
                     'Nenhuma expedição por aqui.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                    style: TextStyle(color: AppColors.gray600, fontSize: 15),
                   ),
                 ],
               ),
@@ -213,7 +214,7 @@ class _EntregadorHomePageState extends State<EntregadorHomePage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                  Icon(Icons.error_outline, size: 48, color: AppColors.errorLight),
                   const SizedBox(height: 12),
                   Text(mensagem, textAlign: TextAlign.center),
                   const SizedBox(height: 12),
@@ -238,16 +239,16 @@ class _ExpedicaoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final endereco = expedicao.enderecoEntrega.formatado;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(AppRadius.xl2),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.xl2),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(AppRadius.xl2),
+            border: Border.all(color: AppColors.gray200),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,12 +289,12 @@ class _ExpedicaoCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.place_outlined, size: 16, color: Colors.grey.shade500),
+                    Icon(Icons.place_outlined, size: 16, color: AppColors.gray500),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         endereco,
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                        style: TextStyle(fontSize: 13, color: AppColors.gray700),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -305,14 +306,14 @@ class _ExpedicaoCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.event_outlined, size: 16, color: Colors.grey.shade500),
+                    Icon(Icons.event_outlined, size: 16, color: AppColors.gray500),
                     const SizedBox(width: 4),
                     Text(
                       _formatarData(expedicao.dataProgramada!) +
                           (expedicao.horarioProgramado != null && expedicao.horarioProgramado!.isNotEmpty
                               ? ' · ${expedicao.horarioProgramado}'
                               : ''),
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 12, color: AppColors.gray600),
                     ),
                   ],
                 ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/categoria.dart';
+import '../widgets/header_voltar.dart';
 import '../models/equipamento.dart';
 import '../screens/product_view_page.dart';
 import '../services/catalogo_service.dart';
 import '../widgets/category_listagem.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Página única e dinâmica de catálogo/categoria — busca os equipamentos
 /// na API (via [CatalogoService]) e filtra por [categoriaSlug], igual ao
@@ -68,24 +69,11 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
     );
   }
 
-  String get _nomeFormatado {
-    final slug = _slugAtual;
-    if (slug == null) return 'Catálogo Completo';
-    final encontrada = kCategorias.where((c) => c.slug == slug);
-    if (encontrada.isNotEmpty) return encontrada.first.nome;
-    return slug.replaceAll('-', ' ');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: Text(_nomeFormatado),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.bgPrimary,
+      appBar: const HeaderVoltar(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -104,7 +92,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Divider(height: 1, color: Colors.grey),
+                    const Divider(height: 1, color: AppColors.gray500),
                     const SizedBox(height: 16),
                     FutureBuilder<List<Equipamento>>(
                       future: _futureDados,
@@ -121,7 +109,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                             child: Center(
                               child: Text(
                                 'Não foi possível carregar os equipamentos.',
-                                style: TextStyle(color: Colors.grey.shade700),
+                                style: TextStyle(color: AppColors.gray700),
                               ),
                             ),
                           );
@@ -139,7 +127,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                                         ? 'Nenhum equipamento disponível com os filtros aplicados.'
                                         : 'Nenhum equipamento disponível.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey.shade700),
+                                style: TextStyle(color: AppColors.gray700),
                               ),
                             ),
                           );
@@ -166,35 +154,35 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
     return TextField(
       controller: _buscaController,
       onChanged: (valor) => setState(() => _termoBusca = valor),
-      style: const TextStyle(fontSize: 14, color: Colors.black87),
+      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: 'Buscar equipamento...',
-        hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-        prefixIcon: Icon(Icons.search, size: 20, color: Colors.grey.shade600),
+        hintStyle: TextStyle(fontSize: 14, color: AppColors.gray500),
+        prefixIcon: Icon(Icons.search, size: 20, color: AppColors.gray600),
         isDense: true,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 10,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: AppColors.gray300),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: AppColors.gray300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Colors.orange),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: const BorderSide(color: AppColors.primary),
         ),
         suffixIcon: _termoBusca.isEmpty
             ? null
             : IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.close, size: 18, color: Colors.grey.shade600),
+                icon: Icon(Icons.close, size: 18, color: AppColors.gray600),
                 onPressed: () {
                   _buscaController.clear();
                   setState(() => _termoBusca = '');
@@ -253,9 +241,9 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl2)),
       ),
       builder: (contextSheet) {
         return StatefulBuilder(
@@ -265,9 +253,9 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                 value: valor,
                 title: Text(
                   rotulo,
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                 ),
-                activeColor: Colors.orange,
+                activeColor: AppColors.primary,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
               );
@@ -288,7 +276,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         TextButton(
@@ -303,7 +291,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: Colors.orange,
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
@@ -314,7 +302,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey,
+                        color: AppColors.gray500,
                       ),
                     ),
                     RadioGroup<String>(
@@ -337,9 +325,9 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                       onChanged: (v) => setSheetState(() => disponiveisTemp = v),
                       title: const Text(
                         'Somente equipamentos disponíveis',
-                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
                       ),
-                      activeThumbColor: Colors.orange,
+                      activeThumbColor: AppColors.primary,
                       contentPadding: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 8),
@@ -347,12 +335,12 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         onPressed: () {
                           setState(() {
@@ -390,12 +378,12 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
-        backgroundColor: comFiltro ? Colors.orange : Colors.white,
-        foregroundColor: comFiltro ? Colors.white : Colors.black87,
+        backgroundColor: comFiltro ? AppColors.primary : AppColors.white,
+        foregroundColor: comFiltro ? AppColors.white : AppColors.textPrimary,
         side: BorderSide(
-          color: comFiltro ? Colors.orange : Colors.grey.shade300,
+          color: comFiltro ? AppColors.primary : AppColors.gray300,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       ),
     );

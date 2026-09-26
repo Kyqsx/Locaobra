@@ -4,6 +4,7 @@ import 'package:locaobra_mobile/entregador/models/expedicao.dart'
 import 'package:locaobra_mobile/entregador/widgets/status_expedicao_badge.dart';
 import 'package:locaobra_mobile/rastreio/models/rastreio_expedicao.dart';
 import 'package:locaobra_mobile/rastreio/services/rastreio_service.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Rastreio de UMA expedição (entrega ou coleta) pro cliente: linha do
 /// tempo com as etapas já percorridas, endereço, itens e — quando já
@@ -66,13 +67,13 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
         title: Text(
           _expedicao != null ? 'Rastreio — ${tipoExpedicaoLabel(_expedicao!.tipo)}' : 'Rastreio da entrega',
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
       body: SafeArea(child: _buildBody()),
@@ -90,7 +91,7 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
+              Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.error)),
               const SizedBox(height: 12),
               OutlinedButton(onPressed: _carregar, child: const Text('Tentar de novo')),
             ],
@@ -154,9 +155,9 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +188,7 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
       padding: const EdgeInsets.only(top: 4),
       child: RichText(
         text: TextSpan(
-          style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+          style: TextStyle(color: AppColors.gray800, fontSize: 13),
           children: [
             TextSpan(text: '$rotulo: ', style: const TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: valor),
@@ -202,14 +203,14 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.red.shade200),
+        color: AppColors.errorBg,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.errorLight),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.cancel_outlined, color: Colors.red.shade700),
+          Icon(Icons.cancel_outlined, color: AppColors.error),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(
@@ -219,7 +220,7 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
                   TextSpan(text: expedicao.motivoCancelamento ?? 'Nenhum motivo informado.'),
                 ],
               ),
-              style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+              style: TextStyle(color: AppColors.error, fontSize: 13),
             ),
           ),
         ],
@@ -248,9 +249,9 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +289,7 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
     required bool ultima,
     String? dataHora,
   }) {
-    final cor = concluida ? Colors.green.shade700 : Colors.grey.shade400;
+    final cor = concluida ? AppColors.success : AppColors.gray400;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: IntrinsicHeight(
@@ -307,7 +308,7 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
                     child: Container(
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 2),
-                      color: concluida ? Colors.green.shade200 : Colors.grey.shade300,
+                      color: concluida ? AppColors.successBg : AppColors.gray300,
                     ),
                   ),
               ],
@@ -323,14 +324,14 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
                       rotulo,
                       style: TextStyle(
                         fontWeight: atual || concluida ? FontWeight.bold : FontWeight.normal,
-                        color: concluida ? Colors.black87 : Colors.grey.shade600,
+                        color: concluida ? AppColors.textPrimary : AppColors.gray600,
                         fontSize: 14,
                       ),
                     ),
                     if (dataHora != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(dataHora, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                        child: Text(dataHora, style: TextStyle(color: AppColors.gray600, fontSize: 12)),
                       ),
                   ],
                 ),
@@ -353,7 +354,7 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
           if (expedicao.fotoEntrega != null && expedicao.fotoEntrega!.isNotEmpty) ...[
             const SizedBox(height: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: Image.network(
                 expedicao.fotoEntregaUrl,
                 height: 180,
@@ -373,9 +374,9 @@ class _RastreioDetalhePageState extends State<RastreioDetalhePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

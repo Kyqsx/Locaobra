@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/header_voltar.dart';
 import 'package:locaobra_mobile/auth/auth_state.dart';
 import 'package:locaobra_mobile/auth/login_page.dart';
 import 'package:locaobra_mobile/cart/cart_item.dart';
@@ -10,6 +11,7 @@ import 'package:locaobra_mobile/services/catalogo_service.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
 import 'package:locaobra_mobile/widgets/avaliacoes_section.dart';
 import 'package:locaobra_mobile/widgets/estrelas.dart';
+import 'package:locaobra_mobile/theme/app_theme.dart';
 
 /// Resultado de tentar colocar o equipamento no carrinho.
 enum _ResultadoCarrinho { interrompido, adicionado, limiteAtingido }
@@ -216,16 +218,8 @@ class _ProductViewPageState extends State<ProductViewPage> {
     final equipamento = _equipamento;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: Text(
-          equipamento?.nome ?? 'Equipamento',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
+      backgroundColor: AppColors.bgPrimary,
+      appBar: HeaderVoltar(
         actions: [
           ValueListenableBuilder<List<CartItem>>(
             valueListenable: CartState.itens,
@@ -267,7 +261,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
               Text(
                 _erro ?? 'Equipamento não encontrado.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade700),
+                style: TextStyle(color: AppColors.gray700),
               ),
               const SizedBox(height: 12),
               OutlinedButton(
@@ -320,7 +314,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
     return Column(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           child: AspectRatio(
             aspectRatio: 1,
             child: fotos.isEmpty
@@ -356,14 +350,14 @@ class _ProductViewPageState extends State<ProductViewPage> {
                   child: Container(
                     width: 64,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                       border: Border.all(
-                        color: ativa ? Colors.orange : Colors.grey.shade300,
+                        color: ativa ? AppColors.primary : AppColors.gray300,
                         width: ativa ? 2 : 1,
                       ),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       child: _FotoEquipamento(foto: fotos[indice]),
                     ),
                   ),
@@ -394,7 +388,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -413,7 +407,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                             '${equipamento.totalAvaliacoes} $rotuloAvaliacoes',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade700,
+                              color: AppColors.gray700,
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -424,7 +418,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                       'Sem avaliações ainda',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: AppColors.gray700,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -436,7 +430,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
             style: TextStyle(
               fontSize: 14,
               height: 1.4,
-              color: Colors.grey.shade800,
+              color: AppColors.gray800,
             ),
           ),
           const Divider(height: 28),
@@ -505,7 +499,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                   flex: 4,
                   child: Text(
                     especificacoes[i].key,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 13, color: AppColors.gray600),
                   ),
                 ),
                 Expanded(
@@ -516,7 +510,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -553,15 +547,15 @@ class _ProductViewPageState extends State<ProductViewPage> {
               onSelectionChanged: (selecao) =>
                   setState(() => _diasLocacao = selecao.first),
               style: SegmentedButton.styleFrom(
-                selectedBackgroundColor: Colors.orange.shade100,
-                selectedForegroundColor: Colors.deepOrange,
+                selectedBackgroundColor: AppColors.primaryTint,
+                selectedForegroundColor: AppColors.primaryDark,
               ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             _diasLocacao == 1 ? '1 dia' : '$_diasLocacao dias',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: AppColors.gray600),
           ),
           const SizedBox(height: 16),
           Row(
@@ -572,7 +566,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -625,7 +619,7 @@ class _ProductViewPageState extends State<ProductViewPage> {
     final estimado = equipamento.valorDiaria * _diasLocacao * _quantidade;
 
     return Material(
-      color: Colors.white,
+      color: AppColors.white,
       elevation: 8,
       child: SafeArea(
         top: false,
@@ -639,14 +633,14 @@ class _ProductViewPageState extends State<ProductViewPage> {
                 children: [
                   Text(
                     'Valor estimado',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 13, color: AppColors.gray700),
                   ),
                   Text(
                     formatarMoeda(estimado),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -660,14 +654,14 @@ class _ProductViewPageState extends State<ProductViewPage> {
                           ? null
                           : _adicionarAoCarrinho,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange,
-                        side: const BorderSide(color: Colors.orange),
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                       ),
                       child: const Text(
@@ -686,15 +680,15 @@ class _ProductViewPageState extends State<ProductViewPage> {
                       onPressed:
                           indisponivel || _ocupado ? null : _comprarAgora,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 14,
                         ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                       ),
                       child: Text(
@@ -732,9 +726,9 @@ class _Cartao extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.gray300),
       ),
       child: child,
     );
@@ -755,7 +749,7 @@ class _TituloSecao extends StatelessWidget {
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: AppColors.textPrimary,
         ),
       ),
     );
@@ -782,7 +776,7 @@ class _LinhaInfo extends StatelessWidget {
           Expanded(
             child: Text(
               rotulo,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 13, color: AppColors.gray600),
             ),
           ),
           Text(
@@ -790,7 +784,7 @@ class _LinhaInfo extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: destaque ? Colors.orange : Colors.black87,
+              color: destaque ? AppColors.primary : AppColors.textPrimary,
             ),
           ),
         ],
@@ -811,12 +805,12 @@ class _LinhaBeneficio extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(icone, size: 18, color: Colors.orange),
+          Icon(icone, size: 18, color: AppColors.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               texto,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+              style: TextStyle(fontSize: 13, color: AppColors.gray800),
             ),
           ),
         ],
@@ -843,8 +837,8 @@ class _SeletorQuantidade extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.gray300),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -897,7 +891,7 @@ class _FotoEquipamento extends StatelessWidget {
       loadingBuilder: (context, child, progresso) {
         if (progresso == null) return child;
         return Container(
-          color: Colors.grey.shade100,
+          color: AppColors.gray100,
           alignment: Alignment.center,
           child: const SizedBox(
             width: 24,
@@ -916,7 +910,7 @@ class _FotoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100,
+      color: AppColors.gray100,
       alignment: Alignment.center,
       child: const Text('📐', style: TextStyle(fontSize: 40)),
     );
@@ -958,7 +952,7 @@ class _GaleriaTelaCheiaState extends State<_GaleriaTelaCheia> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.white,
         elevation: 0,
         title: Text('${_atual + 1} / ${widget.fotos.length}'),
       ),
