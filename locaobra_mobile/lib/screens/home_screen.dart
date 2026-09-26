@@ -516,34 +516,35 @@ class HomeScreen extends StatelessWidget {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: Material(
-          color: AppColors.white,
-          child: InkWell(
-            onTap: onTap,
-            splashColor: AppColors.primary,
-            highlightColor: AppColors.primary,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.gray300, width: 1),
-              ),
-              child: Column(
-                children: [
-                  SvgPicture.asset(imagePath!, width: 36, height: 36),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+      child: Material(
+        color: AppColors.white,
+        // Borda no shape da Material (e não num Container interno), pra
+        // acompanhar os cantos arredondados em vez de ser cortada.
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: const BorderSide(color: AppColors.gray300, width: 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: AppColors.primary,
+          highlightColor: AppColors.primary,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            width: double.infinity,
+            child: Column(
+              children: [
+                SvgPicture.asset(imagePath!, width: 36, height: 36),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

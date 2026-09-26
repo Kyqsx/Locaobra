@@ -219,27 +219,40 @@ class _ProductViewPageState extends State<ProductViewPage> {
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
+      extendBodyBehindAppBar: true,
       appBar: HeaderVoltar(
         actions: [
           ValueListenableBuilder<List<CartItem>>(
-            valueListenable: CartState.itens,
-            builder: (context, itens, _) {
-              final total = CartState.totalItens;
-              return IconButton(
-                tooltip: 'Carrinho',
-                onPressed: () => abrirCarrinho(context),
-                icon: Badge(
-                  isLabelVisible: total > 0,
-                  label: Text('$total'),
-                  child: const Icon(Icons.shopping_cart_outlined),
-                ),
-              );
-            },
+              valueListenable: CartState.itens,
+              builder: (context, itens, _) {
+                final total = CartState.totalItens;
+                return HeaderCircleButton(
+                  icon: Icons.shopping_cart_outlined,
+                  // Mesmo diâmetro da altura do campo de pesquisa (36).
+                  size: 36,
+                  onTap: () => abrirCarrinho(context),
+                  badge: total > 0
+                      ? Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Badge(label: Text('$total')),
+                        )
+                      : null,
+                );
+              },
           ),
-          const SizedBox(width: 4),
         ],
       ),
-      body: _buildCorpo(equipamento),
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              color: AppColors.bgPrimary,
+              child: _buildCorpo(equipamento),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: equipamento == null
           ? null
           : _buildBarraCompra(equipamento),
@@ -282,7 +295,9 @@ class _ProductViewPageState extends State<ProductViewPage> {
 
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: const EdgeInsets.all(16),
+      // Mesmo padding lateral do catálogo (6px). Top zero pra galeria começar
+      // por trás do header transparente (extendBodyBehindAppBar).
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

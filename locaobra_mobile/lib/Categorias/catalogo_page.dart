@@ -80,7 +80,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -91,9 +91,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                         _buildFiltrarButton(),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, color: AppColors.gray500),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     FutureBuilder<List<Equipamento>>(
                       future: _futureDados,
                       builder: (context, snapshot) {
@@ -151,7 +149,9 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
   // Campo de pesquisa — filtra os equipamentos já carregados por nome ou
   // descrição, sem nova chamada de API (igual ao catálogo do web).
   Widget _buildCampoBusca() {
-    return TextField(
+    return SizedBox(
+      height: 36,
+      child: TextField(
       controller: _buscaController,
       onChanged: (valor) => setState(() => _termoBusca = valor),
       style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
@@ -189,6 +189,7 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
                 },
               ),
       ),
+        ),
     );
   }
 
@@ -378,13 +379,14 @@ class _CatalogoPaginaState extends State<CatalogoPagina> {
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 36),
         backgroundColor: comFiltro ? AppColors.primary : AppColors.white,
         foregroundColor: comFiltro ? AppColors.white : AppColors.textPrimary,
         side: BorderSide(
           color: comFiltro ? AppColors.primary : AppColors.gray300,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
       ),
     );
   }
