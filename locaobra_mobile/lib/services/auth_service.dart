@@ -37,11 +37,30 @@ class CadastroResult {
 /// Resultado de GET /api/auth/me — só os campos que o app usa pra decidir
 /// pra onde navegar depois do login.
 class PerfilResult {
+  final String? nome;
   final String? tipo;
   final String? cargoFuncionario;
   final int? idFuncionario;
 
-  PerfilResult({this.tipo, this.cargoFuncionario, this.idFuncionario});
+  PerfilResult({this.nome, this.tipo, this.cargoFuncionario, this.idFuncionario});
+}
+
+/// Resultado de restaurarSessao() — diferencia "token inválido/expirado"
+/// (aí sim apaga o token salvo) de "não deu pra confirmar agora" (sem
+/// internet, timeout...), caso em que o token é mantido pra tentar de novo
+/// na próxima abertura do app, em vez de derrubar uma sessão válida por
+/// causa de uma falha temporária de rede.
+class RestauracaoSessao {
+  final PerfilResult? perfil;
+  final bool tokenInvalido;
+
+  RestauracaoSessao.valida(PerfilResult this.perfil) : tokenInvalido = false;
+  RestauracaoSessao.tokenInvalido()
+    : perfil = null,
+      tokenInvalido = true;
+  RestauracaoSessao.indisponivel()
+    : perfil = null,
+      tokenInvalido = false;
 }
 
 class AuthService {
@@ -127,6 +146,7 @@ class AuthService {
       if (data is! Map<String, dynamic>) return null;
 
       return PerfilResult(
+        nome: data['nome']?.toString(),
         tipo: data['tipo']?.toString(),
         cargoFuncionario: data['cargoFuncionario']?.toString(),
         idFuncionario: data['idFuncionario'] is int
@@ -135,6 +155,40 @@ class AuthService {
       );
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Usado só na abertura do app, pra restaurar a sessão a partir do token
+  /// salvo (ver TokenStorage). Ao contrário de buscarPerfil(), aqui importa
+  /// saber SE o token foi rejeitado (401/403 -> apaga) ou se só não deu pra
+  /// confirmar agora (sem internet, timeout -> mantém o token e tenta de
+  /// novo depois).
+  Future<RestauracaoSessao> restaurarSessao() async {
+    try {
+      final response = await ApiClient.get('/api/auth/me');
+
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        return RestauracaoSessao.tokenInvalido();
+      }
+      if (response.statusCode != 200) {
+        return RestauracaoSessao.indisponivel();
+      }
+
+      final data = jsonDecode(response.body);
+      if (data is! Map<String, dynamic>) return RestauracaoSessao.indisponivel();
+
+      return RestauracaoSessao.valida(
+        PerfilResult(
+          nome: data['nome']?.toString(),
+          tipo: data['tipo']?.toString(),
+          cargoFuncionario: data['cargoFuncionario']?.toString(),
+          idFuncionario: data['idFuncionario'] is int
+              ? data['idFuncionario'] as int
+              : int.tryParse('${data['idFuncionario']}'),
+        ),
+      );
+    } catch (_) {
+      return RestauracaoSessao.indisponivel();
     }
   }
 

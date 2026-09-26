@@ -13,6 +13,7 @@ import 'package:locaobra_mobile/screens/pagamento_page.dart';
 import 'package:locaobra_mobile/services/api_client.dart';
 import 'package:locaobra_mobile/services/endereco_service.dart';
 import 'package:locaobra_mobile/services/pedido_service.dart';
+import 'package:locaobra_mobile/screens/home_screen.dart';
 import 'package:locaobra_mobile/utils/formatters.dart';
 
 /// Carrinho + Checkout num patch só (como no web): revisar os itens e
@@ -424,7 +425,16 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                // Antes usava popUntil((r) => r.isFirst), que sempre volta pra
+                // WelcomeScreen (a primeira rota do app, cadastrada antes do
+                // login) — ela nunca reflete o AuthState, então mesmo logado
+                // a tela mostrava "Entrar ou Cadastrar" de novo, parecendo
+                // deslogado. Chegar até o carrinho já exige login
+                // (_garantirLogin), então o certo é ir pra Home autenticada.
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  (route) => false,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 255, 128, 0),
                   foregroundColor: Colors.white,

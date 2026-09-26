@@ -1,0 +1,719 @@
+diff --git a/src/components/header.jsx b/src/components/header.jsx
+index 4ad666a..dea8b13 100644
+--- a/src/components/header.jsx
++++ b/src/components/header.jsx
+@@ -5,7 +5,7 @@ import './components.css';
+ import { useAuth } from '../utils/useAuth';
+ import { useCart } from '../context/CartContext';
+ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+-import { faRightFromBracket, faUser, faShield, faClipboardList, faCartShopping, faLocationDot } from '@fortawesome/free-solid-svg-icons';
++import { faRightFromBracket, faUser, faShield, faClipboardList, faCartShopping, faLocationDot, faTruck } from '@fortawesome/free-solid-svg-icons';
+ import logo from '../assets/locaobraLogo.png';
+ 
+ function Header() {
+@@ -73,6 +73,9 @@ function Header() {
+                                         <Link to="/meus-pedidos" className="sub-item">
+                                             <FontAwesomeIcon icon={faClipboardList} /> Meus Pedidos
+                                         </Link>
++                                        <Link to="/minhas-entregas" className="sub-item">
++                                            <FontAwesomeIcon icon={faTruck} /> Minhas Entregas
++                                        </Link>
+                                         <Link to="/meus-enderecos" className="sub-item">
+                                             <FontAwesomeIcon icon={faLocationDot} /> Meus Endereços
+                                         </Link>
+diff --git a/src/pages/Pedidos/meusPedidos.jsx b/src/pages/Pedidos/meusPedidos.jsx
+index ecd8cb7..de2a162 100644
+--- a/src/pages/Pedidos/meusPedidos.jsx
++++ b/src/pages/Pedidos/meusPedidos.jsx
+@@ -1,6 +1,7 @@
+ import React, { useEffect, useState } from 'react';
+-import { Link } from 'react-router-dom';
++import { Link, useNavigate } from 'react-router-dom';
+ import api from '../../service/api';
++import rastreioService from '../../service/rastreioService';
+ import './Pedidos.css';
+ import { formatarData } from '../../utils/formatters';
+ 
+@@ -12,10 +13,13 @@ const STATUS_INFO = {
+ };
+ 
+ function MeusPedidos() {
++  const navigate = useNavigate();
+   const [pedidos, setPedidos] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState(null);
+   const [cancelandoId, setCancelandoId] = useState(null);
++  const [rastreandoId, setRastreandoId] = useState(null);
++  const [escolhaExpedicoes, setEscolhaExpedicoes] = useState(null); // lista pra escolher quando o pedido tem mais de uma expedição
+ 
+   const carregar = () => {
+     setLoading(true);
+@@ -32,6 +36,29 @@ function MeusPedidos() {
+ 
+   const podeCancelar = (status) => status === 'SOLICITADO';
+ 
++  // Busca a(s) expedição(ões) geradas por esse pedido e abre o rastreio.
++  // Normalmente é uma só; quando os itens saíram de depósitos diferentes,
++  // o pedido pode ter mais de uma — nesse caso deixa o cliente escolher.
++  const handleRastrear = async (pedido) => {
++    setRastreandoId(pedido.id);
++    try {
++      const expedicoes = await rastreioService.listarPorPedido(pedido.id);
++      if (!expedicoes || expedicoes.length === 0) {
++        alert('Esse pedido ainda não tem uma entrega agendada.');
++        return;
++      }
++      if (expedicoes.length === 1) {
++        navigate(`/minhas-entregas/${expedicoes[0].id}`);
++        return;
++      }
++      setEscolhaExpedicoes(expedicoes);
++    } catch (err) {
++      alert(err?.response?.data?.message || 'Não foi possível carregar o rastreio desse pedido.');
++    } finally {
++      setRastreandoId(null);
++    }
++  };
++
+   const handleCancelar = async (id) => {
+     if (!window.confirm('Tem certeza que deseja cancelar esse pedido?')) return;
+     setCancelandoId(id);
+@@ -119,15 +146,26 @@ function MeusPedidos() {
+                   )}
+                 </div>
+ 
+-                {podeCancelar(pedido.status) && (
++                {(pedido.status === 'APROVADO' || podeCancelar(pedido.status)) && (
+                   <div className="pedido-card-actions">
+-                    <button
+-                      className="btnSecondary"
+-                      onClick={() => handleCancelar(pedido.id)}
+-                      disabled={cancelandoId === pedido.id}
+-                    >
+-                      {cancelandoId === pedido.id ? 'Cancelando...' : 'Cancelar pedido'}
+-                    </button>
++                    {pedido.status === 'APROVADO' && (
++                      <button
++                        className="btnPrimary"
++                        onClick={() => handleRastrear(pedido)}
++                        disabled={rastreandoId === pedido.id}
++                      >
++                        {rastreandoId === pedido.id ? 'Buscando...' : 'Rastrear entrega'}
++                      </button>
++                    )}
++                    {podeCancelar(pedido.status) && (
++                      <button
++                        className="btnSecondary"
++                        onClick={() => handleCancelar(pedido.id)}
++                        disabled={cancelandoId === pedido.id}
++                      >
++                        {cancelandoId === pedido.id ? 'Cancelando...' : 'Cancelar pedido'}
++                      </button>
++                    )}
+                   </div>
+                 )}
+               </div>
+@@ -135,6 +173,30 @@ function MeusPedidos() {
+           })}
+         </div>
+       )}
++
++      {escolhaExpedicoes && (
++        <div className="modalBackdrop" onClick={() => setEscolhaExpedicoes(null)}>
++          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
++            <h3>Esse pedido tem mais de uma entrega</h3>
++            <p className="pedidos-subtitle">Qual você quer acompanhar?</p>
++            <div className="pedidos-lista" style={{ marginTop: 'var(--space-3)' }}>
++              {escolhaExpedicoes.map((exp) => (
++                <button
++                  key={exp.id}
++                  className="pedido-card"
++                  style={{ textAlign: 'left', cursor: 'pointer', width: '100%', padding: 'var(--space-4) var(--space-5)' }}
++                  onClick={() => navigate(`/minhas-entregas/${exp.id}`)}
++                >
++                  <strong>{exp.codigo}</strong>
++                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', marginTop: 4 }}>
++                    {exp.enderecoEntrega?.formatado || 'Endereço não informado'}
++                  </div>
++                </button>
++              ))}
++            </div>
++          </div>
++        </div>
++      )}
+     </div>
+   );
+ }
+diff --git a/src/pages/Rastreio/Rastreio.css b/src/pages/Rastreio/Rastreio.css
+new file mode 100644
+index 0000000..727d4af
+--- /dev/null
++++ b/src/pages/Rastreio/Rastreio.css
+@@ -0,0 +1,163 @@
++/* ============================================
++   RASTREIO (CLIENTE) — telas de acompanhamento
++   de entrega/coleta, espelhando o app mobile
++   ============================================ */
++
++.rastreio-card-link {
++  text-decoration: none;
++  color: inherit;
++  display: block;
++}
++
++.rastreio-card {
++  transition: box-shadow 0.15s ease, transform 0.15s ease;
++  cursor: pointer;
++}
++
++.rastreio-card:hover {
++  box-shadow: var(--shadow-lg, 0 8px 16px rgba(0, 0, 0, 0.08));
++  transform: translateY(-1px);
++}
++
++.rastreio-header {
++  display: flex;
++  flex-direction: column;
++  gap: var(--space-2);
++}
++
++.rastreio-voltar-link {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  color: var(--gray-500);
++  font-size: var(--text-sm);
++  text-decoration: none;
++  width: fit-content;
++}
++
++.rastreio-voltar-link:hover {
++  color: var(--primary-color);
++}
++
++.rastreio-voltar {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  margin-top: var(--space-4);
++  text-decoration: none;
++}
++
++.rastreio-cabecalho {
++  margin-bottom: var(--space-5);
++}
++
++.rastreio-cancelada-banner {
++  display: flex;
++  align-items: flex-start;
++  gap: 10px;
++  background: rgba(220, 76, 76, 0.08);
++  color: var(--error-red);
++  border: 1px solid rgba(220, 76, 76, 0.2);
++  border-radius: var(--radius-lg);
++  padding: var(--space-4) var(--space-5);
++  font-size: var(--text-sm);
++  margin-bottom: var(--space-5);
++}
++
++.rastreio-cancelada-banner svg {
++  margin-top: 2px;
++  flex-shrink: 0;
++}
++
++/* ---- Timeline ---- */
++.rastreio-timeline {
++  padding: var(--space-5) var(--space-6);
++  margin-bottom: var(--space-5);
++}
++
++.rastreio-etapa {
++  display: flex;
++  align-items: flex-start;
++  gap: 12px;
++}
++
++.rastreio-etapa-marcador {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++}
++
++.rastreio-etapa-marcador svg {
++  font-size: 1.1rem;
++}
++
++.rastreio-icone-concluido {
++  color: var(--success-green, #2e7d32);
++}
++
++.rastreio-icone-pendente {
++  color: var(--gray-300);
++}
++
++.rastreio-etapa-linha {
++  width: 2px;
++  flex: 1;
++  min-height: 28px;
++  background: var(--gray-200);
++  margin: 4px 0;
++}
++
++.rastreio-etapa-linha.concluida {
++  background: rgba(46, 125, 50, 0.3);
++}
++
++.rastreio-etapa-texto {
++  display: flex;
++  flex-direction: column;
++  padding-bottom: var(--space-4);
++}
++
++.rastreio-etapa-rotulo {
++  font-size: var(--text-sm);
++  font-weight: 500;
++  color: var(--gray-500);
++}
++
++.rastreio-etapa-rotulo.concluida {
++  font-weight: 700;
++  color: var(--gray-900);
++}
++
++.rastreio-etapa-data {
++  font-size: var(--text-xs);
++  color: var(--gray-500);
++  margin-top: 2px;
++}
++
++/* ---- Cards de informação (endereço, itens, observações, confirmação) ---- */
++.rastreio-info-card {
++  padding: var(--space-5) var(--space-6);
++  margin-bottom: var(--space-4);
++}
++
++.rastreio-info-card h4 {
++  margin: 0 0 var(--space-2);
++  font-size: var(--text-sm);
++  font-weight: 700;
++  color: var(--gray-800);
++}
++
++.rastreio-info-card p {
++  margin: 0;
++  font-size: var(--text-sm);
++  color: var(--gray-700);
++}
++
++.rastreio-foto-entrega {
++  margin-top: var(--space-3);
++  width: 100%;
++  max-width: 420px;
++  border-radius: var(--radius-md);
++  display: block;
++  object-fit: cover;
++}
+diff --git a/src/pages/Rastreio/minhasEntregas.jsx b/src/pages/Rastreio/minhasEntregas.jsx
+new file mode 100644
+index 0000000..8190f5b
+--- /dev/null
++++ b/src/pages/Rastreio/minhasEntregas.jsx
+@@ -0,0 +1,107 @@
++import React, { useEffect, useState } from 'react';
++import { Link } from 'react-router-dom';
++import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
++import { faTruck, faLocationDot } from '@fortawesome/free-solid-svg-icons';
++import rastreioService from '../../service/rastreioService';
++import { formatarData } from '../../utils/formatters';
++import './Rastreio.css';
++
++const STATUS_LABEL = {
++  AGENDADO: 'Agendado',
++  EM_TRANSITO: 'Em trânsito',
++  ENTREGUE: 'Entregue',
++  CONCLUIDO: 'Concluído',
++  CANCELADO: 'Cancelado',
++};
++
++const TIPO_LABEL = {
++  ENTREGA: 'Entrega',
++  COLETA: 'Coleta',
++};
++
++// "Minhas Entregas" — lista todas as expedições (entregas e coletas) do
++// cliente logado, mais recentes primeiro. Ponto de entrada geral do
++// rastreio (menu do usuário); o rastreio de um pedido específico também
++// pode ser aberto direto a partir de "Meus Pedidos". Espelha
++// locaobra_mobile/lib/rastreio/screens/minhas_entregas_page.dart.
++function MinhasEntregas() {
++  const [entregas, setEntregas] = useState([]);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState(null);
++
++  const carregar = () => {
++    setLoading(true);
++    setError(null);
++    rastreioService
++      .listarMinhas()
++      .then((data) => setEntregas(Array.isArray(data) ? data : []))
++      .catch(() => setError('Não foi possível carregar suas entregas.'))
++      .finally(() => setLoading(false));
++  };
++
++  useEffect(() => {
++    carregar();
++  }, []);
++
++  return (
++    <div className="pedidos-container">
++      <div className="pedidos-header">
++        <h1>Minhas Entregas</h1>
++        <p className="pedidos-subtitle">Acompanhe suas entregas e coletas agendadas.</p>
++      </div>
++
++      {loading ? (
++        <div className="loading-container">Carregando entregas...</div>
++      ) : error ? (
++        <div className="error-container">{error}</div>
++      ) : entregas.length === 0 ? (
++        <div className="pedidos-vazio">
++          <FontAwesomeIcon icon={faTruck} size="2x" style={{ marginBottom: 12, opacity: 0.5 }} />
++          <p>Você ainda não tem entregas ou coletas agendadas.</p>
++        </div>
++      ) : (
++        <div className="pedidos-lista">
++          {entregas.map((expedicao) => (
++            <Link
++              to={`/minhas-entregas/${expedicao.id}`}
++              key={expedicao.id}
++              className="rastreio-card-link"
++            >
++              <div className="pedido-card rastreio-card">
++                <div className="pedido-card-header">
++                  <div>
++                    <span className="pedido-codigo">
++                      {TIPO_LABEL[expedicao.tipo] || expedicao.tipo} • {expedicao.codigo}
++                    </span>
++                  </div>
++                  <span className={`expeStatusTag ${expedicao.status?.toLowerCase()}`}>
++                    {STATUS_LABEL[expedicao.status] || expedicao.status}
++                  </span>
++                </div>
++                <div className="pedido-card-body">
++                  {expedicao.pedidoCodigo && (
++                    <div className="pedido-info-row">
++                      <strong>Pedido:</strong> {expedicao.pedidoCodigo}
++                    </div>
++                  )}
++                  <div className="pedido-info-row">
++                    <FontAwesomeIcon icon={faLocationDot} style={{ marginRight: 6, opacity: 0.6 }} />
++                    {expedicao.enderecoEntrega?.formatado || 'Endereço não informado'}
++                  </div>
++                  {expedicao.dataProgramada && (
++                    <div className="pedido-info-row">
++                      <strong>Previsto:</strong> {formatarData(expedicao.dataProgramada)}
++                      {expedicao.horarioProgramado ? ` às ${expedicao.horarioProgramado}` : ''}
++                    </div>
++                  )}
++                </div>
++              </div>
++            </Link>
++          ))}
++        </div>
++      )}
++    </div>
++  );
++}
++
++export default MinhasEntregas;
+diff --git a/src/pages/Rastreio/rastreioDetalhe.jsx b/src/pages/Rastreio/rastreioDetalhe.jsx
+new file mode 100644
+index 0000000..7bd1e15
+--- /dev/null
++++ b/src/pages/Rastreio/rastreioDetalhe.jsx
+@@ -0,0 +1,225 @@
++import React, { useEffect, useState } from 'react';
++import { useParams, Link } from 'react-router-dom';
++import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
++import { faArrowLeft, faCircleCheck, faCircle, faCircleXmark } from '@fortawesome/free-solid-svg-icons';
++import rastreioService from '../../service/rastreioService';
++import { imageUrl } from '../../utils/imagem';
++import './Rastreio.css';
++
++const STATUS_LABEL = {
++  AGENDADO: 'Agendado',
++  EM_TRANSITO: 'Em trânsito',
++  ENTREGUE: 'Entregue',
++  CONCLUIDO: 'Concluído',
++  CANCELADO: 'Cancelado',
++};
++
++const TIPO_LABEL = {
++  ENTREGA: 'Entrega',
++  COLETA: 'Coleta',
++};
++
++// Etapas da entrega: Agendado -> Em trânsito -> Entregue.
++// Etapas da coleta: as mesmas, mais Concluído (equipamento de volta ao depósito).
++function etapasPara(tipo) {
++  return tipo === 'COLETA'
++    ? ['AGENDADO', 'EM_TRANSITO', 'ENTREGUE', 'CONCLUIDO']
++    : ['AGENDADO', 'EM_TRANSITO', 'ENTREGUE'];
++}
++
++// 'yyyy-MM-dd' -> 'dd/MM/yyyy'
++function formatarDataSimples(iso) {
++  if (!iso || iso.length < 10) return '—';
++  const partes = iso.substring(0, 10).split('-');
++  if (partes.length !== 3) return iso;
++  return `${partes[2]}/${partes[1]}/${partes[0]}`;
++}
++
++// 'yyyy-MM-ddTHH:mm:ss...' -> 'dd/MM/yyyy às HH:mm'
++function formatarDataHora(iso) {
++  if (!iso || iso.length < 16) return null;
++  const data = formatarDataSimples(iso);
++  const hora = iso.substring(11, 16);
++  return `${data} às ${hora}`;
++}
++
++function dataHoraDaEtapa(expedicao, etapa) {
++  switch (etapa) {
++    case 'AGENDADO':
++      return formatarDataHora(expedicao.criadoEm);
++    case 'EM_TRANSITO':
++      return formatarDataHora(expedicao.checkoutEm);
++    case 'ENTREGUE':
++      return formatarDataHora(expedicao.entregaConfirmadaEm);
++    default:
++      return null; // CONCLUIDO: a API de rastreio não expõe checkinEm
++  }
++}
++
++// Rastreio de UMA expedição (entrega ou coleta) pro cliente: linha do
++// tempo com as etapas já percorridas, endereço, itens e — quando já
++// confirmada no local — quem recebeu e a foto tirada pelo entregador.
++// Espelha locaobra_mobile/lib/rastreio/screens/rastreio_detalhe_page.dart.
++function RastreioDetalhe() {
++  const { id } = useParams();
++  const [expedicao, setExpedicao] = useState(null);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState(null);
++
++  const carregar = () => {
++    setLoading(true);
++    setError(null);
++    rastreioService
++      .buscarPorId(id)
++      .then((data) => setExpedicao(data))
++      .catch(() => setError('Não foi possível carregar essa entrega.'))
++      .finally(() => setLoading(false));
++  };
++
++  useEffect(() => {
++    carregar();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [id]);
++
++  if (loading) {
++    return (
++      <div className="pedidos-container">
++        <div className="loading-container">Carregando rastreio...</div>
++      </div>
++    );
++  }
++
++  if (error || !expedicao) {
++    return (
++      <div className="pedidos-container">
++        <div className="error-container">{error || 'Entrega não encontrada.'}</div>
++        <Link to="/minhas-entregas" className="btnSecondary rastreio-voltar">
++          <FontAwesomeIcon icon={faArrowLeft} /> Voltar
++        </Link>
++      </div>
++    );
++  }
++
++  const ehColeta = expedicao.tipo === 'COLETA';
++  const cancelada = expedicao.status === 'CANCELADO';
++  const etapas = etapasPara(expedicao.tipo);
++  const indiceAtual = etapas.indexOf(expedicao.status);
++
++  return (
++    <div className="pedidos-container">
++      <div className="pedidos-header rastreio-header">
++        <Link to="/minhas-entregas" className="rastreio-voltar-link">
++          <FontAwesomeIcon icon={faArrowLeft} /> Minhas Entregas
++        </Link>
++        <h1>Rastreio — {TIPO_LABEL[expedicao.tipo] || expedicao.tipo}</h1>
++      </div>
++
++      <div className="pedido-card rastreio-cabecalho">
++        <div className="pedido-card-header">
++          <span className="pedido-codigo" style={{ fontFamily: 'var(--font-mono)' }}>
++            {expedicao.codigo}
++          </span>
++          <span className={`expeStatusTag ${expedicao.status?.toLowerCase()}`}>
++            {STATUS_LABEL[expedicao.status] || expedicao.status}
++          </span>
++        </div>
++        <div className="pedido-card-body">
++          {expedicao.pedidoCodigo && (
++            <div className="pedido-info-row"><strong>Pedido:</strong> {expedicao.pedidoCodigo}</div>
++          )}
++          <div className="pedido-info-row">
++            <strong>Data prevista:</strong> {formatarDataSimples(expedicao.dataProgramada)}
++            {expedicao.horarioProgramado ? ` às ${expedicao.horarioProgramado}` : ''}
++          </div>
++          {expedicao.motoristaNome && (
++            <div className="pedido-info-row"><strong>Entregador:</strong> {expedicao.motoristaNome}</div>
++          )}
++        </div>
++      </div>
++
++      {cancelada ? (
++        <div className="rastreio-cancelada-banner">
++          <FontAwesomeIcon icon={faCircleXmark} />
++          <span>
++            <strong>Cancelada.</strong> {expedicao.motivoCancelamento || 'Nenhum motivo informado.'}
++          </span>
++        </div>
++      ) : (
++        <div className="pedido-card rastreio-timeline">
++          {etapas.map((etapa, i) => {
++            const concluida = indiceAtual >= 0 && i <= indiceAtual;
++            const ultima = i === etapas.length - 1;
++            const dataHora = dataHoraDaEtapa(expedicao, etapa);
++            return (
++              <div className="rastreio-etapa" key={etapa}>
++                <div className="rastreio-etapa-marcador">
++                  <FontAwesomeIcon
++                    icon={concluida ? faCircleCheck : faCircle}
++                    className={concluida ? 'rastreio-icone-concluido' : 'rastreio-icone-pendente'}
++                  />
++                  {!ultima && (
++                    <span className={`rastreio-etapa-linha ${concluida ? 'concluida' : ''}`} />
++                  )}
++                </div>
++                <div className="rastreio-etapa-texto">
++                  <span className={`rastreio-etapa-rotulo ${concluida ? 'concluida' : ''}`}>
++                    {STATUS_LABEL[etapa]}
++                  </span>
++                  {dataHora && <span className="rastreio-etapa-data">{dataHora}</span>}
++                </div>
++              </div>
++            );
++          })}
++        </div>
++      )}
++
++      <div className="pedido-card rastreio-info-card">
++        <h4>Endereço</h4>
++        <p>{expedicao.enderecoEntrega?.formatado || 'Não informado'}</p>
++      </div>
++
++      <div className="pedido-card rastreio-info-card">
++        <h4>Itens</h4>
++        {!expedicao.itens || expedicao.itens.length === 0 ? (
++          <p>Nenhum item informado.</p>
++        ) : (
++          <div className="pedido-itens">
++            {expedicao.itens.map((item, i) => (
++              <div className="pedido-item" key={i}>
++                <span>{item.equipamentoNome || 'Equipamento'} × {item.quantidade}</span>
++              </div>
++            ))}
++          </div>
++        )}
++      </div>
++
++      {expedicao.observacoes && expedicao.observacoes.trim() !== '' && (
++        <div className="pedido-card rastreio-info-card">
++          <h4>Observações</h4>
++          <p>{expedicao.observacoes}</p>
++        </div>
++      )}
++
++      {expedicao.entregaConfirmadaEm && (
++        <div className="pedido-card rastreio-info-card">
++          <h4>{ehColeta ? 'Confirmação da coleta' : 'Confirmação da entrega'}</h4>
++          {expedicao.assinaturaEntrega && (
++            <div className="pedido-info-row"><strong>Recebido por:</strong> {expedicao.assinaturaEntrega}</div>
++          )}
++          <div className="pedido-info-row">
++            <strong>Confirmado em:</strong> {formatarDataHora(expedicao.entregaConfirmadaEm) || '—'}
++          </div>
++          {expedicao.fotoEntrega && (
++            <img
++              src={imageUrl(expedicao.fotoEntrega)}
++              alt="Foto da entrega"
++              className="rastreio-foto-entrega"
++            />
++          )}
++        </div>
++      )}
++    </div>
++  );
++}
++
++export default RastreioDetalhe;
+diff --git a/src/routes.jsx b/src/routes.jsx
+index ccde692..b798b27 100644
+--- a/src/routes.jsx
++++ b/src/routes.jsx
+@@ -25,7 +25,9 @@ import AdminPedidos from './pages/Admin/pedidos';
+ import MeusPedidos from './pages/Pedidos/meusPedidos';
+ import Carrinho from './pages/Cart/carrinho';
+ import Pagamento from './pages/Cart/pagamento';
+-import MeusEnderecos from './pages/Perfil/meusEnderecos';
++import MeusEnderecos from './pages/Perfil/meusEnderecos';
++import MinhasEntregas from './pages/Rastreio/minhasEntregas';
++import RastreioDetalhe from './pages/Rastreio/rastreioDetalhe';
+ 
+ import Header from "./components/header";
+ import Sidebar from "./components/sidebar";
+@@ -114,7 +116,9 @@ function RotasApp() {
+                             <Route path="/blog" element={<Blog />} />
+                             <Route path="/blog/:slug" element={<ArtigoView />} />
+                             <Route path="/meus-pedidos" element={<ClienteRoute><MeusPedidos /></ClienteRoute>} />
+-                            <Route path="/meus-enderecos" element={<ClienteRoute><MeusEnderecos /></ClienteRoute>} />
++                            <Route path="/meus-enderecos" element={<ClienteRoute><MeusEnderecos /></ClienteRoute>} />
++                            <Route path="/minhas-entregas" element={<ClienteRoute><MinhasEntregas /></ClienteRoute>} />
++                            <Route path="/minhas-entregas/:id" element={<ClienteRoute><RastreioDetalhe /></ClienteRoute>} />
+                             <Route path="/carrinho" element={<ClienteRoute><Carrinho /></ClienteRoute>} />
+                             <Route path="/carrinho/pagamento" element={<ClienteRoute><Pagamento /></ClienteRoute>} />
+                         </Route>
+diff --git a/src/service/rastreioService.js b/src/service/rastreioService.js
+new file mode 100644
+index 0000000..6051fbf
+--- /dev/null
++++ b/src/service/rastreioService.js
+@@ -0,0 +1,28 @@
++import api from './api';
++
++// Rastreio de entrega/coleta pro cliente logado — espelha a fatia de
++// /api/expedicoes consumida pelo app do cliente (só leitura; quem altera o
++// status é sempre o conferente/entregador). Mesmos endpoints usados pelo
++// locaobra_mobile (lib/rastreio/services/rastreio_service.dart).
++const rastreioService = {
++  // GET /api/expedicoes/minhas — todas as expedições (entrega e coleta) em
++  // que o cliente logado é o destinatário, mais recentes primeiro.
++  listarMinhas() {
++    return api.get('/api/expedicoes/minhas').then((res) => res.data);
++  },
++
++  // GET /api/expedicoes/minhas/{id} — detalhe de uma expedição específica
++  // (a API garante que só devolve se for do cliente logado).
++  buscarPorId(id) {
++    return api.get(`/api/expedicoes/minhas/${id}`).then((res) => res.data);
++  },
++
++  // GET /api/expedicoes/pedido/{pedidoId} — expedição(ões) geradas por um
++  // pedido específico. Normalmente uma só, mas pode ser mais de uma quando
++  // os itens saíram de depósitos diferentes.
++  listarPorPedido(pedidoId) {
++    return api.get(`/api/expedicoes/pedido/${pedidoId}`).then((res) => res.data);
++  },
++};
++
++export default rastreioService;
